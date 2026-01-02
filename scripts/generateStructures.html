@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>構造式自動生成ツール</title>
+  <style>
+    body {
+      font-family: 'Noto Serif Japanese', serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    h1 {
+      color: #ff8c00;
+    }
+    .container {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #ff8c00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #ffa500;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    textarea {
+      width: 100%;
+      min-height: 300px;
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      background: #333;
+      border-radius: 4px;
+    }
+    .success {
+      background: #2d5a2d;
+    }
+    .error {
+      background: #5a2d2d;
+    }
+  </style>
+</head>
+<body>
+  <h1>構造式自動生成ツール</h1>
+  
+  <div class="container">
+    <h2>使い方</h2>
+    <ol>
+      <li>「データを取得」ボタンをクリックして、スプレッドシートから化合物データを取得</li>
+      <li>生成されたCSVデータをコピー</li>
+      <li>スプレッドシートに貼り付けて更新</li>
+    </ol>
+  </div>
+
+  <div class="container">
+    <button id="fetchBtn">データを取得して構造式を生成</button>
+    <div id="status" class="status" style="display: none;"></div>
+  </div>
+
+  <div class="container">
+    <h2>生成されたCSVデータ</h2>
+    <textarea id="output" readonly></textarea>
+    <button id="copyBtn" style="margin-top: 10px;">クリップボードにコピー</button>
+  </div>
+
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx3yv3iDlepCp8Ys6As-Bto80OkJzupYBT1_olY4yPhEx6EkDkZft1hpzLdH4K-TYSE0Q/exec';
+
+    // 構造式生成関数（generateStructures.jsと同じロジック）
+    function generateAlkane(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    function generateAlkene(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          if (i === 1) {
+            bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'double' });
+          } else {
+            bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+          }
+        }
+      }
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        const isDoubleBond = i === 0 || i === 1;
+        
+        if (isDoubleBond) {
+          // 二重結合の炭素: 上下に斜めにHを配置（エチレンの場合）
+          if (carbonCount === 2) {
+            // エチレンの場合: C1とC2にそれぞれ2つのH
+            if (i === 0) {
+              atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 46, y: startY - 90 });
+              atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 46, y: startY + 90 });
+            } else {
+              atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 46, y: startY - 90 });
+              atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 46, y: startY + 90 });
+            }
+          } else {
+            // プロピレンなど: 二重結合の炭素に2つのH
+            atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 34, y: startY - 86 });
+            atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 34, y: startY + 86 });
+          }
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    function generateAlkyne(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          if (i === 1) {
+            bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'triple' });
+          } else {
+            bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+          }
+        }
+      }
+      
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        const isTripleBond = i === 0 || i === 1;
+        
+        if (isTripleBond) {
+          if (i === 0) {
+            atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+            bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+          } else {
+            atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+            bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+          }
+        } else if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // アルコール（OH基を持つ化合物）を生成
+    function generateAlcohol(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にOH基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: lastX + 140, y: startY });
+      atoms.push({ id: 'H1', element: 'H', x: lastX + 180, y: startY });
+      bonds.push({ from: `C${lastC}`, to: 'O1', type: 'single' });
+      bonds.push({ from: 'O1', to: 'H1', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 2;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          // 最後の炭素はOH基があるので、2つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // アルデヒド（CHO基を持つ化合物）を生成
+    function generateAldehyde(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最初の炭素にCHO基を追加
+      const firstX = startX;
+      atoms.push({ id: 'O1', element: 'O', x: firstX + 140, y: startY });
+      bonds.push({ from: 'C1', to: 'O1', type: 'double' });
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          // 最初の炭素はCHO基があるので、1つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          bonds.push({ from: 'C1', to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // ケトン（C=O基を持つ化合物）を生成
+    function generateKetone(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置（C=Oは中央）
+      const carbonylPos = Math.floor(carbonCount / 2);
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 中央の炭素にOを追加（C=O）
+      const carbonylX = startX + carbonylPos * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: carbonylX, y: startY - 90 });
+      bonds.push({ from: `C${carbonylPos + 1}`, to: 'O1', type: 'double' });
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isCarbonyl = i === carbonylPos;
+        
+        if (isCarbonyl) {
+          // C=Oの炭素は2つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (i === 0) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (i === carbonCount - 1) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // カルボン酸（COOH基を持つ化合物）を生成
+    function generateCarboxylicAcid(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にCOOH基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: lastX + 140, y: startY });
+      atoms.push({ id: 'O2', element: 'O', x: lastX + 140, y: startY - 90 });
+      atoms.push({ id: 'H1', element: 'H', x: lastX + 180, y: startY - 90 });
+      bonds.push({ from: `C${lastC}`, to: 'O1', type: 'double' });
+      bonds.push({ from: `C${lastC}`, to: 'O2', type: 'single' });
+      bonds.push({ from: 'O2', to: 'H1', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 2;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          // 最後の炭素はCOOH基があるので、2つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // ハロゲン化化合物を生成
+    function generateHalide(carbonCount, halideElement = 'Cl', halidePosition = 1, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // ハロゲン原子を追加
+      const halideX = startX + (halidePosition - 1) * spacing;
+      atoms.push({ id: 'X1', element: halideElement, x: halideX, y: startY - 90 });
+      bonds.push({ from: `C${halidePosition}`, to: 'X1', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        const hasHalide = i === halidePosition - 1;
+        
+        if (hasHalide) {
+          // ハロゲンがある炭素は2つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // エステルを生成
+    function generateEster(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にCOO基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: lastX + 140, y: startY });
+      atoms.push({ id: 'O2', element: 'O', x: lastX + 140, y: startY - 90 });
+      // エステルのO-CH3部分
+      const esterC = carbonCount + 1;
+      atoms.push({ id: `C${esterC}`, element: 'C', x: lastX + 280, y: startY - 90 });
+      atoms.push({ id: 'H1', element: 'H', x: lastX + 280, y: startY - 180 });
+      atoms.push({ id: 'H2', element: 'H', x: lastX + 320, y: startY - 90 });
+      atoms.push({ id: 'H3', element: 'H', x: lastX + 280, y: startY });
+      bonds.push({ from: `C${lastC}`, to: 'O1', type: 'double' });
+      bonds.push({ from: `C${lastC}`, to: 'O2', type: 'single' });
+      bonds.push({ from: 'O2', to: `C${esterC}`, type: 'single' });
+      bonds.push({ from: `C${esterC}`, to: 'H1', type: 'single' });
+      bonds.push({ from: `C${esterC}`, to: 'H2', type: 'single' });
+      bonds.push({ from: `C${esterC}`, to: 'H3', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 4;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // アミンを生成
+    function generateAmine(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にNH2基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'N1', element: 'N', x: lastX + 140, y: startY });
+      atoms.push({ id: 'H1', element: 'H', x: lastX + 180, y: startY - 40 });
+      atoms.push({ id: 'H2', element: 'H', x: lastX + 180, y: startY + 40 });
+      bonds.push({ from: `C${lastC}`, to: 'N1', type: 'single' });
+      bonds.push({ from: 'N1', to: 'H1', type: 'single' });
+      bonds.push({ from: 'N1', to: 'H2', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 3;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // エーテルを生成
+    function generateEther(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 中央にO原子を追加（エーテル結合）
+      const middlePos = Math.floor(carbonCount / 2);
+      const middleX = startX + middlePos * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: middleX, y: startY - 90 });
+      
+      // エーテル結合を追加
+      bonds.push({ from: `C${middlePos + 1}`, to: 'O1', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        const isMiddle = i === middlePos;
+        
+        if (isMiddle) {
+          // エーテル結合がある炭素は2つのHのみ
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x + 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // アミドを生成
+    function generateAmide(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にCONH2基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'O1', element: 'O', x: lastX + 140, y: startY });
+      atoms.push({ id: 'N1', element: 'N', x: lastX + 140, y: startY - 90 });
+      atoms.push({ id: 'H1', element: 'H', x: lastX + 180, y: startY - 90 });
+      atoms.push({ id: 'H2', element: 'H', x: lastX + 140, y: startY - 130 });
+      bonds.push({ from: `C${lastC}`, to: 'O1', type: 'double' });
+      bonds.push({ from: `C${lastC}`, to: 'N1', type: 'single' });
+      bonds.push({ from: 'N1', to: 'H1', type: 'single' });
+      bonds.push({ from: 'N1', to: 'H2', type: 'single' });
+      
+      // 水素原子を配置
+      let hIndex = 3;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // アミノ酸（グリシン）を生成
+    function generateAminoAcid(startX = 100, startY = 200, spacing = 140) {
+      const atoms = [
+        { id: 'N1', element: 'N', x: startX, y: startY },
+        { id: 'C1', element: 'C', x: startX + spacing, y: startY },
+        { id: 'C2', element: 'C', x: startX + spacing * 2, y: startY },
+        { id: 'O1', element: 'O', x: startX + spacing * 2, y: startY - 90 },
+        { id: 'O2', element: 'O', x: startX + spacing * 2 + 140, y: startY },
+        { id: 'H1', element: 'H', x: startX - 40, y: startY },
+        { id: 'H2', element: 'H', x: startX, y: startY - 40 },
+        { id: 'H3', element: 'H', x: startX, y: startY + 40 },
+        { id: 'H4', element: 'H', x: startX + spacing, y: startY - 90 },
+        { id: 'H5', element: 'H', x: startX + spacing, y: startY + 90 },
+        { id: 'H6', element: 'H', x: startX + spacing * 2 + 180, y: startY },
+      ];
+      
+      const bonds = [
+        { from: 'N1', to: 'C1', type: 'single' },
+        { from: 'C1', to: 'C2', type: 'single' },
+        { from: 'C2', to: 'O1', type: 'double' },
+        { from: 'C2', to: 'O2', type: 'single' },
+        { from: 'N1', to: 'H1', type: 'single' },
+        { from: 'N1', to: 'H2', type: 'single' },
+        { from: 'N1', to: 'H3', type: 'single' },
+        { from: 'C1', to: 'H4', type: 'single' },
+        { from: 'C1', to: 'H5', type: 'single' },
+        { from: 'O2', to: 'H6', type: 'single' },
+      ];
+      
+      return { atoms, bonds };
+    }
+
+    // 高分子の繰り返し単位を生成（括弧で囲む）
+    function generatePolymerRepeatUnit(unitType, startX = 200, startY = 200) {
+      // 繰り返し単位の構造を生成
+      let structure;
+      
+      switch(unitType) {
+        case 'polyethylene':
+          // -CH2-CH2-
+          structure = {
+            atoms: [
+              { id: 'C1', element: 'C', x: startX - 70, y: startY },
+              { id: 'C2', element: 'C', x: startX + 70, y: startY },
+              { id: 'H1', element: 'H', x: startX - 70, y: startY - 90 },
+              { id: 'H2', element: 'H', x: startX - 70, y: startY + 90 },
+              { id: 'H3', element: 'H', x: startX + 70, y: startY - 90 },
+              { id: 'H4', element: 'H', x: startX + 70, y: startY + 90 },
+            ],
+            bonds: [
+              { from: 'C1', to: 'C2', type: 'single' },
+              { from: 'C1', to: 'H1', type: 'single' },
+              { from: 'C1', to: 'H2', type: 'single' },
+              { from: 'C2', to: 'H3', type: 'single' },
+              { from: 'C2', to: 'H4', type: 'single' },
+            ]
+          };
+          break;
+        case 'polypropylene':
+          // -CH2-CH(CH3)-
+          structure = {
+            atoms: [
+              { id: 'C1', element: 'C', x: startX - 70, y: startY },
+              { id: 'C2', element: 'C', x: startX + 70, y: startY },
+              { id: 'C3', element: 'C', x: startX + 70, y: startY - 90 },
+              { id: 'H1', element: 'H', x: startX - 70, y: startY - 90 },
+              { id: 'H2', element: 'H', x: startX - 70, y: startY + 90 },
+              { id: 'H3', element: 'H', x: startX + 70, y: startY + 90 },
+              { id: 'H4', element: 'H', x: startX + 70 - 40, y: startY - 90 },
+              { id: 'H5', element: 'H', x: startX + 70 + 40, y: startY - 90 },
+              { id: 'H6', element: 'H', x: startX + 70, y: startY - 130 },
+            ],
+            bonds: [
+              { from: 'C1', to: 'C2', type: 'single' },
+              { from: 'C2', to: 'C3', type: 'single' },
+              { from: 'C1', to: 'H1', type: 'single' },
+              { from: 'C1', to: 'H2', type: 'single' },
+              { from: 'C2', to: 'H3', type: 'single' },
+              { from: 'C3', to: 'H4', type: 'single' },
+              { from: 'C3', to: 'H5', type: 'single' },
+              { from: 'C3', to: 'H6', type: 'single' },
+            ]
+          };
+          break;
+        case 'pvc':
+          // -CH2-CHCl-
+          structure = {
+            atoms: [
+              { id: 'C1', element: 'C', x: startX - 70, y: startY },
+              { id: 'C2', element: 'C', x: startX + 70, y: startY },
+              { id: 'Cl1', element: 'Cl', x: startX + 70, y: startY - 90 },
+              { id: 'H1', element: 'H', x: startX - 70, y: startY - 90 },
+              { id: 'H2', element: 'H', x: startX - 70, y: startY + 90 },
+              { id: 'H3', element: 'H', x: startX + 70, y: startY + 90 },
+            ],
+            bonds: [
+              { from: 'C1', to: 'C2', type: 'single' },
+              { from: 'C2', to: 'Cl1', type: 'single' },
+              { from: 'C1', to: 'H1', type: 'single' },
+              { from: 'C1', to: 'H2', type: 'single' },
+              { from: 'C2', to: 'H3', type: 'single' },
+            ]
+          };
+          break;
+        case 'polystyrene':
+          // -CH2-CH(C6H5)-
+          structure = {
+            atoms: [
+              { id: 'C1', element: 'C', x: startX - 70, y: startY },
+              { id: 'C2', element: 'C', x: startX + 70, y: startY },
+              { id: 'C3', element: 'C', x: startX + 70, y: startY - 90 },
+              // ベンゼン環（簡略化）
+              { id: 'C4', element: 'C', x: startX + 70, y: startY - 180 },
+              { id: 'C5', element: 'C', x: startX + 70 + 60, y: startY - 210 },
+              { id: 'C6', element: 'C', x: startX + 70 + 60, y: startY - 270 },
+              { id: 'C7', element: 'C', x: startX + 70, y: startY - 300 },
+              { id: 'C8', element: 'C', x: startX + 70 - 60, y: startY - 270 },
+              { id: 'C9', element: 'C', x: startX + 70 - 60, y: startY - 210 },
+              { id: 'H1', element: 'H', x: startX - 70, y: startY - 90 },
+              { id: 'H2', element: 'H', x: startX - 70, y: startY + 90 },
+              { id: 'H3', element: 'H', x: startX + 70, y: startY + 90 },
+            ],
+            bonds: [
+              { from: 'C1', to: 'C2', type: 'single' },
+              { from: 'C2', to: 'C3', type: 'single' },
+              { from: 'C3', to: 'C4', type: 'single' },
+              { from: 'C4', to: 'C5', type: 'double' },
+              { from: 'C5', to: 'C6', type: 'single' },
+              { from: 'C6', to: 'C7', type: 'double' },
+              { from: 'C7', to: 'C8', type: 'single' },
+              { from: 'C8', to: 'C9', type: 'double' },
+              { from: 'C9', to: 'C4', type: 'single' },
+              { from: 'C1', to: 'H1', type: 'single' },
+              { from: 'C1', to: 'H2', type: 'single' },
+              { from: 'C2', to: 'H3', type: 'single' },
+            ]
+          };
+          break;
+        case 'ptfe':
+          // -CF2-CF2-
+          structure = {
+            atoms: [
+              { id: 'C1', element: 'C', x: startX - 70, y: startY },
+              { id: 'C2', element: 'C', x: startX + 70, y: startY },
+              { id: 'F1', element: 'F', x: startX - 70, y: startY - 90 },
+              { id: 'F2', element: 'F', x: startX - 70, y: startY + 90 },
+              { id: 'F3', element: 'F', x: startX + 70, y: startY - 90 },
+              { id: 'F4', element: 'F', x: startX + 70, y: startY + 90 },
+            ],
+            bonds: [
+              { from: 'C1', to: 'C2', type: 'single' },
+              { from: 'C1', to: 'F1', type: 'single' },
+              { from: 'C1', to: 'F2', type: 'single' },
+              { from: 'C2', to: 'F3', type: 'single' },
+              { from: 'C2', to: 'F4', type: 'single' },
+            ]
+          };
+          break;
+        default:
+          return null;
+      }
+      
+      return structure;
+    }
+
+    // ニトリルを生成
+    function generateNitrile(carbonCount, startX = 100, startY = 200, spacing = 140) {
+      const atoms = [];
+      const bonds = [];
+      
+      // 炭素原子を配置
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        atoms.push({ id: `C${i + 1}`, element: 'C', x, y: startY });
+        if (i > 0) {
+          bonds.push({ from: `C${i}`, to: `C${i + 1}`, type: 'single' });
+        }
+      }
+      
+      // 最後の炭素にCN基を追加
+      const lastC = carbonCount;
+      const lastX = startX + (carbonCount - 1) * spacing;
+      atoms.push({ id: 'N1', element: 'N', x: lastX + 140, y: startY });
+      bonds.push({ from: `C${lastC}`, to: 'N1', type: 'triple' });
+      
+      // 水素原子を配置
+      let hIndex = 1;
+      for (let i = 0; i < carbonCount; i++) {
+        const x = startX + i * spacing;
+        const isFirst = i === 0;
+        const isLast = i === carbonCount - 1;
+        
+        if (isFirst) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x - 40, y: startY });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 3}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else if (isLast) {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        } else {
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY - 90 });
+          atoms.push({ id: `H${hIndex++}`, element: 'H', x: x, y: startY + 90 });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 2}`, type: 'single' });
+          bonds.push({ from: `C${i + 1}`, to: `H${hIndex - 1}`, type: 'single' });
+        }
+      }
+      
+      return { atoms, bonds };
+    }
+
+    // ベンゼン環を生成
+    function generateBenzene(startX = 200, startY = 200) {
+      const atoms = [
+        { id: 'C1', element: 'C', x: startX, y: startY - 120 },
+        { id: 'C2', element: 'C', x: startX + 104, y: startY - 60 },
+        { id: 'C3', element: 'C', x: startX + 104, y: startY + 60 },
+        { id: 'C4', element: 'C', x: startX, y: startY + 120 },
+        { id: 'C5', element: 'C', x: startX - 104, y: startY + 60 },
+        { id: 'C6', element: 'C', x: startX - 104, y: startY - 60 },
+        { id: 'H1', element: 'H', x: startX, y: startY - 180 },
+        { id: 'H2', element: 'H', x: startX + 170, y: startY - 100 },
+        { id: 'H3', element: 'H', x: startX + 170, y: startY + 100 },
+        { id: 'H4', element: 'H', x: startX, y: startY + 180 },
+        { id: 'H5', element: 'H', x: startX - 170, y: startY + 100 },
+        { id: 'H6', element: 'H', x: startX - 170, y: startY - 100 },
+      ];
+      
+      const bonds = [
+        { from: 'C1', to: 'C2', type: 'double' },
+        { from: 'C2', to: 'C3', type: 'single' },
+        { from: 'C3', to: 'C4', type: 'double' },
+        { from: 'C4', to: 'C5', type: 'single' },
+        { from: 'C5', to: 'C6', type: 'double' },
+        { from: 'C6', to: 'C1', type: 'single' },
+        { from: 'C1', to: 'H1', type: 'single' },
+        { from: 'C2', to: 'H2', type: 'single' },
+        { from: 'C3', to: 'H3', type: 'single' },
+        { from: 'C4', to: 'H4', type: 'single' },
+        { from: 'C5', to: 'H5', type: 'single' },
+        { from: 'C6', to: 'H6', type: 'single' },
+      ];
+      
+      return { atoms, bonds };
+    }
+
+    // ベンゼン環の置換体を生成
+    function generateBenzeneSubstitute(substituent, startX = 200, startY = 200) {
+      const structure = generateBenzene(startX, startY);
+      
+      // C1のHを置換基に置き換え
+      const h1Index = structure.atoms.findIndex(a => a.id === 'H1');
+      if (h1Index !== -1) {
+        structure.atoms.splice(h1Index, 1);
+      }
+      const h1BondIndex = structure.bonds.findIndex(b => b.from === 'C1' && b.to === 'H1');
+      if (h1BondIndex !== -1) {
+        structure.bonds.splice(h1BondIndex, 1);
+      }
+      
+      if (substituent === 'CH3') {
+        // トルエン（メチル基）
+        structure.atoms.push({ id: 'C7', element: 'C', x: startX, y: startY - 220 });
+        structure.atoms.push({ id: 'H7', element: 'H', x: startX - 40, y: startY - 220 });
+        structure.atoms.push({ id: 'H8', element: 'H', x: startX + 40, y: startY - 220 });
+        structure.atoms.push({ id: 'H9', element: 'H', x: startX, y: startY - 260 });
+        structure.bonds.push({ from: 'C1', to: 'C7', type: 'single' });
+        structure.bonds.push({ from: 'C7', to: 'H7', type: 'single' });
+        structure.bonds.push({ from: 'C7', to: 'H8', type: 'single' });
+        structure.bonds.push({ from: 'C7', to: 'H9', type: 'single' });
+      } else if (substituent === 'Cl') {
+        // クロロベンゼン
+        structure.atoms.push({ id: 'Cl1', element: 'Cl', x: startX, y: startY - 220 });
+        structure.bonds.push({ from: 'C1', to: 'Cl1', type: 'single' });
+      } else if (substituent === 'Br') {
+        // ブロモベンゼン
+        structure.atoms.push({ id: 'Br1', element: 'Br', x: startX, y: startY - 220 });
+        structure.bonds.push({ from: 'C1', to: 'Br1', type: 'single' });
+      } else if (substituent === 'OH') {
+        // フェノール
+        structure.atoms.push({ id: 'O1', element: 'O', x: startX, y: startY - 220 });
+        structure.atoms.push({ id: 'H7', element: 'H', x: startX, y: startY - 260 });
+        structure.bonds.push({ from: 'C1', to: 'O1', type: 'single' });
+        structure.bonds.push({ from: 'O1', to: 'H7', type: 'single' });
+      } else if (substituent === 'CHO') {
+        // ベンズアルデヒド
+        structure.atoms.push({ id: 'C7', element: 'C', x: startX, y: startY - 220 });
+        structure.atoms.push({ id: 'O1', element: 'O', x: startX, y: startY - 300 });
+        structure.bonds.push({ from: 'C1', to: 'C7', type: 'single' });
+        structure.bonds.push({ from: 'C7', to: 'O1', type: 'double' });
+      } else if (substituent === 'COOH') {
+        // 安息香酸
+        structure.atoms.push({ id: 'C7', element: 'C', x: startX, y: startY - 220 });
+        structure.atoms.push({ id: 'O1', element: 'O', x: startX, y: startY - 300 });
+        structure.atoms.push({ id: 'O2', element: 'O', x: startX - 40, y: startY - 220 });
+        structure.atoms.push({ id: 'H7', element: 'H', x: startX - 40, y: startY - 260 });
+        structure.bonds.push({ from: 'C1', to: 'C7', type: 'single' });
+        structure.bonds.push({ from: 'C7', to: 'O1', type: 'double' });
+        structure.bonds.push({ from: 'C7', to: 'O2', type: 'single' });
+        structure.bonds.push({ from: 'O2', to: 'H7', type: 'single' });
+      } else if (substituent === 'NH2') {
+        // アニリン
+        structure.atoms.push({ id: 'N1', element: 'N', x: startX, y: startY - 220 });
+        structure.atoms.push({ id: 'H7', element: 'H', x: startX - 40, y: startY - 220 });
+        structure.atoms.push({ id: 'H8', element: 'H', x: startX + 40, y: startY - 220 });
+        structure.bonds.push({ from: 'C1', to: 'N1', type: 'single' });
+        structure.bonds.push({ from: 'N1', to: 'H7', type: 'single' });
+        structure.bonds.push({ from: 'N1', to: 'H8', type: 'single' });
+      }
+      
+      return structure;
+    }
+
+    function extractCarbonCount(formula) {
+      const match = formula.match(/C(\d+)/);
+      if (match) {
+        return parseInt(match[1]);
+      }
+      if (formula.includes('C') && !formula.match(/C\d/)) {
+        return 1;
+      }
+      return null;
+    }
+
+    function extractHalide(formula) {
+      if (formula.includes('Cl')) return 'Cl';
+      if (formula.includes('Br')) return 'Br';
+      if (formula.includes('I')) return 'I';
+      if (formula.includes('F')) return 'F';
+      return null;
+    }
+
+    function generateStructure(name, type, formula) {
+      // 括弧を除去した名前を最初に計算
+      const nameWithoutParen = name.split('（')[0].split('(')[0].trim();
+      
+      // 2,4,6-トリブロモフェノールを最初にチェック（名前の一部でもマッチ）
+      if (name.includes('トリブロモ') && name.includes('フェノール')) {
+        const startX = 200;
+        const startY = 200;
+        const atoms = [
+          { id: 'C1', element: 'C', x: startX, y: startY - 120 },
+          { id: 'C2', element: 'C', x: startX + 104, y: startY - 60 },
+          { id: 'C3', element: 'C', x: startX + 104, y: startY + 60 },
+          { id: 'C4', element: 'C', x: startX, y: startY + 120 },
+          { id: 'C5', element: 'C', x: startX - 104, y: startY + 60 },
+          { id: 'C6', element: 'C', x: startX - 104, y: startY - 60 },
+          { id: 'O1', element: 'O', x: startX, y: startY - 220 },
+          { id: 'H1', element: 'H', x: startX, y: startY - 260 },
+          { id: 'Br1', element: 'Br', x: startX + 170, y: startY - 100 },
+          { id: 'Br2', element: 'Br', x: startX, y: startY + 180 },
+          { id: 'Br3', element: 'Br', x: startX - 170, y: startY - 100 },
+        ];
+        const bonds = [
+          { from: 'C1', to: 'C2', type: 'double' },
+          { from: 'C2', to: 'C3', type: 'single' },
+          { from: 'C3', to: 'C4', type: 'double' },
+          { from: 'C4', to: 'C5', type: 'single' },
+          { from: 'C5', to: 'C6', type: 'double' },
+          { from: 'C6', to: 'C1', type: 'single' },
+          { from: 'C1', to: 'O1', type: 'single' },
+          { from: 'O1', to: 'H1', type: 'single' },
+          { from: 'C2', to: 'Br1', type: 'single' },
+          { from: 'C4', to: 'Br2', type: 'single' },
+          { from: 'C6', to: 'Br3', type: 'single' },
+        ];
+        return { atoms, bonds };
+      }
+      
+      const knownCompounds = {
+        'メタン': () => {
+          // メタンの正確な構造（既存データに合わせる）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 200, y: 200 },
+            { id: 'H1', element: 'H', x: 110, y: 110 },
+            { id: 'H2', element: 'H', x: 290, y: 110 },
+            { id: 'H3', element: 'H', x: 110, y: 290 },
+            { id: 'H4', element: 'H', x: 290, y: 290 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C1', to: 'H3', type: 'single' },
+            { from: 'C1', to: 'H4', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'エタン': () => {
+          // エタンの正確な構造（既存データに合わせる）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 50, y: 200 },
+            { id: 'H2', element: 'H', x: 130, y: 110 },
+            { id: 'H3', element: 'H', x: 130, y: 290 },
+            { id: 'H4', element: 'H', x: 270, y: 110 },
+            { id: 'H5', element: 'H', x: 270, y: 290 },
+            { id: 'H6', element: 'H', x: 350, y: 200 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C1', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'H4', type: 'single' },
+            { from: 'C2', to: 'H5', type: 'single' },
+            { from: 'C2', to: 'H6', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'プロパン': () => generateAlkane(3),
+        'ブタン': () => generateAlkane(4),
+        'エチレン': () => {
+          // エチレンの正確な構造（既存データに合わせる）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 84, y: 110 },
+            { id: 'H2', element: 'H', x: 84, y: 290 },
+            { id: 'H3', element: 'H', x: 316, y: 110 },
+            { id: 'H4', element: 'H', x: 316, y: 290 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C2', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'H4', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'エテン': () => {
+          // エチレンと同じ
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 84, y: 110 },
+            { id: 'H2', element: 'H', x: 84, y: 290 },
+            { id: 'H3', element: 'H', x: 316, y: 110 },
+            { id: 'H4', element: 'H', x: 316, y: 290 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C2', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'H4', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'プロピレン': () => generateAlkene(3),
+        'プロペン': () => generateAlkene(3),
+        'アセチレン': () => {
+          // アセチレンの正確な構造（既存データに合わせる）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 50, y: 200 },
+            { id: 'H2', element: 'H', x: 350, y: 200 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'triple' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C2', to: 'H2', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'エチン': () => {
+          // アセチレンと同じ
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 50, y: 200 },
+            { id: 'H2', element: 'H', x: 350, y: 200 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'triple' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C2', to: 'H2', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'ベンゼン': () => generateBenzene(),
+        'トルエン': () => generateBenzeneSubstitute('CH3'),
+        'クロロベンゼン': () => generateBenzeneSubstitute('Cl'),
+        'ブロモベンゼン': () => generateBenzeneSubstitute('Br'),
+        'フェノール': () => generateBenzeneSubstitute('OH'),
+        'ベンズアルデヒド': () => generateBenzeneSubstitute('CHO'),
+        '安息香酸': () => generateBenzeneSubstitute('COOH'),
+        'アニリン': () => generateBenzeneSubstitute('NH2'),
+        'メタノール': () => generateAlcohol(1),
+        'エタノール': () => generateAlcohol(2),
+        '1-プロパノール': () => generateAlcohol(3),
+        '2-プロパノール': () => generateAlcohol(3), // 簡易版
+        'ホルムアルデヒド': () => generateAldehyde(1),
+        'アセトアルデヒド': () => generateAldehyde(2),
+        'アセトン': () => generateKetone(3),
+        'ギ酸': () => generateCarboxylicAcid(1),
+        '酢酸': () => generateCarboxylicAcid(2),
+        '酢酸エチル': () => generateEster(2),
+        '酢酸メチル': () => generateEster(1),
+        'メチルアミン': () => generateAmine(1),
+        'アセトニトリル': () => generateNitrile(2),
+        'ジエチルエーテル': () => {
+          // C2H5-O-C2H5
+          const atoms = [
+            { id: 'C1', element: 'C', x: 50, y: 200 },
+            { id: 'C2', element: 'C', x: 150, y: 200 },
+            { id: 'O1', element: 'O', x: 250, y: 200 },
+            { id: 'C3', element: 'C', x: 350, y: 200 },
+            { id: 'C4', element: 'C', x: 450, y: 200 },
+            { id: 'H1', element: 'H', x: 10, y: 200 },
+            { id: 'H2', element: 'H', x: 50, y: 110 },
+            { id: 'H3', element: 'H', x: 50, y: 290 },
+            { id: 'H4', element: 'H', x: 150, y: 110 },
+            { id: 'H5', element: 'H', x: 150, y: 290 },
+            { id: 'H6', element: 'H', x: 350, y: 110 },
+            { id: 'H7', element: 'H', x: 350, y: 290 },
+            { id: 'H8', element: 'H', x: 450, y: 110 },
+            { id: 'H9', element: 'H', x: 450, y: 290 },
+            { id: 'H10', element: 'H', x: 490, y: 200 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C2', to: 'O1', type: 'single' },
+            { from: 'O1', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'single' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C1', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'H4', type: 'single' },
+            { from: 'C2', to: 'H5', type: 'single' },
+            { from: 'C3', to: 'H6', type: 'single' },
+            { from: 'C3', to: 'H7', type: 'single' },
+            { from: 'C4', to: 'H8', type: 'single' },
+            { from: 'C4', to: 'H9', type: 'single' },
+            { from: 'C4', to: 'H10', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'アセトアミド': () => generateAmide(2),
+        'グリシン': () => generateAminoAcid(),
+        'グルコース': () => {
+          // グルコース（簡略化版：六角形の環状構造）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 200, y: 100 },
+            { id: 'C2', element: 'C', x: 280, y: 140 },
+            { id: 'C3', element: 'C', x: 280, y: 220 },
+            { id: 'C4', element: 'C', x: 200, y: 260 },
+            { id: 'C5', element: 'C', x: 120, y: 220 },
+            { id: 'O1', element: 'O', x: 120, y: 140 },
+            { id: 'O2', element: 'O', x: 200, y: 40 },
+            { id: 'O3', element: 'O', x: 360, y: 180 },
+            { id: 'O4', element: 'O', x: 200, y: 300 },
+            { id: 'O5', element: 'O', x: 40, y: 180 },
+            { id: 'H1', element: 'H', x: 200, y: 20 },
+            { id: 'H2', element: 'H', x: 360, y: 140 },
+            { id: 'H3', element: 'H', x: 360, y: 220 },
+            { id: 'H4', element: 'H', x: 200, y: 340 },
+            { id: 'H5', element: 'H', x: 40, y: 220 },
+            { id: 'H6', element: 'H', x: 40, y: 140 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'single' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'O1', type: 'single' },
+            { from: 'O1', to: 'C1', type: 'single' },
+            { from: 'C1', to: 'O2', type: 'single' },
+            { from: 'C2', to: 'O3', type: 'single' },
+            { from: 'C4', to: 'O4', type: 'single' },
+            { from: 'C5', to: 'O5', type: 'single' },
+            { from: 'O2', to: 'H1', type: 'single' },
+            { from: 'O3', to: 'H2', type: 'single' },
+            { from: 'O3', to: 'H3', type: 'single' },
+            { from: 'O4', to: 'H4', type: 'single' },
+            { from: 'O5', to: 'H5', type: 'single' },
+            { from: 'O5', to: 'H6', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'スクロース': () => {
+          // スクロース（簡略化版：2つの六角形が結合）
+          const atoms = [
+            // 第1の環
+            { id: 'C1', element: 'C', x: 100, y: 200 },
+            { id: 'C2', element: 'C', x: 180, y: 240 },
+            { id: 'C3', element: 'C', x: 180, y: 320 },
+            { id: 'C4', element: 'C', x: 100, y: 360 },
+            { id: 'C5', element: 'C', x: 20, y: 320 },
+            { id: 'O1', element: 'O', x: 20, y: 240 },
+            // 第2の環
+            { id: 'C6', element: 'C', x: 300, y: 200 },
+            { id: 'C7', element: 'C', x: 380, y: 240 },
+            { id: 'C8', element: 'C', x: 380, y: 320 },
+            { id: 'C9', element: 'C', x: 300, y: 360 },
+            { id: 'C10', element: 'C', x: 220, y: 320 },
+            { id: 'O2', element: 'O', x: 220, y: 240 },
+            // 結合O
+            { id: 'O3', element: 'O', x: 100, y: 120 },
+            { id: 'O4', element: 'O', x: 300, y: 120 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'single' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'O1', type: 'single' },
+            { from: 'O1', to: 'C1', type: 'single' },
+            { from: 'C6', to: 'C7', type: 'single' },
+            { from: 'C7', to: 'C8', type: 'single' },
+            { from: 'C8', to: 'C9', type: 'single' },
+            { from: 'C9', to: 'C10', type: 'single' },
+            { from: 'C10', to: 'O2', type: 'single' },
+            { from: 'O2', to: 'C6', type: 'single' },
+            { from: 'C1', to: 'O3', type: 'single' },
+            { from: 'O3', to: 'O4', type: 'single' },
+            { from: 'O4', to: 'C6', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'デンプン': () => generatePolymerRepeatUnit('polyethylene'), // 簡略化
+        'セルロース': () => generatePolymerRepeatUnit('polyethylene'), // 簡略化
+        'ポリエチレン': () => generatePolymerRepeatUnit('polyethylene'),
+        'ポリプロピレン': () => generatePolymerRepeatUnit('polypropylene'),
+        'ポリ塩化ビニル': () => generatePolymerRepeatUnit('pvc'),
+        'PVC': () => generatePolymerRepeatUnit('pvc'),
+        'ポリスチレン': () => generatePolymerRepeatUnit('polystyrene'),
+        'PTFE': () => generatePolymerRepeatUnit('ptfe'),
+        'ポリテトラフルオロエチレン': () => generatePolymerRepeatUnit('ptfe'),
+        'PET': () => {
+          // PETの繰り返し単位（簡略化）
+          const atoms = [
+            { id: 'O1', element: 'O', x: 100, y: 200 },
+            { id: 'C1', element: 'C', x: 200, y: 200 },
+            { id: 'C2', element: 'C', x: 300, y: 200 },
+            { id: 'O2', element: 'O', x: 400, y: 200 },
+            { id: 'C3', element: 'C', x: 250, y: 120 },
+            { id: 'C4', element: 'C', x: 250, y: 40 },
+            { id: 'C5', element: 'C', x: 330, y: 40 },
+            { id: 'C6', element: 'C', x: 410, y: 40 },
+            { id: 'C7', element: 'C', x: 410, y: 120 },
+            { id: 'C8', element: 'C', x: 330, y: 120 },
+            { id: 'O3', element: 'O', x: 500, y: 200 },
+            { id: 'C9', element: 'C', x: 600, y: 200 },
+            { id: 'C10', element: 'C', x: 700, y: 200 },
+            { id: 'O4', element: 'O', x: 800, y: 200 },
+          ];
+          const bonds = [
+            { from: 'O1', to: 'C1', type: 'single' },
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C2', to: 'O2', type: 'single' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'double' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'C6', type: 'double' },
+            { from: 'C6', to: 'C7', type: 'single' },
+            { from: 'C7', to: 'C8', type: 'double' },
+            { from: 'C8', to: 'C3', type: 'single' },
+            { from: 'O2', to: 'O3', type: 'single' },
+            { from: 'O3', to: 'C9', type: 'single' },
+            { from: 'C9', to: 'C10', type: 'single' },
+            { from: 'C10', to: 'O4', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        'ナイロン66': () => {
+          // ナイロン66の繰り返し単位（簡略化）
+          const atoms = [
+            { id: 'N1', element: 'N', x: 100, y: 200 },
+            { id: 'C1', element: 'C', x: 200, y: 200 },
+            { id: 'C2', element: 'C', x: 300, y: 200 },
+            { id: 'C3', element: 'C', x: 400, y: 200 },
+            { id: 'C4', element: 'C', x: 500, y: 200 },
+            { id: 'C5', element: 'C', x: 600, y: 200 },
+            { id: 'C6', element: 'C', x: 700, y: 200 },
+            { id: 'N2', element: 'N', x: 800, y: 200 },
+            { id: 'O1', element: 'O', x: 350, y: 120 },
+            { id: 'O2', element: 'O', x: 350, y: 280 },
+            { id: 'H1', element: 'H', x: 50, y: 200 },
+            { id: 'H2', element: 'H', x: 100, y: 160 },
+            { id: 'H3', element: 'H', x: 800, y: 160 },
+            { id: 'H4', element: 'H', x: 850, y: 200 },
+          ];
+          const bonds = [
+            { from: 'N1', to: 'C1', type: 'single' },
+            { from: 'C1', to: 'C2', type: 'single' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'single' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'C6', type: 'single' },
+            { from: 'C6', to: 'N2', type: 'single' },
+            { from: 'C3', to: 'O1', type: 'double' },
+            { from: 'C3', to: 'O2', type: 'single' },
+            { from: 'N1', to: 'H1', type: 'single' },
+            { from: 'N1', to: 'H2', type: 'single' },
+            { from: 'N2', to: 'H3', type: 'single' },
+            { from: 'N2', to: 'H4', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        '塩化ビニル': () => {
+          // エチレンにClを追加（C2のHを1つClに置換）
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 84, y: 110 },
+            { id: 'H2', element: 'H', x: 84, y: 290 },
+            { id: 'H3', element: 'H', x: 316, y: 110 },
+            { id: 'Cl1', element: 'Cl', x: 316, y: 290 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C2', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'Cl1', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+        '2,4,6-トリブロモフェノール': () => {
+          // フェノールに3つのBrを追加（2,4,6位）
+          const startX = 200;
+          const startY = 200;
+          const atoms = [
+            // ベンゼン環
+            { id: 'C1', element: 'C', x: startX, y: startY - 120 },
+            { id: 'C2', element: 'C', x: startX + 104, y: startY - 60 },
+            { id: 'C3', element: 'C', x: startX + 104, y: startY + 60 },
+            { id: 'C4', element: 'C', x: startX, y: startY + 120 },
+            { id: 'C5', element: 'C', x: startX - 104, y: startY + 60 },
+            { id: 'C6', element: 'C', x: startX - 104, y: startY - 60 },
+            // OH基（C1に結合）
+            { id: 'O1', element: 'O', x: startX, y: startY - 220 },
+            { id: 'H1', element: 'H', x: startX, y: startY - 260 },
+            // Br基（C2, C4, C6に結合）
+            { id: 'Br1', element: 'Br', x: startX + 170, y: startY - 100 },
+            { id: 'Br2', element: 'Br', x: startX, y: startY + 180 },
+            { id: 'Br3', element: 'Br', x: startX - 170, y: startY - 100 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'double' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'C6', type: 'double' },
+            { from: 'C6', to: 'C1', type: 'single' },
+            { from: 'C1', to: 'O1', type: 'single' },
+            { from: 'O1', to: 'H1', type: 'single' },
+            { from: 'C2', to: 'Br1', type: 'single' },
+            { from: 'C4', to: 'Br2', type: 'single' },
+            { from: 'C6', to: 'Br3', type: 'single' },
+          ];
+          return { atoms, bonds };
+        },
+      };
+      
+      // まず名前で完全一致をチェック
+      if (knownCompounds[name]) {
+        return knownCompounds[name]();
+      }
+      
+      // 括弧を除去した名前でチェック（例：「エチレン（エテン）」→「エチレン」）
+      if (knownCompounds[nameWithoutParen]) {
+        return knownCompounds[nameWithoutParen]();
+      }
+      
+      // 名前の部分一致もチェック（括弧内の別名など）
+      for (const [key, generator] of Object.entries(knownCompounds)) {
+        if (name.includes(key) || nameWithoutParen.includes(key) || key.includes(name) || key.includes(nameWithoutParen)) {
+          return generator();
+        }
+      }
+      
+      // タイプから推測
+      if (type.includes('アルカン')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAlkane(carbonCount);
+        }
+      } else if (type.includes('アルケン')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAlkene(carbonCount);
+        }
+      } else if (type.includes('アルキン')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAlkyne(carbonCount);
+        }
+      } else if (type.includes('アルコール')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAlcohol(carbonCount);
+        }
+      } else if (type.includes('アルデヒド')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAldehyde(carbonCount);
+        }
+      } else if (type.includes('ケトン')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount && carbonCount >= 3) {
+          return generateKetone(carbonCount);
+        }
+      } else if (type.includes('カルボン酸')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateCarboxylicAcid(carbonCount);
+        }
+      } else if (type.includes('ハロゲン化アルケン')) {
+        // ハロゲン化アルケン（塩化ビニルなど）
+        if (name.includes('塩化ビニル') || name.includes('ビニル')) {
+          // エチレンにClを追加
+          const atoms = [
+            { id: 'C1', element: 'C', x: 130, y: 200 },
+            { id: 'C2', element: 'C', x: 270, y: 200 },
+            { id: 'H1', element: 'H', x: 84, y: 110 },
+            { id: 'H2', element: 'H', x: 84, y: 290 },
+            { id: 'H3', element: 'H', x: 316, y: 110 },
+            { id: 'Cl1', element: 'Cl', x: 316, y: 290 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C1', to: 'H1', type: 'single' },
+            { from: 'C1', to: 'H2', type: 'single' },
+            { from: 'C2', to: 'H3', type: 'single' },
+            { from: 'C2', to: 'Cl1', type: 'single' },
+          ];
+          return { atoms, bonds };
+        }
+        // その他のハロゲン化アルケン
+        const carbonCount = extractCarbonCount(formula);
+        const halide = extractHalide(formula);
+        if (carbonCount && halide) {
+          // アルケン構造を生成してからハロゲンを追加
+          const alkene = generateAlkene(carbonCount);
+          // 最後の炭素にハロゲンを追加（簡易版）
+          const lastC = alkene.atoms.find(a => a.id === `C${carbonCount}`);
+          if (lastC) {
+            alkene.atoms.push({ id: 'X1', element: halide, x: lastC.x, y: lastC.y - 90 });
+            alkene.bonds.push({ from: `C${carbonCount}`, to: 'X1', type: 'single' });
+            // Hを1つ削除
+            const hToRemove = alkene.atoms.findIndex(a => a.id.startsWith('H') && Math.abs(a.x - lastC.x) < 50 && a.y > lastC.y);
+            if (hToRemove !== -1) {
+              const removedH = alkene.atoms[hToRemove];
+              alkene.atoms.splice(hToRemove, 1);
+              const bondToRemove = alkene.bonds.findIndex(b => b.to === removedH.id);
+              if (bondToRemove !== -1) {
+                alkene.bonds.splice(bondToRemove, 1);
+              }
+            }
+          }
+          return alkene;
+        }
+      } else if (type.includes('ハロゲン')) {
+        const carbonCount = extractCarbonCount(formula);
+        const halide = extractHalide(formula);
+        if (carbonCount && halide) {
+          return generateHalide(carbonCount, halide, 1);
+        }
+      } else if (type.includes('エステル')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateEster(carbonCount);
+        }
+      } else if (type.includes('アミン')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAmine(carbonCount);
+        }
+      } else if (type.includes('ニトリル')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateNitrile(carbonCount);
+        }
+      } else if (type.includes('エーテル')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateEther(carbonCount);
+        }
+      } else if (type.includes('アミド')) {
+        const carbonCount = extractCarbonCount(formula);
+        if (carbonCount) {
+          return generateAmide(carbonCount);
+        }
+      } else if (type.includes('アミノ酸')) {
+        return generateAminoAcid();
+      } else if (type.includes('単糖') || type.includes('ブドウ糖')) {
+        return generateStructure('グルコース', type, formula);
+      } else if (type.includes('二糖') || type.includes('ショ糖')) {
+        return generateStructure('スクロース', type, formula);
+      } else if (type.includes('多糖') || type.includes('デンプン') || type.includes('セルロース')) {
+        return generatePolymerRepeatUnit('polyethylene');
+      } else if (type.includes('合成高分子')) {
+        if (name.includes('ポリエチレン')) {
+          return generatePolymerRepeatUnit('polyethylene');
+        } else if (name.includes('ポリプロピレン')) {
+          return generatePolymerRepeatUnit('polypropylene');
+        } else if (name.includes('ポリ塩化ビニル') || name.includes('PVC')) {
+          return generatePolymerRepeatUnit('pvc');
+        } else if (name.includes('ポリスチレン')) {
+          return generatePolymerRepeatUnit('polystyrene');
+        } else if (name.includes('PTFE') || name.includes('ポリテトラフルオロエチレン')) {
+          return generatePolymerRepeatUnit('ptfe');
+        } else if (name.includes('PET')) {
+          return generateStructure('PET', type, formula);
+        } else if (name.includes('ナイロン')) {
+          return generateStructure('ナイロン66', type, formula);
+        }
+      } else if (type.includes('芳香族') || type.includes('ベンゼン') || type.includes('フェノール') || type.includes('誘導体')) {
+        // 2,4,6-トリブロモフェノールを最初にチェック
+        if ((name.includes('トリブロモ') && name.includes('フェノール')) || name.includes('2,4,6')) {
+          // knownCompoundsから直接取得
+          if (knownCompounds['2,4,6-トリブロモフェノール']) {
+            return knownCompounds['2,4,6-トリブロモフェノール']();
+          }
+          // フォールバック: 直接生成
+          const startX = 200;
+          const startY = 200;
+          const atoms = [
+            { id: 'C1', element: 'C', x: startX, y: startY - 120 },
+            { id: 'C2', element: 'C', x: startX + 104, y: startY - 60 },
+            { id: 'C3', element: 'C', x: startX + 104, y: startY + 60 },
+            { id: 'C4', element: 'C', x: startX, y: startY + 120 },
+            { id: 'C5', element: 'C', x: startX - 104, y: startY + 60 },
+            { id: 'C6', element: 'C', x: startX - 104, y: startY - 60 },
+            { id: 'O1', element: 'O', x: startX, y: startY - 220 },
+            { id: 'H1', element: 'H', x: startX, y: startY - 260 },
+            { id: 'Br1', element: 'Br', x: startX + 170, y: startY - 100 },
+            { id: 'Br2', element: 'Br', x: startX, y: startY + 180 },
+            { id: 'Br3', element: 'Br', x: startX - 170, y: startY - 100 },
+          ];
+          const bonds = [
+            { from: 'C1', to: 'C2', type: 'double' },
+            { from: 'C2', to: 'C3', type: 'single' },
+            { from: 'C3', to: 'C4', type: 'double' },
+            { from: 'C4', to: 'C5', type: 'single' },
+            { from: 'C5', to: 'C6', type: 'double' },
+            { from: 'C6', to: 'C1', type: 'single' },
+            { from: 'C1', to: 'O1', type: 'single' },
+            { from: 'O1', to: 'H1', type: 'single' },
+            { from: 'C2', to: 'Br1', type: 'single' },
+            { from: 'C4', to: 'Br2', type: 'single' },
+            { from: 'C6', to: 'Br3', type: 'single' },
+          ];
+          return { atoms, bonds };
+        } else if (name === 'ベンゼン') {
+          return generateBenzene();
+        } else if (name.includes('トルエン')) {
+          return generateBenzeneSubstitute('CH3');
+        } else if (name.includes('クロロベンゼン') || (name.includes('塩化') && name.includes('ベンゼン'))) {
+          return generateBenzeneSubstitute('Cl');
+        } else if (name.includes('ブロモベンゼン')) {
+          return generateBenzeneSubstitute('Br');
+        } else if (name.includes('フェノール')) {
+          return generateBenzeneSubstitute('OH');
+        } else if (name.includes('ベンズアルデヒド')) {
+          return generateBenzeneSubstitute('CHO');
+        } else if (name.includes('安息香酸')) {
+          return generateBenzeneSubstitute('COOH');
+        } else if (name.includes('アニリン')) {
+          return generateBenzeneSubstitute('NH2');
+        } else {
+          return generateBenzene();
+        }
+      }
+      
+      return null;
+    }
+
+    function parseCSV(csvText) {
+      const lines = csvText.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        rows.push(row);
+      }
+      
+      return { headers, rows };
+    }
+
+    async function generateStructures() {
+      const fetchBtn = document.getElementById('fetchBtn');
+      const statusDiv = document.getElementById('status');
+      const output = document.getElementById('output');
+      
+      fetchBtn.disabled = true;
+      statusDiv.style.display = 'block';
+      statusDiv.className = 'status';
+      statusDiv.textContent = 'データを取得中...';
+      
+      try {
+        const response = await fetch(`${GAS_URL}?type=compounds&category=organic`);
+        const data = await response.json();
+        
+        if (!data.csv) {
+          throw new Error('データの取得に失敗しました');
+        }
+        
+        const { headers, rows } = parseCSV(data.csv);
+        const nameIndex = headers.indexOf('name');
+        const typeIndex = headers.indexOf('type');
+        const formulaIndex = headers.indexOf('formula');
+        const atomsIndex = headers.indexOf('atoms');
+        const bondsIndex = headers.indexOf('bonds');
+        
+        let generatedCount = 0;
+        let skippedCount = 0;
+        let errorCount = 0;
+        
+        const outputLines = [headers.join(',')];
+        
+        for (const row of rows) {
+          const name = row.name || '';
+          const type = row.type || '';
+          const formula = row.formula || '';
+          const existingAtoms = (row.atoms || '').trim();
+          const existingBonds = (row.bonds || '').trim();
+          
+          // デバッグ: 2,4,6-トリブロモフェノールの場合
+          if (name.includes('トリブロモ') || name.includes('2,4,6')) {
+            console.log(`Debug ${name}: existingAtoms =`, JSON.stringify(existingAtoms), 'length =', existingAtoms.length);
+            console.log(`Debug ${name}: existingBonds =`, JSON.stringify(existingBonds), 'length =', existingBonds.length);
+            console.log(`Debug ${name}: type =`, type);
+            console.log(`Debug ${name}: formula =`, formula);
+          }
+          
+          if (existingAtoms && existingBonds) {
+            // 既に構造式がある場合はそのまま
+            const values = headers.map(h => {
+              const val = row[h] || '';
+              return val.includes(',') ? `"${val.replace(/"/g, '""')}"` : val;
+            });
+            outputLines.push(values.join(','));
+            skippedCount++;
+            continue;
+          }
+          
+          let structure = null;
+          try {
+            structure = generateStructure(name, type, formula);
+            // デバッグ: 2,4,6-トリブロモフェノールの場合
+            if (name.includes('トリブロモ') || name.includes('2,4,6')) {
+              console.log(`Debug ${name}: structure =`, structure);
+              if (!structure) {
+                console.log(`Debug ${name}: structure is null!`);
+              } else {
+                console.log(`Debug ${name}: atoms count =`, structure.atoms ? structure.atoms.length : 0);
+                console.log(`Debug ${name}: bonds count =`, structure.bonds ? structure.bonds.length : 0);
+              }
+            }
+          } catch (error) {
+            console.error(`Error generating structure for ${name}:`, error);
+          }
+          
+          if (structure && structure.atoms && structure.atoms.length > 0 && structure.bonds && structure.bonds.length > 0) {
+            const atomsJson = JSON.stringify(structure.atoms);
+            const bondsJson = JSON.stringify(structure.bonds);
+            const atomsEscaped = atomsJson.replace(/"/g, '""');
+            const bondsEscaped = bondsJson.replace(/"/g, '""');
+            
+            const newRow = { ...row };
+            newRow.atoms = atomsJson;
+            newRow.bonds = bondsJson;
+            
+            const values = headers.map(h => {
+              const val = newRow[h] || '';
+              return val.includes(',') || val.includes('"') ? `"${val.replace(/"/g, '""')}"` : val;
+            });
+            outputLines.push(values.join(','));
+            generatedCount++;
+          } else {
+            // 生成できない場合は元の行をそのまま
+            const values = headers.map(h => {
+              const val = row[h] || '';
+              return val.includes(',') ? `"${val.replace(/"/g, '""')}"` : val;
+            });
+            outputLines.push(values.join(','));
+            if (!structure) {
+              console.warn(`Could not generate structure for: ${name} (${type})`);
+            }
+            errorCount++;
+          }
+        }
+        
+        output.value = outputLines.join('\n');
+        
+        statusDiv.className = 'status success';
+        statusDiv.textContent = `完了！生成: ${generatedCount}件, スキップ: ${skippedCount}件, エラー: ${errorCount}件`;
+        
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = `エラー: ${error.message}`;
+        console.error(error);
+      } finally {
+        fetchBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('fetchBtn').addEventListener('click', generateStructures);
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert('クリップボードにコピーしました！');
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,106 @@
+.quiz-summary-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.4s ease;
+}
+
+.quiz-summary-card {
+    background: linear-gradient(135deg, #2a1f1a 0%, #3a2f2a 100%);
+    border: 2px solid #ff8c00;
+    border-radius: 20px;
+    padding: 40px;
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(255, 140, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+
+.quiz-summary-card h2 {
+    margin-top: 0;
+    font-size: 2rem;
+    color: #ff8c00;
+    text-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+    font-family: 'Noto Serif JP', serif;
+}
+
+.summary-score-large {
+    font-size: 2.5rem;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.summary-percentage {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #81c784;
+    margin-bottom: 30px;
+}
+
+.summary-message {
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+    line-height: 1.6;
+}
+
+.summary-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.summary-button {
+    padding: 15px 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Noto Serif JP', serif;
+}
+
+.summary-button.restart {
+    background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+}
+
+.summary-button.restart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 140, 0, 0.6);
+}
+
+.summary-button.back {
+    background: transparent;
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+}
+
+.summary-button.back:hover {
+    background: rgba(255, 140, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

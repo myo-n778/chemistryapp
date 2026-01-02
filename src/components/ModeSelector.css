@@ -1,0 +1,109 @@
+.mode-selector {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  font-family: 'Noto Serif JP', 'Noto Serif', serif;
+  color: #ffffff;
+  text-align: center;
+}
+
+.mode-selector-header {
+  margin-bottom: 10px;
+}
+
+.back-to-category-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: #3a2f2a;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-family: 'Noto Serif JP', 'Noto Serif', serif;
+}
+
+.back-to-category-button:hover {
+  background: #4a3f3a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mode-selector h1 {
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+  color: #ffffff;
+}
+
+.mode-description {
+  font-size: 0.85rem;
+  color: #aaaaaa;
+  margin-bottom: 12px;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mode-button {
+  background: #2a1f1a;
+  border: 2px solid #ffa500;
+  border-radius: 8px;
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mode-button:hover {
+  background: #ffa500;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.5);
+}
+
+.mode-button:hover .mode-title,
+.mode-button:hover .mode-subtitle {
+  color: #2a1f1a;
+}
+
+.mode-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffa500;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.mode-subtitle {
+  font-size: 0.75rem;
+  color: #aaaaaa;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .mode-selector h1 {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

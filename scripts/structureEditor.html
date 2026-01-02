@@ -1,0 +1,2614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>構造式エディタ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Serif JP', 'Noto Serif', serif;
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    h1 {
+      color: #ff8c00;
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    
+    .header-section {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .header-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .header-button {
+      padding: 5px 10px;
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .header-button:hover {
+      background: #4a4a4a;
+      border-color: #ff8c00;
+    }
+    
+    .header-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .header-button.active {
+      background: #ff8c00;
+      border-color: #ff8c00;
+      color: #000;
+    }
+    
+    .header-button-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 0 4px;
+      border-left: 1px solid #555;
+      border-right: 1px solid #555;
+    }
+    
+    .header-button-group:first-child {
+      border-left: none;
+    }
+    
+    .header-button-group:last-child {
+      border-right: none;
+    }
+    
+    .header-button-small {
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    
+    .header-select {
+      padding: 6px 8px;
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11px;
+    }
+    
+    .header-label {
+      color: #888;
+      font-size: 10px;
+      margin-right: 4px;
+    }
+    
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 250px 1fr 400px;
+      gap: 20px;
+      height: calc(100vh - 120px);
+    }
+    
+    .toolbar {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-y: auto;
+    }
+    
+    .toolbar h2 {
+      font-size: 1.2rem;
+      margin-top: 0;
+      color: #ff8c00;
+    }
+    
+    .atom-button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .atom-button:hover {
+      background: #4a4a4a;
+      border-color: #ff8c00;
+    }
+    
+    .atom-button.active {
+      background: #ff8c00;
+      border-color: #ff8c00;
+      color: #000;
+    }
+    
+    .bond-type {
+      margin: 10px 0;
+    }
+    
+    .bond-type label {
+      display: block;
+      margin: 5px 0;
+      cursor: pointer;
+    }
+    
+    .canvas-container {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .zoom-controls {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .zoom-btn {
+      width: 35px;
+      height: 35px;
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .zoom-btn:hover {
+      background: #4a4a4a;
+      border-color: #ff8c00;
+    }
+    
+    .zoom-btn.active {
+      background: #ff8c00;
+      border-color: #ff8c00;
+      color: #000;
+    }
+    
+    #canvas {
+      background: #1a1a1a;
+      border: 2px solid #444;
+      cursor: crosshair;
+      display: block;
+    }
+    
+    .sidebar {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-y: auto;
+    }
+    
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-top: 0;
+      color: #ff8c00;
+    }
+    
+    .input-group {
+      margin: 15px 0;
+    }
+    
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    
+    .input-group input,
+    .input-group textarea {
+      width: 100%;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    .input-group textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    button {
+      padding: 10px 20px;
+      background: #ff8c00;
+      border: none;
+      border-radius: 4px;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #ffa500;
+    }
+    
+    button.secondary {
+      background: #555;
+      color: #fff;
+    }
+    
+    button.secondary:hover {
+      background: #666;
+    }
+    
+    .atom-info {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    
+    .atom-info strong {
+      color: #ff8c00;
+    }
+    
+    .preview {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+      min-height: 200px;
+    }
+    
+    .preview svg {
+      width: 100%;
+      height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>構造式エディタ</h1>
+      <div class="header-buttons">
+        <div class="header-button-group">
+          <button class="header-button" id="undoBtn" onclick="undo()" disabled>元に戻す</button>
+          <button class="header-button" id="redoBtn" onclick="redo()" disabled>やり直す</button>
+          <button class="header-button" onclick="clearCanvas()">クリア</button>
+          <button class="header-button" onclick="deleteSelected()">削除 (Del)</button>
+        </div>
+        <div class="header-button-group">
+          <span class="header-label">原子:</span>
+          <button class="header-button header-button-small atom-select-btn" data-element="C">C</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="H">H</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="O">O</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="N">N</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="Cl">Cl</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="Br">Br</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="F">F</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="I">I</button>
+          <button class="header-button header-button-small atom-select-btn" data-element="Na">Na</button>
+        </div>
+        <div class="header-button-group">
+          <span class="header-label">結合:</span>
+          <button class="header-button header-button-small bond-type-btn" data-type="single">単</button>
+          <button class="header-button header-button-small bond-type-btn" data-type="double">二</button>
+          <button class="header-button header-button-small bond-type-btn" data-type="triple">三</button>
+        </div>
+        <div class="header-button-group">
+          <button class="header-button header-button-small" onclick="snapToGrid()">グリッド</button>
+          <button class="header-button header-button-small" onclick="snapToAngle()">角度</button>
+          <button class="header-button header-button-small" onclick="snapToDistance()">距離</button>
+        </div>
+        <div class="header-button-group">
+          <span class="header-label">回転:</span>
+          <button class="header-button header-button-small" onclick="rotate90CW()">+90°</button>
+          <button class="header-button header-button-small" onclick="rotate90CCW()">-90°</button>
+          <button class="header-button header-button-small" onclick="rotate180()">180°</button>
+          <button class="header-button header-button-small" onclick="rotateCustom()">角度指定</button>
+        </div>
+        <div class="header-button-group">
+          <button class="header-button header-button-small" onclick="createPolymerGroup()">ポリマー化</button>
+          <button class="header-button header-button-small" onclick="removePolymerGroup()">ポリマー解除</button>
+        </div>
+        <div class="header-button-group">
+          <button class="header-button header-button-small" onclick="togglePanMode()" id="panModeBtn" title="パンモード (スペースキー)">⇄</button>
+        </div>
+        <div class="header-button-group">
+          <span class="header-label">テンプレート:</span>
+          <button class="header-button header-button-small" onclick="addBenzeneRing()">ベンゼン</button>
+          <button class="header-button header-button-small" onclick="addMethane()">CH4</button>
+          <button class="header-button header-button-small" onclick="addEthane()">C2H6</button>
+          <button class="header-button header-button-small" onclick="addOH()">OH</button>
+          <button class="header-button header-button-small" onclick="addCHO()">CHO</button>
+          <button class="header-button header-button-small" onclick="addCOOH()">COOH</button>
+          <button class="header-button header-button-small" onclick="addNH2()">NH2</button>
+          <button class="header-button header-button-small" onclick="addCN()">CN</button>
+          <button class="header-button header-button-small" onclick="addCH3()">CH3</button>
+          <button class="header-button header-button-small" onclick="addC2H5()">C2H5</button>
+        </div>
+        <div class="header-button-group">
+          <span class="header-label">カテゴリ:</span>
+          <select id="categorySelect" class="header-select">
+            <option value="organic">有機化学</option>
+            <option value="inorganic">無機化学</option>
+          </select>
+          <button class="header-button" onclick="loadFromSpreadsheet()">読み込み</button>
+          <select id="compoundSelect" class="header-select" style="display: none;" onchange="loadSelectedCompound()">
+            <option value="">化合物を選択...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <div class="editor-layout">
+      <!-- 左側: ツールバー -->
+      <div class="toolbar">
+        <h2>プレビュー</h2>
+        <div class="preview" id="preview" style="min-height: 200px; max-height: 300px; overflow: auto;"></div>
+      </div>
+      
+      <!-- 中央: キャンバス -->
+      <div class="canvas-container">
+        <div class="zoom-controls">
+          <button class="zoom-btn" onclick="zoomIn()" title="拡大 (+キー)">+</button>
+          <button class="zoom-btn" onclick="zoomOut()" title="縮小 (-キー)">-</button>
+          <button class="zoom-btn" onclick="resetZoom()" title="リセット">⌂</button>
+        </div>
+        <canvas id="canvas" width="800" height="600"></canvas>
+      </div>
+      
+      <!-- 右側: サイドバー -->
+      <div class="sidebar">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">化合物情報</h2>
+          <div class="button-group" style="flex-direction: row; gap: 5px;">
+            <button onclick="copyAtoms()" style="padding: 5px 10px; font-size: 11px;">Atoms</button>
+            <button onclick="copyBonds()" style="padding: 5px 10px; font-size: 11px;">Bonds</button>
+            <button onclick="copyBoth()" style="padding: 5px 10px; font-size: 11px;">両方</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>化合物名</label>
+          <input type="text" id="compoundName" placeholder="例: メタン">
+        </div>
+        
+        <h2>生成されたデータ</h2>
+        <div class="input-group">
+          <label>Atoms (JSON)</label>
+          <textarea id="atomsOutput" readonly></textarea>
+        </div>
+        
+        <div class="input-group">
+          <label>Bonds (JSON)</label>
+          <textarea id="bondsOutput" readonly></textarea>
+        </div>
+        
+        <div class="input-group">
+          <label>既存データを読み込む</label>
+          <textarea id="loadData" placeholder='{"atoms": [...], "bonds": [...]}'></textarea>
+          <button onclick="loadStructure()" style="margin-top: 10px; width: 100%;">読み込む</button>
+        </div>
+        
+        <div class="atom-info" id="atomInfo" style="display: none;">
+          <strong>選択中の原子:</strong> <span id="selectedAtom"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const atomsOutput = document.getElementById('atomsOutput');
+    const bondsOutput = document.getElementById('bondsOutput');
+    const compoundNameInput = document.getElementById('compoundName');
+    const previewDiv = document.getElementById('preview');
+    
+    let atoms = [];
+    let bonds = [];
+    let polymerGroups = []; // ポリマーグループ [{atomIds: [...], minX, maxX, minY, maxY}]
+    let selectedElement = null; // 初期状態では選択されていない
+    let selectedBondType = 'single';
+    let selectedAtom = null;
+    let selectedAtoms = []; // 範囲選択された原子の配列
+    let selectedBond = null; // 選択された結合
+    let isConnecting = false;
+    let atomIdCounter = 1;
+    let loadedCompounds = [];
+    let currentCompoundId = null;
+    
+    // 矢印キー長押し用の変数
+    let arrowKeyState = {
+      key: null,
+      startTime: null,
+      interval: null,
+      lastMoveTime: 0
+    };
+    
+    // コピー・ペースト用の変数
+    let copiedAtoms = [];
+    let copiedBonds = [];
+    
+    // 範囲選択用の変数
+    let isSelecting = false;
+    let selectionStart = { x: 0, y: 0 };
+    let selectionEnd = { x: 0, y: 0 };
+    
+    // スナップ距離の閾値
+    const SNAP_DISTANCE = 10;
+    
+    // ズームとパン用の変数
+    let zoom = 1.0;
+    let panX = 0;
+    let panY = 0;
+    let panMode = false; // パンモード
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let lastTouchDistance = 0; // 2本指の距離
+    let lastTouchCenter = { x: 0, y: 0 }; // 2本指の中心
+    let mouseX = 0; // マウスカーソルのX座標（キャンバス相対）
+    let mouseY = 0; // マウスカーソルのY座標（キャンバス相対）
+    
+    // Undo/Redo用の履歴
+    let history = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 50;
+    
+    // 標準的な距離と角度
+    const STANDARD_DISTANCE = 140;
+    const STANDARD_ANGLES = [0, 60, 90, 120, 180, 240, 270, 300]; // 度
+    const GRID_SIZE = 20;
+    
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx3yv3iDlepCp8Ys6As-Bto80OkJzupYBT1_olY4yPhEx6EkDkZft1hpzLdH4K-TYSE0Q/exec';
+    
+    const atomColors = {
+      'C': '#ffa500',
+      'H': '#87CEEB',
+      'O': '#ffffff',
+      'N': '#0000ff',
+      'Cl': '#00ff00',
+      'Br': '#8b4513',
+      'F': '#90ee90',
+      'I': '#9400d3',
+      'Na': '#c0c0c0'
+    };
+    
+    const atomRadius = {
+      'C': 22,
+      'H': 18,
+      'O': 20,
+      'N': 20,
+      'Cl': 24,
+      'Br': 26,
+      'F': 18,
+      'I': 28,
+      'Na': 24
+    };
+    
+    // 原子ボタンのイベント（ヘッダーのボタン）
+    document.querySelectorAll('.atom-select-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newElement = btn.dataset.element;
+        
+        // 原子が選択されている場合、選択された原子の種類を置き換え
+        const atomsToReplace = selectedAtoms.length > 0 ? selectedAtoms : (selectedAtom ? [selectedAtom] : []);
+        if (atomsToReplace.length > 0) {
+          saveState();
+          atomsToReplace.forEach(atom => {
+            atom.element = newElement;
+            // ベンゼン環の炭素を置き換える場合はisBenzeneフラグを削除
+            if (atom.isBenzene && newElement !== 'C') {
+              delete atom.isBenzene;
+            }
+          });
+          updateOutput();
+          draw();
+          
+          // 選択状態を更新
+          if (selectedAtoms.length > 0) {
+            document.getElementById('selectedAtom').textContent = `${selectedAtoms.length}個の原子を選択 (${newElement})`;
+          } else if (selectedAtom) {
+            document.getElementById('selectedAtom').textContent = `${selectedAtom.element} (ID: ${selectedAtom.id})`;
+          }
+        } else {
+          // 原子が選択されていない場合、キャンバスの中央にその種類の原子を追加
+          saveState();
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const world = screenToWorld(centerX, centerY);
+          const id = `atom${atomIdCounter++}`;
+          const newAtom = {
+            id: id,
+            element: newElement,
+            x: snapToGridPosition(world.x),
+            y: snapToGridPosition(world.y)
+          };
+          atoms.push(newAtom);
+          // 追加した原子を自動的に選択状態にする
+          selectedAtom = newAtom;
+          selectedAtoms = [newAtom];
+          selectedElement = newElement;
+          document.getElementById('atomInfo').style.display = 'block';
+          document.getElementById('selectedAtom').textContent = `${newAtom.element} (ID: ${newAtom.id})`;
+          updateUndoRedoButtons();
+          updateOutput();
+          draw();
+        }
+      });
+    });
+    
+    // 結合タイプのイベント（ヘッダーのボタン）
+    document.querySelectorAll('.bond-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const bondType = btn.dataset.type;
+        
+        // 結合が選択されている場合、その結合のタイプを変更
+        if (selectedBond) {
+          selectedBond.type = bondType;
+          selectedBondType = bondType;
+          document.getElementById('selectedAtom').textContent = `結合 (${selectedBond.type})`;
+          saveState();
+          updateOutput();
+          draw();
+        } else if (selectedAtoms.length >= 2) {
+          // 複数の原子が選択されている場合、選択された原子間に結合を作成
+          saveState();
+          const atomsToConnect = selectedAtoms;
+          selectedBondType = bondType;
+          
+          // 選択された原子のすべてのペア間に結合を作成（既存の結合はスキップ）
+          for (let i = 0; i < atomsToConnect.length; i++) {
+            for (let j = i + 1; j < atomsToConnect.length; j++) {
+              const atom1 = atomsToConnect[i];
+              const atom2 = atomsToConnect[j];
+              
+              // 既存の結合をチェック
+              const existingBond = bonds.find(b => 
+                (b.from === atom1.id && b.to === atom2.id) ||
+                (b.from === atom2.id && b.to === atom1.id)
+              );
+              
+              if (!existingBond) {
+                bonds.push({
+                  from: atom1.id,
+                  to: atom2.id,
+                  type: bondType
+                });
+              }
+            }
+          }
+          
+          updateOutput();
+          draw();
+        } else {
+          // 原子が選択されていない場合、何もしない
+          selectedBondType = bondType;
+        }
+      });
+    });
+    
+    // 初期選択状態は設定しない（何も選択されていない状態が標準）
+    
+    // キャンバスクリック（範囲選択が終了した後の処理）
+    canvas.addEventListener('click', (e) => {
+      // 範囲選択中はクリックイベントを無視
+      if (isSelecting) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const clickedAtom = findAtomAt(x, y);
+      const clickedBond = findBondAt(x, y);
+      
+      // 結合をクリックした場合
+      if (clickedBond && !clickedAtom) {
+        selectedBond = clickedBond;
+        selectedAtom = null;
+        selectedAtoms = [];
+        document.getElementById('atomInfo').style.display = 'block';
+        document.getElementById('selectedAtom').textContent = `結合 (${clickedBond.type})`;
+        isConnecting = false;
+        selectedBondType = clickedBond.type;
+        updateUndoRedoButtons();
+        draw();
+        return;
+      }
+      
+      if (clickedAtom) {
+        // Command/Ctrlキーを押している場合は複数選択
+        if (e.metaKey || e.ctrlKey) {
+          if (selectedAtoms.includes(clickedAtom)) {
+            // 既に選択されている場合は選択解除
+            selectedAtoms = selectedAtoms.filter(a => a.id !== clickedAtom.id);
+            if (selectedAtoms.length === 0) {
+              selectedAtom = null;
+              document.getElementById('atomInfo').style.display = 'none';
+            } else {
+              selectedAtom = selectedAtoms[0];
+              document.getElementById('atomInfo').style.display = 'block';
+              document.getElementById('selectedAtom').textContent = `${selectedAtoms.length}個の原子を選択`;
+            }
+          } else {
+            // 新しく選択に追加
+            selectedAtoms.push(clickedAtom);
+            selectedAtom = clickedAtom;
+            document.getElementById('atomInfo').style.display = 'block';
+            document.getElementById('selectedAtom').textContent = `${selectedAtoms.length}個の原子を選択`;
+          }
+          selectedBond = null;
+          isConnecting = false;
+          updateUndoRedoButtons();
+          draw();
+        } else if (isConnecting && selectedAtom && selectedAtom.id !== clickedAtom.id) {
+          // 結合を作成
+          const existingBond = bonds.find(b => 
+            (b.from === selectedAtom.id && b.to === clickedAtom.id) ||
+            (b.from === clickedAtom.id && b.to === selectedAtom.id)
+          );
+          
+          if (!existingBond) {
+            bonds.push({
+              from: selectedAtom.id,
+              to: clickedAtom.id,
+              type: selectedBondType
+            });
+            saveState();
+            updateOutput();
+            draw();
+          }
+          isConnecting = false;
+          selectedAtom = null;
+          selectedAtoms = [];
+        } else {
+          // 原子を選択
+          selectedAtom = clickedAtom;
+          selectedAtoms = [clickedAtom];
+          selectedBond = null;
+          document.getElementById('atomInfo').style.display = 'block';
+          document.getElementById('selectedAtom').textContent = `${clickedAtom.element} (ID: ${clickedAtom.id})`;
+          isConnecting = true;
+          updateUndoRedoButtons();
+        }
+      } else {
+        // キャンバスクリックでは何も追加しない（原子ボタンをクリックしたときだけ追加）
+      }
+    });
+    
+    // キャンバス上で原子をドラッグ
+    let draggingAtom = null;
+    let draggingAtoms = []; // 複数原子をドラッグ
+    let dragOffset = { x: 0, y: 0 }; // ドラッグ開始時のオフセット
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // パンモードまたは中ボタンでパン
+      if (panMode || e.button === 1 || e.which === 2) {
+        isPanning = true;
+        panStart = { x, y };
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+      
+      const atom = findAtomAt(x, y);
+      
+      // 選択された原子がある場合、それらをドラッグ
+      if (selectedAtoms.length > 0) {
+        const clickedAtom = selectedAtoms.find(a => a === atom);
+        if (clickedAtom || atom) {
+          // 選択された原子をドラッグ
+          draggingAtoms = selectedAtoms.length > 0 ? [...selectedAtoms] : (atom ? [atom] : []);
+          if (atom && !selectedAtoms.includes(atom)) {
+            // 選択されていない原子をクリックした場合は、その原子だけを選択
+            draggingAtoms = [atom];
+            selectedAtom = atom;
+            selectedAtoms = [atom];
+            document.getElementById('atomInfo').style.display = 'block';
+            document.getElementById('selectedAtom').textContent = `${atom.element} (ID: ${atom.id})`;
+            updateUndoRedoButtons();
+          }
+          
+          // ドラッグ開始時のオフセットを計算
+          const world = screenToWorld(x, y);
+          if (draggingAtoms.length > 0) {
+            dragOffset = {
+              x: world.x - draggingAtoms[0].x,
+              y: world.y - draggingAtoms[0].y
+            };
+          }
+          isSelecting = false;
+          return;
+        }
+      }
+      
+      if (atom) {
+        // Shiftキーが押されている場合は範囲選択を優先
+        if (e.shiftKey) {
+          isSelecting = true;
+          selectionStart = { x, y };
+          selectionEnd = { x, y };
+          selectedAtoms = [];
+          selectedAtom = null;
+          isConnecting = false;
+          document.getElementById('atomInfo').style.display = 'none';
+        } else {
+          // 単一原子をドラッグ
+          draggingAtom = atom;
+          draggingAtoms = [atom];
+          const world = screenToWorld(x, y);
+          dragOffset = {
+            x: world.x - atom.x,
+            y: world.y - atom.y
+          };
+          isSelecting = false;
+        }
+      } else {
+        // 原子がない場所は常に範囲選択を開始
+        isSelecting = true;
+        selectionStart = { x, y };
+        selectionEnd = { x, y };
+        selectedAtoms = [];
+        selectedAtom = null;
+        isConnecting = false;
+        document.getElementById('atomInfo').style.display = 'none';
+      }
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // マウスカーソルの位置を更新
+      mouseX = x;
+      mouseY = y;
+      
+      if (isPanning) {
+        // パン中
+        const deltaX = x - panStart.x;
+        const deltaY = y - panStart.y;
+        panX += deltaX;
+        panY += deltaY;
+        panStart = { x, y };
+        draw();
+      } else if (draggingAtoms.length > 0) {
+        // 複数原子をドラッグ中
+        const world = screenToWorld(x, y);
+        const baseX = world.x - dragOffset.x;
+        const baseY = world.y - dragOffset.y;
+        
+        // 最初の原子の移動量を計算
+        const firstAtom = draggingAtoms[0];
+        const deltaX = baseX - firstAtom.x;
+        const deltaY = baseY - firstAtom.y;
+        
+        // 全ての原子を同じ量だけ移動
+        draggingAtoms.forEach(atom => {
+          atom.x += deltaX;
+          atom.y += deltaY;
+        });
+        
+        // 最初の原子にスナップを適用
+        snapToOtherAtoms(firstAtom);
+        
+        draw();
+      } else if (draggingAtom) {
+        // 単一原子をドラッグ中（他の原子にスナップ）
+        const world = screenToWorld(x, y);
+        draggingAtom.x = world.x - dragOffset.x;
+        draggingAtom.y = world.y - dragOffset.y;
+        snapToOtherAtoms(draggingAtom);
+        draw();
+      } else if (isSelecting) {
+        // 範囲選択中
+        selectionEnd = { x, y };
+        draw();
+      }
+    });
+    
+    canvas.addEventListener('mouseup', (e) => {
+      if (isPanning) {
+        isPanning = false;
+        canvas.style.cursor = panMode ? 'grab' : 'crosshair';
+      } else if (draggingAtoms.length > 0) {
+        // 複数原子のドラッグ終了
+        draggingAtoms.forEach(atom => {
+          snapToOtherAtoms(atom);
+          atom.x = snapToGridPosition(atom.x);
+          atom.y = snapToGridPosition(atom.y);
+        });
+        saveState();
+        updateOutput();
+        updatePreview();
+        draggingAtoms = [];
+        draggingAtom = null;
+      } else if (draggingAtom) {
+        // 単一原子のドラッグ終了（他の原子にスナップ）
+        snapToOtherAtoms(draggingAtom);
+        draggingAtom.x = snapToGridPosition(draggingAtom.x);
+        draggingAtom.y = snapToGridPosition(draggingAtom.y);
+        saveState();
+        updateOutput();
+        updatePreview();
+        draggingAtom = null;
+      } else if (isSelecting) {
+        // 範囲選択終了
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        selectionEnd = { x, y };
+        
+        // スクリーン座標をワールド座標に変換
+        const worldStart = screenToWorld(selectionStart.x, selectionStart.y);
+        const worldEnd = screenToWorld(selectionEnd.x, selectionEnd.y);
+        
+        // 選択範囲内の原子を取得（ワールド座標で判定）
+        const minX = Math.min(worldStart.x, worldEnd.x);
+        const maxX = Math.max(worldStart.x, worldEnd.x);
+        const minY = Math.min(worldStart.y, worldEnd.y);
+        const maxY = Math.max(worldStart.y, worldEnd.y);
+        
+        selectedAtoms = atoms.filter(atom => {
+          return atom.x >= minX && atom.x <= maxX && atom.y >= minY && atom.y <= maxY;
+        });
+        
+        if (selectedAtoms.length > 0) {
+          selectedAtom = selectedAtoms[0]; // 最初の原子を選択
+          document.getElementById('atomInfo').style.display = 'block';
+          document.getElementById('selectedAtom').textContent = `${selectedAtoms.length}個の原子を選択`;
+        } else {
+          selectedAtom = null;
+          document.getElementById('atomInfo').style.display = 'none';
+        }
+        
+        isSelecting = false;
+        updateUndoRedoButtons();
+        draw();
+      }
+    });
+    
+    // スクリーン座標をワールド座標に変換
+    function screenToWorld(screenX, screenY) {
+      return {
+        x: (screenX - panX) / zoom,
+        y: (screenY - panY) / zoom
+      };
+    }
+    
+    // ワールド座標をスクリーン座標に変換
+    function worldToScreen(worldX, worldY) {
+      return {
+        x: worldX * zoom + panX,
+        y: worldY * zoom + panY
+      };
+    }
+    
+    function findAtomAt(screenX, screenY) {
+      const world = screenToWorld(screenX, screenY);
+      return atoms.find(atom => {
+        const radius = atomRadius[atom.element] || 20;
+        const dx = atom.x - world.x;
+        const dy = atom.y - world.y;
+        return Math.sqrt(dx * dx + dy * dy) < radius;
+      });
+    }
+    
+    // 結合を検出する関数
+    function findBondAt(screenX, screenY) {
+      const world = screenToWorld(screenX, screenY);
+      return bonds.find(bond => {
+        const fromAtom = atoms.find(a => a.id === bond.from);
+        const toAtom = atoms.find(a => a.id === bond.to);
+        if (!fromAtom || !toAtom) return false;
+        
+        // 線分と点の距離を計算
+        const dx = toAtom.x - fromAtom.x;
+        const dy = toAtom.y - fromAtom.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        
+        if (length === 0) return false;
+        
+        // 線分上の最近接点を計算
+        const t = Math.max(0, Math.min(1, ((world.x - fromAtom.x) * dx + (world.y - fromAtom.y) * dy) / (length * length)));
+        const closestX = fromAtom.x + t * dx;
+        const closestY = fromAtom.y + t * dy;
+        
+        // 点と線分の距離
+        const distX = world.x - closestX;
+        const distY = world.y - closestY;
+        const distance = Math.sqrt(distX * distX + distY * distY);
+        
+        // 線分の範囲内かチェック
+        const isOnSegment = t >= 0 && t <= 1;
+        
+        // ズームに応じて選択範囲を調整
+        const threshold = 8 / zoom;
+        
+        return isOnSegment && distance < threshold;
+      });
+    }
+    
+    // 他の原子にスナップする関数
+    function snapToOtherAtoms(atom) {
+      if (!atom) return;
+      
+      atoms.forEach(otherAtom => {
+        if (otherAtom.id === atom.id) return;
+        
+        // X座標のスナップ
+        if (Math.abs(atom.x - otherAtom.x) < SNAP_DISTANCE) {
+          atom.x = otherAtom.x;
+        }
+        
+        // Y座標のスナップ
+        if (Math.abs(atom.y - otherAtom.y) < SNAP_DISTANCE) {
+          atom.y = otherAtom.y;
+        }
+      });
+    }
+    
+    // 選択された原子を矢印キーで移動
+    function moveSelectedAtoms(deltaX, deltaY, saveHistory = true) {
+      if (selectedAtoms.length === 0 && !selectedAtom) return;
+      
+      // 履歴は最初の移動時のみ保存（連続移動時は保存しない）
+      if (saveHistory) {
+        saveState();
+      }
+      
+      const atomsToMove = selectedAtoms.length > 0 ? selectedAtoms : [selectedAtom];
+      
+      atomsToMove.forEach(atom => {
+        atom.x += deltaX;
+        atom.y += deltaY;
+      });
+      
+      updateOutput();
+      draw();
+    }
+    
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 範囲選択の矩形を描画（スクリーン座標）
+      if (isSelecting) {
+        const minX = Math.min(selectionStart.x, selectionEnd.x);
+        const maxX = Math.max(selectionStart.x, selectionEnd.x);
+        const minY = Math.min(selectionStart.y, selectionEnd.y);
+        const maxY = Math.max(selectionStart.y, selectionEnd.y);
+        
+        ctx.strokeStyle = 'rgba(255, 200, 0, 0.8)';
+        ctx.fillStyle = 'rgba(255, 200, 0, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+        ctx.setLineDash([]);
+      }
+      
+      // ズームとパンの変換を適用
+      ctx.save();
+      ctx.translate(panX, panY);
+      ctx.scale(zoom, zoom);
+      
+      // グリッドを描画（薄く）
+      if (selectedAtom && !isSelecting) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1 / zoom;
+        // 画面に表示される範囲のグリッドのみ描画
+        const startX = Math.floor((-panX / zoom) / GRID_SIZE) * GRID_SIZE;
+        const endX = Math.ceil((canvas.width - panX) / zoom / GRID_SIZE) * GRID_SIZE;
+        const startY = Math.floor((-panY / zoom) / GRID_SIZE) * GRID_SIZE;
+        const endY = Math.ceil((canvas.height - panY) / zoom / GRID_SIZE) * GRID_SIZE;
+        
+        for (let x = startX; x <= endX; x += GRID_SIZE) {
+          ctx.beginPath();
+          ctx.moveTo(x, startY);
+          ctx.lineTo(x, endY);
+          ctx.stroke();
+        }
+        for (let y = startY; y <= endY; y += GRID_SIZE) {
+          ctx.beginPath();
+          ctx.moveTo(startX, y);
+          ctx.lineTo(endX, y);
+          ctx.stroke();
+        }
+        
+        // 選択中の原子から標準角度のガイド線を表示
+        ctx.strokeStyle = 'rgba(255, 200, 0, 0.3)';
+        ctx.lineWidth = 1 / zoom;
+        ctx.setLineDash([5 / zoom, 5 / zoom]);
+        STANDARD_ANGLES.forEach(angle => {
+          const rad = (angle * Math.PI) / 180;
+          const endX = selectedAtom.x + Math.cos(rad) * STANDARD_DISTANCE;
+          const endY = selectedAtom.y + Math.sin(rad) * STANDARD_DISTANCE;
+          ctx.beginPath();
+          ctx.moveTo(selectedAtom.x, selectedAtom.y);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
+      
+      // 結合を描画
+      bonds.forEach(bond => {
+        const fromAtom = atoms.find(a => a.id === bond.from);
+        const toAtom = atoms.find(a => a.id === bond.to);
+        
+        if (fromAtom && toAtom) {
+          const radius = atomRadius[fromAtom.element] || 20;
+          const toRadius = atomRadius[toAtom.element] || 20;
+          
+          // 原子の端から端まで線を引く
+          const dx = toAtom.x - fromAtom.x;
+          const dy = toAtom.y - fromAtom.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const fromX = fromAtom.x + (dx / dist) * radius;
+          const fromY = fromAtom.y + (dy / dist) * radius;
+          const toX = toAtom.x - (dx / dist) * toRadius;
+          const toY = toAtom.y - (dy / dist) * toRadius;
+          
+          // 選択された結合はハイライト
+          const isSelected = selectedBond && selectedBond === bond;
+          ctx.strokeStyle = isSelected ? '#ff8c00' : '#ffffff';
+          ctx.lineWidth = (isSelected ? 6 : 4) / zoom;
+          
+          if (bond.type === 'single') {
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+          } else if (bond.type === 'double') {
+            const perpX = -dy / dist * 5;
+            const perpY = dx / dist * 5;
+            ctx.beginPath();
+            ctx.moveTo(fromX + perpX, fromY + perpY);
+            ctx.lineTo(toX + perpX, toY + perpY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(fromX - perpX, fromY - perpY);
+            ctx.lineTo(toX - perpX, toY - perpY);
+            ctx.stroke();
+          } else if (bond.type === 'triple') {
+            const perpX = -dy / dist * 8;
+            const perpY = dx / dist * 8;
+            ctx.beginPath();
+            ctx.moveTo(fromX + perpX, fromY + perpY);
+            ctx.lineTo(toX + perpX, toY + perpY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(fromX - perpX, fromY - perpY);
+            ctx.lineTo(toX - perpX, toY - perpY);
+            ctx.stroke();
+          }
+        }
+      });
+      
+      // 原子を描画
+      atoms.forEach(atom => {
+        const radius = atomRadius[atom.element] || 20;
+        const color = atomColors[atom.element] || '#ffffff';
+        
+        // グロー効果
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        
+        // 円を描画
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0;
+        
+        // 選択中の原子をハイライト
+        const isSelected = selectedAtoms.some(a => a.id === atom.id) || atom.id === selectedAtom?.id;
+        if (isSelected) {
+          ctx.strokeStyle = '#ff8c00';
+          ctx.lineWidth = 3 / zoom;
+          ctx.beginPath();
+          ctx.arc(atom.x, atom.y, radius + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        
+        // テキストを描画（ベンゼン環のC以外）
+        if (atom.element !== 'C' || !atom.isBenzene) {
+          ctx.fillStyle = '#000000';
+          ctx.font = `bold ${16 / zoom}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(atom.element, atom.x, atom.y);
+        }
+      });
+      
+      // ポリマーグループの括弧とnを描画
+      polymerGroups.forEach(group => {
+        if (group.atomIds.length === 0) return;
+        
+        // グループ内の原子の境界を計算
+        const groupAtoms = atoms.filter(a => group.atomIds.includes(a.id));
+        if (groupAtoms.length === 0) return;
+        
+        const xs = groupAtoms.map(a => a.x);
+        const ys = groupAtoms.map(a => a.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        
+        // 余白を追加
+        const padding = 30 / zoom;
+        const bracketX1 = minX - padding;
+        const bracketX2 = maxX + padding;
+        const bracketY1 = minY - padding;
+        const bracketY2 = maxY + padding;
+        
+        // 角括弧を描画
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3 / zoom;
+        ctx.lineCap = 'round';
+        
+        // 左側の角括弧 ]
+        ctx.beginPath();
+        ctx.moveTo(bracketX1, bracketY1);
+        ctx.lineTo(bracketX1 + 15 / zoom, bracketY1);
+        ctx.moveTo(bracketX1, bracketY1);
+        ctx.lineTo(bracketX1, bracketY2);
+        ctx.moveTo(bracketX1, bracketY2);
+        ctx.lineTo(bracketX1 + 15 / zoom, bracketY2);
+        ctx.stroke();
+        
+        // 右側の角括弧 [
+        ctx.beginPath();
+        ctx.moveTo(bracketX2, bracketY1);
+        ctx.lineTo(bracketX2 - 15 / zoom, bracketY1);
+        ctx.moveTo(bracketX2, bracketY1);
+        ctx.lineTo(bracketX2, bracketY2);
+        ctx.moveTo(bracketX2, bracketY2);
+        ctx.lineTo(bracketX2 - 15 / zoom, bracketY2);
+        ctx.stroke();
+        
+        // 「n」を描画（右側の括弧の外側、下に）
+        ctx.fillStyle = '#000000';
+        ctx.font = `bold ${20 / zoom}px Arial`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('n', bracketX2 + 25 / zoom, bracketY2);
+        
+        // 括弧の外側に伸びる結合線を描画
+        // 左側の原子から左に伸びる結合
+        const leftAtoms = groupAtoms.filter(a => a.x === minX);
+        leftAtoms.forEach(atom => {
+          const connectedBonds = bonds.filter(b => 
+            (b.from === atom.id && !group.atomIds.includes(b.to)) ||
+            (b.to === atom.id && !group.atomIds.includes(b.from))
+          );
+          connectedBonds.forEach(bond => {
+            const otherAtomId = bond.from === atom.id ? bond.to : bond.from;
+            const otherAtom = atoms.find(a => a.id === otherAtomId);
+            if (otherAtom && otherAtom.x < atom.x) {
+              // 左側に伸びる結合
+              const radius = atomRadius[atom.element] || 20;
+              const dx = otherAtom.x - atom.x;
+              const dy = otherAtom.y - atom.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const startX = atom.x - (dx / dist) * radius;
+              const startY = atom.y - (dy / dist) * radius;
+              const endX = bracketX1 - 20 / zoom;
+              const endY = atom.y;
+              
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 4 / zoom;
+              ctx.beginPath();
+              ctx.moveTo(startX, startY);
+              ctx.lineTo(endX, endY);
+              ctx.stroke();
+            }
+          });
+        });
+        
+        // 右側の原子から右に伸びる結合
+        const rightAtoms = groupAtoms.filter(a => a.x === maxX);
+        rightAtoms.forEach(atom => {
+          const connectedBonds = bonds.filter(b => 
+            (b.from === atom.id && !group.atomIds.includes(b.to)) ||
+            (b.to === atom.id && !group.atomIds.includes(b.from))
+          );
+          connectedBonds.forEach(bond => {
+            const otherAtomId = bond.from === atom.id ? bond.to : bond.from;
+            const otherAtom = atoms.find(a => a.id === otherAtomId);
+            if (otherAtom && otherAtom.x > atom.x) {
+              // 右側に伸びる結合
+              const radius = atomRadius[atom.element] || 20;
+              const dx = otherAtom.x - atom.x;
+              const dy = otherAtom.y - atom.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const startX = atom.x + (dx / dist) * radius;
+              const startY = atom.y + (dy / dist) * radius;
+              const endX = bracketX2 + 20 / zoom;
+              const endY = atom.y;
+              
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 4 / zoom;
+              ctx.beginPath();
+              ctx.moveTo(startX, startY);
+              ctx.lineTo(endX, endY);
+              ctx.stroke();
+            }
+          });
+        });
+      });
+      
+      // 変換をリセット
+      ctx.restore();
+    }
+    
+    function saveState() {
+      // 現在の状態より後ろの履歴を削除
+      history = history.slice(0, historyIndex + 1);
+      
+      // 新しい状態を保存
+      history.push({
+        atoms: JSON.parse(JSON.stringify(atoms)),
+        bonds: JSON.parse(JSON.stringify(bonds))
+      });
+      
+      // 履歴の最大数を超えたら古いものを削除
+      if (history.length > MAX_HISTORY) {
+        history.shift();
+        // historyIndexは変更しない（先頭が削除されたため）
+      } else {
+        historyIndex++;
+      }
+      
+      // historyIndexが履歴の範囲内であることを確認
+      if (historyIndex >= history.length) {
+        historyIndex = history.length - 1;
+      }
+      
+      updateUndoRedoButtons();
+    }
+    
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        atoms = JSON.parse(JSON.stringify(history[historyIndex].atoms));
+        bonds = JSON.parse(JSON.stringify(history[historyIndex].bonds));
+        polymerGroups = history[historyIndex].polymerGroups ? JSON.parse(JSON.stringify(history[historyIndex].polymerGroups)) : [];
+        updateOutput();
+        draw();
+        updateUndoRedoButtons();
+      }
+    }
+    
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        atoms = JSON.parse(JSON.stringify(history[historyIndex].atoms));
+        bonds = JSON.parse(JSON.stringify(history[historyIndex].bonds));
+        polymerGroups = history[historyIndex].polymerGroups ? JSON.parse(JSON.stringify(history[historyIndex].polymerGroups)) : [];
+        updateOutput();
+        draw();
+        updateUndoRedoButtons();
+      }
+    }
+    
+    // 選択した原子をコピー
+    function copySelected(atomsToCopy) {
+      if (atomsToCopy.length === 0) return;
+      
+      // 選択された原子のIDセットを作成
+      const selectedIds = new Set(atomsToCopy.map(a => a.id));
+      
+      // 選択された原子を深いコピー
+      copiedAtoms = JSON.parse(JSON.stringify(atomsToCopy));
+      
+      // 選択された原子間の結合をコピー
+      copiedBonds = bonds.filter(bond => 
+        selectedIds.has(bond.from) && selectedIds.has(bond.to)
+      ).map(bond => JSON.parse(JSON.stringify(bond)));
+    }
+    
+    // コピーした原子をペースト
+    function pasteCopied() {
+      if (copiedAtoms.length === 0) return;
+      
+      saveState();
+      
+      // コピーされた原子の中心座標を計算
+      const centerX = copiedAtoms.reduce((sum, a) => sum + a.x, 0) / copiedAtoms.length;
+      const centerY = copiedAtoms.reduce((sum, a) => sum + a.y, 0) / copiedAtoms.length;
+      
+      // ペースト位置（キャンバスの中央または選択された原子の位置）
+      let pasteX, pasteY;
+      if (selectedAtoms.length > 0 || selectedAtom) {
+        const selected = selectedAtoms.length > 0 ? selectedAtoms[0] : selectedAtom;
+        pasteX = selected.x + 100; // 選択された原子の右側に配置
+        pasteY = selected.y;
+      } else {
+        // キャンバスの中央
+        const centerScreen = { x: canvas.width / 2, y: canvas.height / 2 };
+        const centerWorld = screenToWorld(centerScreen.x, centerScreen.y);
+        pasteX = centerWorld.x;
+        pasteY = centerWorld.y;
+      }
+      
+      // IDマッピング（古いID -> 新しいID）
+      const idMap = {};
+      const newAtoms = [];
+      
+      // 新しい原子を作成
+      copiedAtoms.forEach(oldAtom => {
+        const newId = `atom${atomIdCounter++}`;
+        idMap[oldAtom.id] = newId;
+        
+        const offsetX = oldAtom.x - centerX;
+        const offsetY = oldAtom.y - centerY;
+        
+        const newAtom = {
+          id: newId,
+          element: oldAtom.element,
+          x: pasteX + offsetX,
+          y: pasteY + offsetY,
+          isBenzene: oldAtom.isBenzene
+        };
+        
+        newAtoms.push(newAtom);
+        atoms.push(newAtom);
+      });
+      
+      // 新しい結合を作成
+      copiedBonds.forEach(oldBond => {
+        const newFromId = idMap[oldBond.from];
+        const newToId = idMap[oldBond.to];
+        
+        if (newFromId && newToId) {
+          bonds.push({
+            from: newFromId,
+            to: newToId,
+            type: oldBond.type
+          });
+        }
+      });
+      
+      // ペーストした原子を選択状態にする
+      selectedAtoms = newAtoms;
+      selectedAtom = newAtoms[0];
+      selectedBond = null;
+      
+      document.getElementById('atomInfo').style.display = 'block';
+      document.getElementById('selectedAtom').textContent = `${newAtoms.length}個の原子をペースト`;
+      
+      updateOutput();
+      draw();
+    }
+    
+    function updateUndoRedoButtons() {
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+      if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
+      
+      // 削除ボタンの有効/無効を更新
+      const deleteBtn = document.querySelector('button[onclick="deleteSelected()"]');
+      if (deleteBtn) {
+        const hasSelection = selectedAtoms.length > 0 || selectedAtom !== null;
+        deleteBtn.disabled = !hasSelection;
+        if (hasSelection) {
+          deleteBtn.style.opacity = '1';
+        } else {
+          deleteBtn.style.opacity = '0.5';
+        }
+      }
+    }
+    
+    function updateOutput() {
+      atomsOutput.value = JSON.stringify(atoms, null, 2);
+      bondsOutput.value = JSON.stringify(bonds, null, 2);
+      updatePreview();
+    }
+    
+    function updatePreview() {
+      if (atoms.length === 0 || bonds.length === 0) {
+        previewDiv.innerHTML = '<p style="color: #888;">構造式を描画してください</p>';
+        return;
+      }
+      
+      // 構造式の範囲を計算
+      const xs = atoms.map(a => a.x);
+      const ys = atoms.map(a => a.y);
+      const minX = Math.min(...xs) - 50;
+      const maxX = Math.max(...xs) + 50;
+      const minY = Math.min(...ys) - 50;
+      const maxY = Math.max(...ys) + 50;
+      const width = maxX - minX;
+      const height = maxY - minY;
+      
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      
+      // 結合を描画
+      bonds.forEach(bond => {
+        const fromAtom = atoms.find(a => a.id === bond.from);
+        const toAtom = atoms.find(a => a.id === bond.to);
+        
+        if (fromAtom && toAtom) {
+          const dx = toAtom.x - fromAtom.x;
+          const dy = toAtom.y - fromAtom.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (bond.type === 'single') {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromAtom.x);
+            line.setAttribute('y1', fromAtom.y);
+            line.setAttribute('x2', toAtom.x);
+            line.setAttribute('y2', toAtom.y);
+            line.setAttribute('stroke', '#ffffff');
+            line.setAttribute('stroke-width', '4');
+            svg.appendChild(line);
+          } else if (bond.type === 'double') {
+            const perpX = -dy / dist * 5;
+            const perpY = dx / dist * 5;
+            
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', fromAtom.x + perpX);
+            line1.setAttribute('y1', fromAtom.y + perpY);
+            line1.setAttribute('x2', toAtom.x + perpX);
+            line1.setAttribute('y2', toAtom.y + perpY);
+            line1.setAttribute('stroke', '#ffffff');
+            line1.setAttribute('stroke-width', '4');
+            svg.appendChild(line1);
+            
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', fromAtom.x - perpX);
+            line2.setAttribute('y1', fromAtom.y - perpY);
+            line2.setAttribute('x2', toAtom.x - perpX);
+            line2.setAttribute('y2', toAtom.y - perpY);
+            line2.setAttribute('stroke', '#ffffff');
+            line2.setAttribute('stroke-width', '4');
+            svg.appendChild(line2);
+          } else if (bond.type === 'triple') {
+            const perpX = -dy / dist * 8;
+            const perpY = dx / dist * 8;
+            
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', fromAtom.x + perpX);
+            line1.setAttribute('y1', fromAtom.y + perpY);
+            line1.setAttribute('x2', toAtom.x + perpX);
+            line1.setAttribute('y2', toAtom.y + perpY);
+            line1.setAttribute('stroke', '#ffffff');
+            line1.setAttribute('stroke-width', '4');
+            svg.appendChild(line1);
+            
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', fromAtom.x);
+            line2.setAttribute('y1', fromAtom.y);
+            line2.setAttribute('x2', toAtom.x);
+            line2.setAttribute('y2', toAtom.y);
+            line2.setAttribute('stroke', '#ffffff');
+            line2.setAttribute('stroke-width', '4');
+            svg.appendChild(line2);
+            
+            const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line3.setAttribute('x1', fromAtom.x - perpX);
+            line3.setAttribute('y1', fromAtom.y - perpY);
+            line3.setAttribute('x2', toAtom.x - perpX);
+            line3.setAttribute('y2', toAtom.y - perpY);
+            line3.setAttribute('stroke', '#ffffff');
+            line3.setAttribute('stroke-width', '4');
+            svg.appendChild(line3);
+          }
+        }
+      });
+      
+      // 原子を描画
+      atoms.forEach(atom => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', atom.x);
+        circle.setAttribute('cy', atom.y);
+        circle.setAttribute('r', atomRadius[atom.element] || 20);
+        circle.setAttribute('fill', atomColors[atom.element] || '#ffffff');
+        svg.appendChild(circle);
+        
+        if (atom.element !== 'C' || !atom.isBenzene) {
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', atom.x);
+          text.setAttribute('y', atom.y);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('dominant-baseline', 'central');
+          text.setAttribute('fill', '#000000');
+          text.setAttribute('font-size', '16');
+          text.setAttribute('font-weight', 'bold');
+          text.textContent = atom.element;
+          svg.appendChild(text);
+        }
+      });
+      
+      previewDiv.innerHTML = '';
+      previewDiv.appendChild(svg);
+    }
+    
+    function copyAtoms() {
+      // 改行なしのコンパクトなJSONをコピー
+      const compactJson = JSON.stringify(atoms);
+      const textarea = document.createElement('textarea');
+      textarea.value = compactJson;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('Atomsデータをコピーしました（改行なし形式）');
+    }
+    
+    function copyBonds() {
+      // 改行なしのコンパクトなJSONをコピー
+      const compactJson = JSON.stringify(bonds);
+      const textarea = document.createElement('textarea');
+      textarea.value = compactJson;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('Bondsデータをコピーしました（改行なし形式）');
+    }
+    
+    // 両方を一度にコピーする関数も追加（タブ区切りで2列に分かれて貼り付け可能）
+    function copyBoth() {
+      const atomsJson = JSON.stringify(atoms);
+      const bondsJson = JSON.stringify(bonds);
+      const textarea = document.createElement('textarea');
+      // タブ区切りでコピー（スプレッドシートに貼り付けると2列に分かれる）
+      textarea.value = `${atomsJson}\t${bondsJson}`;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('AtomsとBondsデータをコピーしました（タブ区切り形式。スプレッドシートに貼り付けると2列に分かれます）');
+    }
+    
+    function loadStructure() {
+      try {
+        const data = JSON.parse(document.getElementById('loadData').value);
+        if (data.atoms && data.bonds) {
+          atoms = data.atoms;
+          bonds = data.bonds;
+          atomIdCounter = Math.max(...atoms.map(a => parseInt(a.id.replace('atom', '')) || 0)) + 1;
+          updateOutput();
+          draw();
+          alert('構造式を読み込みました');
+        } else {
+          alert('無効なデータ形式です。{"atoms": [...], "bonds": [...]}の形式で入力してください。');
+        }
+      } catch (e) {
+        alert('JSONのパースエラー: ' + e.message);
+      }
+    }
+    
+    function snapToGridPosition(value) {
+      return Math.round(value / GRID_SIZE) * GRID_SIZE;
+    }
+    
+    function snapToGrid() {
+      if (atoms.length === 0) return;
+      saveState();
+      atoms.forEach(atom => {
+        atom.x = snapToGridPosition(atom.x);
+        atom.y = snapToGridPosition(atom.y);
+      });
+      updateOutput();
+      draw();
+    }
+    
+    function snapToAngle() {
+      if (!selectedAtom) {
+        alert('原子を選択してください');
+        return;
+      }
+      
+      saveState();
+      // 選択中の原子に結合している原子の角度を整列
+      const connectedBonds = bonds.filter(b => 
+        b.from === selectedAtom.id || b.to === selectedAtom.id
+      );
+      
+      connectedBonds.forEach((bond, index) => {
+        const otherAtomId = bond.from === selectedAtom.id ? bond.to : bond.from;
+        const otherAtom = atoms.find(a => a.id === otherAtomId);
+        if (otherAtom) {
+          const angle = (360 / connectedBonds.length) * index;
+          const rad = (angle * Math.PI) / 180;
+          otherAtom.x = selectedAtom.x + Math.cos(rad) * STANDARD_DISTANCE;
+          otherAtom.y = selectedAtom.y + Math.sin(rad) * STANDARD_DISTANCE;
+        }
+      });
+      
+      updateOutput();
+      draw();
+    }
+    
+    function snapToDistance() {
+      if (!selectedAtom) {
+        alert('原子を選択してください');
+        return;
+      }
+      
+      saveState();
+      // 選択中の原子に結合している原子の距離を標準距離に
+      const connectedBonds = bonds.filter(b => 
+        b.from === selectedAtom.id || b.to === selectedAtom.id
+      );
+      
+      connectedBonds.forEach(bond => {
+        const otherAtomId = bond.from === selectedAtom.id ? bond.to : bond.from;
+        const otherAtom = atoms.find(a => a.id === otherAtomId);
+        if (otherAtom) {
+          const dx = otherAtom.x - selectedAtom.x;
+          const dy = otherAtom.y - selectedAtom.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 0) {
+            otherAtom.x = selectedAtom.x + (dx / dist) * STANDARD_DISTANCE;
+            otherAtom.y = selectedAtom.y + (dy / dist) * STANDARD_DISTANCE;
+          }
+        }
+      });
+      
+      updateOutput();
+      draw();
+    }
+    
+    // 回転関数（角度を指定）- 選択された原子を回転
+    function rotateByAngle(angle) {
+      const atomsToRotate = selectedAtoms.length > 0 ? selectedAtoms : (selectedAtom ? [selectedAtom] : []);
+      
+      if (atomsToRotate.length === 0) {
+        alert('原子を選択してください');
+        return;
+      }
+      
+      saveState();
+      const rad = (angle * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      
+      // 選択された原子の中心を計算
+      const centerX = atomsToRotate.reduce((sum, a) => sum + a.x, 0) / atomsToRotate.length;
+      const centerY = atomsToRotate.reduce((sum, a) => sum + a.y, 0) / atomsToRotate.length;
+      
+      // 選択された原子を中心に回転
+      atomsToRotate.forEach(atom => {
+        const dx = atom.x - centerX;
+        const dy = atom.y - centerY;
+        atom.x = centerX + dx * cos - dy * sin;
+        atom.y = centerY + dx * sin + dy * cos;
+      });
+      
+      updateOutput();
+      draw();
+    }
+    
+    window.rotate90CW = function() {
+      rotateByAngle(90);
+    };
+    
+    window.rotate90CCW = function() {
+      rotateByAngle(-90);
+    };
+    
+    window.rotate180 = function() {
+      rotateByAngle(180);
+    };
+    
+    window.rotateCustom = function() {
+      const angle = parseFloat(prompt('回転角度（度）を入力してください:', '15'));
+      if (!isNaN(angle)) {
+        rotateByAngle(angle);
+      }
+    };
+    
+    window.togglePanMode = function() {
+      panMode = !panMode;
+      const btn = document.getElementById('panModeBtn');
+      if (btn) {
+        btn.classList.toggle('active', panMode);
+      }
+      canvas.style.cursor = panMode ? 'grab' : 'crosshair';
+    };
+    
+    window.createPolymerGroup = function() {
+      const atomsToGroup = selectedAtoms.length > 0 ? selectedAtoms : (selectedAtom ? [selectedAtom] : []);
+      if (atomsToGroup.length === 0) {
+        alert('ポリマーグループにしたい原子を選択してください');
+        return;
+      }
+      
+      saveState();
+      const atomIds = atomsToGroup.map(a => a.id);
+      
+      // 既存のグループに含まれているかチェック
+      const existingGroup = polymerGroups.find(g => 
+        g.atomIds.some(id => atomIds.includes(id))
+      );
+      
+      if (existingGroup) {
+        alert('選択された原子の一部は既にポリマーグループに含まれています');
+        return;
+      }
+      
+      polymerGroups.push({ atomIds: atomIds });
+      updateOutput();
+      draw();
+    };
+    
+    window.removePolymerGroup = function() {
+      const atomsToRemove = selectedAtoms.length > 0 ? selectedAtoms : (selectedAtom ? [selectedAtom] : []);
+      if (atomsToRemove.length === 0) {
+        alert('ポリマーグループから解除したい原子を選択してください');
+        return;
+      }
+      
+      saveState();
+      const atomIds = atomsToRemove.map(a => a.id);
+      
+      polymerGroups = polymerGroups.map(group => ({
+        ...group,
+        atomIds: group.atomIds.filter(id => !atomIds.includes(id))
+      })).filter(group => group.atomIds.length > 0);
+      
+      updateOutput();
+      draw();
+    };
+    
+    function clearCanvas() {
+      if (confirm('すべての構造式を削除しますか？')) {
+        saveState();
+        atoms = [];
+        bonds = [];
+        selectedAtom = null;
+        selectedAtoms = [];
+        isConnecting = false;
+        atomIdCounter = 1;
+        updateUndoRedoButtons();
+        updateOutput();
+        draw();
+      }
+    }
+    
+    function deleteSelected() {
+      // 結合が選択されている場合は結合を削除
+      if (selectedBond) {
+        saveState();
+        bonds = bonds.filter(b => b !== selectedBond);
+        selectedBond = null;
+        document.getElementById('atomInfo').style.display = 'none';
+        updateUndoRedoButtons();
+        updateOutput();
+        draw();
+        return;
+      }
+      
+      if (selectedAtoms.length > 0) {
+        // 複数選択された原子を一括削除
+        saveState();
+        const selectedIds = selectedAtoms.map(a => a.id);
+        atoms = atoms.filter(a => !selectedIds.includes(a.id));
+        bonds = bonds.filter(b => !selectedIds.includes(b.from) && !selectedIds.includes(b.to));
+        selectedAtom = null;
+        selectedAtoms = [];
+        isConnecting = false;
+        document.getElementById('atomInfo').style.display = 'none';
+        updateUndoRedoButtons();
+        updateOutput();
+        draw();
+      } else if (selectedAtom) {
+        // 単一選択された原子を削除
+        saveState();
+        atoms = atoms.filter(a => a.id !== selectedAtom.id);
+        bonds = bonds.filter(b => b.from !== selectedAtom.id && b.to !== selectedAtom.id);
+        selectedAtom = null;
+        selectedAtoms = [];
+        isConnecting = false;
+        document.getElementById('atomInfo').style.display = 'none';
+        updateUndoRedoButtons();
+        updateOutput();
+        draw();
+      }
+    }
+    
+    function addBenzeneRing() {
+      const centerX = 400;
+      const centerY = 300;
+      const radius = 120;
+      const newAtoms = [];
+      
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        const id = `atom${atomIdCounter++}`;
+        newAtoms.push({
+          id: id,
+          element: 'C',
+          x: x,
+          y: y
+        });
+      }
+      
+      atoms.push(...newAtoms);
+      
+      // ベンゼン環の結合（交互に単結合と二重結合）
+      for (let i = 0; i < 6; i++) {
+        const next = (i + 1) % 6;
+        bonds.push({
+          from: newAtoms[i].id,
+          to: newAtoms[next].id,
+          type: i % 2 === 0 ? 'double' : 'single'
+        });
+      }
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addMethane() {
+      const centerX = 400;
+      const centerY = 300;
+      const cId = `atom${atomIdCounter++}`;
+      const cAtom = { id: cId, element: 'C', x: centerX, y: centerY };
+      atoms.push(cAtom);
+      
+      const hPositions = [
+        { x: centerX - 90, y: centerY - 90 },
+        { x: centerX + 90, y: centerY - 90 },
+        { x: centerX - 90, y: centerY + 90 },
+        { x: centerX + 90, y: centerY + 90 }
+      ];
+      
+      hPositions.forEach(pos => {
+        const hId = `atom${atomIdCounter++}`;
+        atoms.push({ id: hId, element: 'H', x: pos.x, y: pos.y });
+        bonds.push({ from: cId, to: hId, type: 'single' });
+      });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addEthane() {
+      const centerX = 400;
+      const centerY = 300;
+      const c1Id = `atom${atomIdCounter++}`;
+      const c2Id = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: c1Id, element: 'C', x: centerX - 70, y: centerY });
+      atoms.push({ id: c2Id, element: 'C', x: centerX + 70, y: centerY });
+      bonds.push({ from: c1Id, to: c2Id, type: 'single' });
+      
+      // C1のH
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX - 120, y: centerY });
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX - 70, y: centerY - 90 });
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX - 70, y: centerY + 90 });
+      bonds.push({ from: c1Id, to: `atom${atomIdCounter - 3}`, type: 'single' });
+      bonds.push({ from: c1Id, to: `atom${atomIdCounter - 2}`, type: 'single' });
+      bonds.push({ from: c1Id, to: `atom${atomIdCounter - 1}`, type: 'single' });
+      
+      // C2のH
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX + 120, y: centerY });
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX + 70, y: centerY - 90 });
+      atoms.push({ id: `atom${atomIdCounter++}`, element: 'H', x: centerX + 70, y: centerY + 90 });
+      bonds.push({ from: c2Id, to: `atom${atomIdCounter - 3}`, type: 'single' });
+      bonds.push({ from: c2Id, to: `atom${atomIdCounter - 2}`, type: 'single' });
+      bonds.push({ from: c2Id, to: `atom${atomIdCounter - 1}`, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addOH() {
+      const centerX = 400;
+      const centerY = 300;
+      const cId = `atom${atomIdCounter++}`;
+      const oId = `atom${atomIdCounter++}`;
+      const hId = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: cId, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: oId, element: 'O', x: centerX + STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: hId, element: 'H', x: centerX + STANDARD_DISTANCE * 1.3, y: centerY });
+      
+      bonds.push({ from: cId, to: oId, type: 'single' });
+      bonds.push({ from: oId, to: hId, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addCHO() {
+      const centerX = 400;
+      const centerY = 300;
+      const cId = `atom${atomIdCounter++}`;
+      const oId = `atom${atomIdCounter++}`;
+      const hId = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: cId, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: hId, element: 'H', x: centerX - STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: oId, element: 'O', x: centerX + STANDARD_DISTANCE, y: centerY });
+      
+      bonds.push({ from: cId, to: hId, type: 'single' });
+      bonds.push({ from: cId, to: oId, type: 'double' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addCOOH() {
+      const centerX = 400;
+      const centerY = 300;
+      const c1Id = `atom${atomIdCounter++}`;
+      const c2Id = `atom${atomIdCounter++}`;
+      const o1Id = `atom${atomIdCounter++}`;
+      const o2Id = `atom${atomIdCounter++}`;
+      const hId = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: c1Id, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: c2Id, element: 'C', x: centerX + STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: o1Id, element: 'O', x: centerX + STANDARD_DISTANCE * 1.5, y: centerY - 50 });
+      atoms.push({ id: o2Id, element: 'O', x: centerX + STANDARD_DISTANCE * 1.5, y: centerY + 50 });
+      atoms.push({ id: hId, element: 'H', x: centerX + STANDARD_DISTANCE * 1.5, y: centerY + 50 + STANDARD_DISTANCE * 0.3 });
+      
+      bonds.push({ from: c1Id, to: c2Id, type: 'single' });
+      bonds.push({ from: c2Id, to: o1Id, type: 'double' });
+      bonds.push({ from: c2Id, to: o2Id, type: 'single' });
+      bonds.push({ from: o2Id, to: hId, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addNH2() {
+      const centerX = 400;
+      const centerY = 300;
+      const cId = `atom${atomIdCounter++}`;
+      const nId = `atom${atomIdCounter++}`;
+      const h1Id = `atom${atomIdCounter++}`;
+      const h2Id = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: cId, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: nId, element: 'N', x: centerX + STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: h1Id, element: 'H', x: centerX + STANDARD_DISTANCE * 1.3, y: centerY - 40 });
+      atoms.push({ id: h2Id, element: 'H', x: centerX + STANDARD_DISTANCE * 1.3, y: centerY + 40 });
+      
+      bonds.push({ from: cId, to: nId, type: 'single' });
+      bonds.push({ from: nId, to: h1Id, type: 'single' });
+      bonds.push({ from: nId, to: h2Id, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addCN() {
+      const centerX = 400;
+      const centerY = 300;
+      const cId = `atom${atomIdCounter++}`;
+      const nId = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: cId, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: nId, element: 'N', x: centerX + STANDARD_DISTANCE, y: centerY });
+      
+      bonds.push({ from: cId, to: nId, type: 'triple' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addCH3() {
+      const centerX = 400;
+      const centerY = 300;
+      const c1Id = `atom${atomIdCounter++}`;
+      const c2Id = `atom${atomIdCounter++}`;
+      const h1Id = `atom${atomIdCounter++}`;
+      const h2Id = `atom${atomIdCounter++}`;
+      const h3Id = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: c1Id, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: c2Id, element: 'C', x: centerX + STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: h1Id, element: 'H', x: centerX + STANDARD_DISTANCE, y: centerY - 90 });
+      atoms.push({ id: h2Id, element: 'H', x: centerX + STANDARD_DISTANCE + 60, y: centerY + 45 });
+      atoms.push({ id: h3Id, element: 'H', x: centerX + STANDARD_DISTANCE - 60, y: centerY + 45 });
+      
+      bonds.push({ from: c1Id, to: c2Id, type: 'single' });
+      bonds.push({ from: c2Id, to: h1Id, type: 'single' });
+      bonds.push({ from: c2Id, to: h2Id, type: 'single' });
+      bonds.push({ from: c2Id, to: h3Id, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    function addC2H5() {
+      const centerX = 400;
+      const centerY = 300;
+      const c1Id = `atom${atomIdCounter++}`;
+      const c2Id = `atom${atomIdCounter++}`;
+      const c3Id = `atom${atomIdCounter++}`;
+      const h1Id = `atom${atomIdCounter++}`;
+      const h2Id = `atom${atomIdCounter++}`;
+      const h3Id = `atom${atomIdCounter++}`;
+      const h4Id = `atom${atomIdCounter++}`;
+      const h5Id = `atom${atomIdCounter++}`;
+      
+      atoms.push({ id: c1Id, element: 'C', x: centerX, y: centerY });
+      atoms.push({ id: c2Id, element: 'C', x: centerX + STANDARD_DISTANCE, y: centerY });
+      atoms.push({ id: c3Id, element: 'C', x: centerX + STANDARD_DISTANCE * 2, y: centerY });
+      atoms.push({ id: h1Id, element: 'H', x: centerX + STANDARD_DISTANCE * 2, y: centerY - 90 });
+      atoms.push({ id: h2Id, element: 'H', x: centerX + STANDARD_DISTANCE * 2, y: centerY + 90 });
+      atoms.push({ id: h3Id, element: 'H', x: centerX + STANDARD_DISTANCE * 2 + 60, y: centerY + 45 });
+      atoms.push({ id: h4Id, element: 'H', x: centerX + STANDARD_DISTANCE * 2 - 60, y: centerY + 45 });
+      atoms.push({ id: h5Id, element: 'H', x: centerX + STANDARD_DISTANCE, y: centerY - 90 });
+      
+      bonds.push({ from: c1Id, to: c2Id, type: 'single' });
+      bonds.push({ from: c2Id, to: c3Id, type: 'single' });
+      bonds.push({ from: c2Id, to: h5Id, type: 'single' });
+      bonds.push({ from: c3Id, to: h1Id, type: 'single' });
+      bonds.push({ from: c3Id, to: h2Id, type: 'single' });
+      bonds.push({ from: c3Id, to: h3Id, type: 'single' });
+      bonds.push({ from: c3Id, to: h4Id, type: 'single' });
+      
+      saveState();
+      updateOutput();
+      draw();
+    }
+    
+    async function loadFromSpreadsheet() {
+      const category = document.getElementById('categorySelect').value;
+      const button = event?.target || document.querySelector('button[onclick="loadFromSpreadsheet()"]');
+      const originalText = button?.textContent || '読み込み';
+      if (button) {
+        button.disabled = true;
+        button.textContent = '読み込み中...';
+      }
+      
+      try {
+        const response = await fetch(`${GAS_URL}?type=compounds&category=${category}`, {
+          method: 'GET',
+          mode: 'cors',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.csv) {
+          throw new Error('CSVデータが見つかりません');
+        }
+        
+        // CSVをパース
+        const lines = data.csv.trim().split('\n');
+        const headers = parseCSVLineForEditor(lines[0]);
+        loadedCompounds = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLineForEditor(lines[i]);
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+          
+          if (row.name) {
+            loadedCompounds.push({
+              id: row.id || `row${i}`,
+              name: row.name,
+              type: row.type || '',
+              formula: row.formula || '',
+              atoms: row.atoms || '',
+              bonds: row.bonds || ''
+            });
+          }
+        }
+        
+        // 化合物選択リストを更新
+        const select = document.getElementById('compoundSelect');
+        select.innerHTML = '<option value="">化合物を選択...</option>';
+        loadedCompounds.forEach(compound => {
+          const option = document.createElement('option');
+          option.value = compound.id;
+          option.textContent = `${compound.name}${compound.type ? ' (' + compound.type + ')' : ''}`;
+          select.appendChild(option);
+        });
+        
+        select.style.display = 'inline-block';
+        alert(`${loadedCompounds.length}個の化合物を読み込みました`);
+        
+      } catch (error) {
+        alert('エラー: ' + error.message);
+        console.error(error);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
+    }
+    
+    function parseCSVLineForEditor(line) {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      values.push(current.trim());
+      return values;
+    }
+    
+    function loadSelectedCompound() {
+      const select = document.getElementById('compoundSelect');
+      const compoundId = select.value;
+      
+      if (!compoundId) return;
+      
+      const compound = loadedCompounds.find(c => c.id === compoundId);
+      if (!compound) return;
+      
+      currentCompoundId = compoundId;
+      document.getElementById('compoundName').value = compound.name;
+      
+      // atomsとbondsを読み込む（スプレッドシートのデータを優先）
+      // 空文字列や空白のみの場合はスプレッドシートにデータがないと判断
+      let atomsStr = (compound.atoms || '').trim();
+      let bondsStr = (compound.bonds || '').trim();
+      
+      if (!atomsStr || !bondsStr || atomsStr === '' || bondsStr === '') {
+        alert(`この化合物（${compound.name}）にはスプレッドシートに構造式データがありません。\nスプレッドシートにatomsとbondsのデータを追加してください。`);
+        atoms = [];
+        bonds = [];
+        updateOutput();
+        draw();
+        return;
+      }
+      
+      try {
+        // 引用符を除去
+        if (atomsStr.startsWith('"') && atomsStr.endsWith('"')) {
+          atomsStr = atomsStr.slice(1, -1).replace(/""/g, '"');
+        }
+        if (bondsStr.startsWith('"') && bondsStr.endsWith('"')) {
+          bondsStr = bondsStr.slice(1, -1).replace(/""/g, '"');
+        }
+        
+        const atomsData = JSON.parse(atomsStr);
+        const bondsData = JSON.parse(bondsStr);
+        
+        // スプレッドシートのデータを直接使用（プリセットデータは使用しない）
+        atoms = atomsData;
+        bonds = bondsData;
+          
+          // IDを再生成
+          atomIdCounter = 1;
+          atoms.forEach(atom => {
+            const match = atom.id.match(/\d+/);
+            if (match) {
+              const num = parseInt(match[0]);
+              if (num >= atomIdCounter) {
+                atomIdCounter = num + 1;
+              }
+            }
+          });
+          
+          // 初期状態を保存
+          history = [{
+            atoms: JSON.parse(JSON.stringify(atoms)),
+            bonds: JSON.parse(JSON.stringify(bonds))
+          }];
+          historyIndex = 0;
+          updateUndoRedoButtons();
+          
+          updateOutput();
+          draw();
+          
+          // 読み込みデータ表示エリアにも表示
+          document.getElementById('loadData').value = JSON.stringify({
+            atoms: atomsData,
+            bonds: bondsData
+          }, null, 2);
+          
+        } catch (e) {
+          alert(`構造式データの読み込みエラー: ${e.message}\n\n化合物名: ${compound.name}\nスプレッドシートのatoms/bondsデータの形式を確認してください。\n\nAtoms: ${atomsStr.substring(0, 100)}...`);
+          console.error('Parse error:', e);
+          console.error('Atoms string:', atomsStr);
+          console.error('Bonds string:', bondsStr);
+          console.error('Compound data:', compound);
+          atoms = [];
+          bonds = [];
+          updateOutput();
+          draw();
+        }
+    }
+    
+    // ズーム関数（グローバルスコープに公開）
+    window.zoomIn = function() {
+      // マウスカーソルの位置を基準にズーム（キャンバス内にない場合は中央を使用）
+      const zoomCenterX = (mouseX >= 0 && mouseX <= canvas.width) ? mouseX : canvas.width / 2;
+      const zoomCenterY = (mouseY >= 0 && mouseY <= canvas.height) ? mouseY : canvas.height / 2;
+      const worldBefore = screenToWorld(zoomCenterX, zoomCenterY);
+      zoom = Math.min(zoom * 1.2, 5);
+      const worldAfter = screenToWorld(zoomCenterX, zoomCenterY);
+      panX += (worldBefore.x - worldAfter.x) * zoom;
+      panY += (worldBefore.y - worldAfter.y) * zoom;
+      draw();
+    };
+    
+    window.zoomOut = function() {
+      // マウスカーソルの位置を基準にズーム（キャンバス内にない場合は中央を使用）
+      const zoomCenterX = (mouseX >= 0 && mouseX <= canvas.width) ? mouseX : canvas.width / 2;
+      const zoomCenterY = (mouseY >= 0 && mouseY <= canvas.height) ? mouseY : canvas.height / 2;
+      const worldBefore = screenToWorld(zoomCenterX, zoomCenterY);
+      zoom = Math.max(zoom / 1.2, 0.1);
+      const worldAfter = screenToWorld(zoomCenterX, zoomCenterY);
+      panX += (worldBefore.x - worldAfter.x) * zoom;
+      panY += (worldBefore.y - worldAfter.y) * zoom;
+      draw();
+    };
+    
+    window.resetZoom = function() {
+      zoom = 1.0;
+      panX = 0;
+      panY = 0;
+      draw();
+    };
+    
+    
+    // マウスホイールでズーム
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = zoom * zoomFactor;
+      
+      if (newZoom >= 0.1 && newZoom <= 5) {
+        // ズーム中心を維持
+        const worldBefore = screenToWorld(x, y);
+        zoom = newZoom;
+        const worldAfter = screenToWorld(x, y);
+        
+        panX += (worldBefore.x - worldAfter.x) * zoom;
+        panY += (worldBefore.y - worldAfter.y) * zoom;
+        
+        draw();
+      }
+    });
+    
+    // タッチイベント（Macの2本指操作対応）
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        // 2本指でピンチズーム
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const rect = canvas.getBoundingClientRect();
+        
+        lastTouchDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        lastTouchCenter = {
+          x: ((touch1.clientX + touch2.clientX) / 2) - rect.left,
+          y: ((touch1.clientY + touch2.clientY) / 2) - rect.top
+        };
+      }
+    });
+    
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        // 2本指でピンチズーム
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const rect = canvas.getBoundingClientRect();
+        
+        const currentDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        
+        const currentCenter = {
+          x: ((touch1.clientX + touch2.clientX) / 2) - rect.left,
+          y: ((touch1.clientY + touch2.clientY) / 2) - rect.top
+        };
+        
+        if (lastTouchDistance > 0) {
+          const zoomFactor = currentDistance / lastTouchDistance;
+          const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+          
+          // ズーム中心を維持
+          const worldBefore = screenToWorld(lastTouchCenter.x, lastTouchCenter.y);
+          zoom = newZoom;
+          const worldAfter = screenToWorld(currentCenter.x, currentCenter.y);
+          
+          panX += (worldBefore.x - worldAfter.x) * zoom;
+          panY += (worldBefore.y - worldAfter.y) * zoom;
+          
+          lastTouchDistance = currentDistance;
+          lastTouchCenter = currentCenter;
+          
+          draw();
+        }
+      }
+    });
+    
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        lastTouchDistance = 0;
+      }
+    });
+    
+    // 初期状態を保存
+    saveState();
+    
+    // 初期描画
+    draw();
+    
+    // キーボードショートカット
+    document.addEventListener('keydown', function(event) {
+      // 入力フィールドにフォーカスがある場合はスキップ
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.isContentEditable
+      );
+      
+      if (isInputFocused) {
+        return; // 入力フィールドにフォーカスがある場合は何もしない
+      }
+      
+      // Command+A (Mac) または Ctrl+A (Windows) ですべての原子を選択
+      if ((event.metaKey || event.ctrlKey) && event.key === 'a' && !event.shiftKey) {
+        event.preventDefault();
+        selectedAtoms = [...atoms];
+        selectedAtom = atoms.length > 0 ? atoms[0] : null;
+        selectedBond = null;
+        document.getElementById('atomInfo').style.display = 'block';
+        document.getElementById('selectedAtom').textContent = `${atoms.length}個の原子を選択`;
+        updateUndoRedoButtons();
+        draw();
+        return;
+      }
+      
+      // Command+Z (Mac) または Ctrl+Z (Windows) でUndo
+      if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+      
+      // Command+Shift+Z (Mac) または Ctrl+Shift+Z (Windows) でRedo
+      if ((event.metaKey || event.ctrlKey) && event.key === 'z' && event.shiftKey) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      
+      // Command+C (Mac) または Ctrl+C (Windows) でコピー
+      if ((event.metaKey || event.ctrlKey) && event.key === 'c' && !event.shiftKey) {
+        const atomsToCopy = selectedAtoms.length > 0 ? selectedAtoms : (selectedAtom ? [selectedAtom] : []);
+        if (atomsToCopy.length > 0) {
+          event.preventDefault();
+          copySelected(atomsToCopy);
+          return;
+        }
+      }
+      
+      // Command+V (Mac) または Ctrl+V (Windows) でペースト
+      if ((event.metaKey || event.ctrlKey) && event.key === 'v' && !event.shiftKey) {
+        if (copiedAtoms.length > 0) {
+          event.preventDefault();
+          pasteCopied();
+          return;
+        }
+      }
+      
+      // 矢印キーで選択された原子を移動
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        if (selectedAtoms.length > 0 || selectedAtom) {
+          event.preventDefault();
+          
+          // キーが押された時刻を記録
+          const now = Date.now();
+          if (arrowKeyState.key !== event.key) {
+            // 新しいキーが押された
+            arrowKeyState.key = event.key;
+            arrowKeyState.startTime = now;
+            arrowKeyState.lastMoveTime = now;
+            
+            // 最初の移動を即座に実行
+            const step = event.shiftKey ? 10 : 1;
+            let deltaX = 0;
+            let deltaY = 0;
+            
+            if (event.key === 'ArrowUp') deltaY = -step;
+            else if (event.key === 'ArrowDown') deltaY = step;
+            else if (event.key === 'ArrowLeft') deltaX = -step;
+            else if (event.key === 'ArrowRight') deltaX = step;
+            
+            moveSelectedAtoms(deltaX, deltaY, true);
+            
+            // キーリピート用のインターバルを設定
+            clearInterval(arrowKeyState.interval);
+            const shiftKeyPressed = event.shiftKey;
+            
+            // 最初の移動後、少し待ってからリピートを開始
+            setTimeout(() => {
+              arrowKeyState.interval = setInterval(() => {
+                const currentTime = Date.now();
+                
+                // 常に30ms間隔で移動
+                const moveInterval = 30;
+                
+                if (currentTime - arrowKeyState.lastMoveTime >= moveInterval) {
+                  const step = shiftKeyPressed ? 10 : 1;
+                  let deltaX = 0;
+                  let deltaY = 0;
+                  
+                  if (arrowKeyState.key === 'ArrowUp') deltaY = -step;
+                  else if (arrowKeyState.key === 'ArrowDown') deltaY = step;
+                  else if (arrowKeyState.key === 'ArrowLeft') deltaX = -step;
+                  else if (arrowKeyState.key === 'ArrowRight') deltaX = step;
+                  
+                  moveSelectedAtoms(deltaX, deltaY, false);
+                  arrowKeyState.lastMoveTime = currentTime;
+                }
+              }, 10); // 10msごとにチェック（より滑らかに）
+            }, 150); // 最初の移動後150ms待ってからリピート開始
+            
+            return;
+          }
+        }
+      }
+      
+      // 矢印キーが離されたとき
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        if (arrowKeyState.key === event.key) {
+          clearInterval(arrowKeyState.interval);
+          arrowKeyState.key = null;
+          arrowKeyState.startTime = null;
+          arrowKeyState.lastMoveTime = 0;
+          // 最後の移動を履歴に保存
+          saveState();
+        }
+      }
+      
+      // スペースキーでパンモード切り替え
+      if (event.key === ' ' && !isInputFocused) {
+        event.preventDefault();
+        togglePanMode();
+        return;
+      }
+      
+      // MacのDeleteキー（Backspace）または通常のDeleteキーに対応
+      const isDelete = event.key === 'Delete' || 
+                      event.key === 'Del' || 
+                      (event.key === 'Backspace' && !event.ctrlKey && !event.metaKey && !event.altKey) ||
+                      (event.keyCode === 8 && !event.ctrlKey && !event.metaKey && !event.altKey) ||
+                      (event.keyCode === 46);
+      
+      if (isDelete) {
+        event.preventDefault();
+        if (selectedAtoms.length > 0 || selectedAtom || selectedBond) {
+          deleteSelected();
+        }
+      }
+    });
+    
+    // キーが離されたときの処理（矢印キーのリピートを停止）
+    document.addEventListener('keyup', function(event) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        if (arrowKeyState.key === event.key) {
+          clearInterval(arrowKeyState.interval);
+          arrowKeyState.key = null;
+          arrowKeyState.startTime = null;
+          arrowKeyState.lastMoveTime = 0;
+          // 最後の移動を履歴に保存
+          saveState();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+

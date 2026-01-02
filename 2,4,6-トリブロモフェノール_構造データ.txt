@@ -1,0 +1,39 @@
+2,4,6-トリブロモフェノールの構造データ
+
+atoms:
+[
+  {"id":"C1","element":"C","x":200,"y":80},
+  {"id":"C2","element":"C","x":304,"y":140},
+  {"id":"C3","element":"C","x":304,"y":260},
+  {"id":"C4","element":"C","x":200,"y":320},
+  {"id":"C5","element":"C","x":96,"y":260},
+  {"id":"C6","element":"C","x":96,"y":140},
+  {"id":"O1","element":"O","x":200,"y":-20},
+  {"id":"H1","element":"H","x":200,"y":-60},
+  {"id":"Br1","element":"Br","x":370,"y":100},
+  {"id":"Br2","element":"Br","x":200,"y":380},
+  {"id":"Br3","element":"Br","x":-30,"y":100}
+]
+
+bonds:
+[
+  {"from":"C1","to":"C2","type":"double"},
+  {"from":"C2","to":"C3","type":"single"},
+  {"from":"C3","to":"C4","type":"double"},
+  {"from":"C4","to":"C5","type":"single"},
+  {"from":"C5","to":"C6","type":"double"},
+  {"from":"C6","to":"C1","type":"single"},
+  {"from":"C1","to":"O1","type":"single"},
+  {"from":"O1","to":"H1","type":"single"},
+  {"from":"C2","to":"Br1","type":"single"},
+  {"from":"C4","to":"Br2","type":"single"},
+  {"from":"C6","to":"Br3","type":"single"}
+]
+
+CSV形式（スプレッドシートにコピー&ペースト用）:
+atoms列:
+[{"id":"C1","element":"C","x":200,"y":80},{"id":"C2","element":"C","x":304,"y":140},{"id":"C3","element":"C","x":304,"y":260},{"id":"C4","element":"C","x":200,"y":320},{"id":"C5","element":"C","x":96,"y":260},{"id":"C6","element":"C","x":96,"y":140},{"id":"O1","element":"O","x":200,"y":-20},{"id":"H1","element":"H","x":200,"y":-60},{"id":"Br1","element":"Br","x":370,"y":100},{"id":"Br2","element":"Br","x":200,"y":380},{"id":"Br3","element":"Br","x":-30,"y":100}]
+
+bonds列:
+[{"from":"C1","to":"C2","type":"double"},{"from":"C2","to":"C3","type":"single"},{"from":"C3","to":"C4","type":"double"},{"from":"C4","to":"C5","type":"single"},{"from":"C5","to":"C6","type":"double"},{"from":"C6","to":"C1","type":"single"},{"from":"C1","to":"O1","type":"single"},{"from":"O1","to":"H1","type":"single"},{"from":"C2","to":"Br1","type":"single"},{"from":"C4","to":"Br2","type":"single"},{"from":"C6","to":"Br3","type":"single"}]
+
