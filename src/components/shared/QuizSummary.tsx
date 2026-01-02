@@ -6,12 +6,12 @@ import './QuizSummary.css';
 interface QuizSummaryProps {
     score: number;
     total: number;
-    pointScore: number;
+    pointScore?: number;
     onRestart: () => void;
     onBack: () => void;
 }
 
-export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore, onRestart, onBack }) => {
+export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore = 0, onRestart, onBack }) => {
     const percentage = Math.round((score / total) * 100);
     const highScore = getHighScore();
 
@@ -25,21 +25,27 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
             <div className="quiz-summary-card">
                 <h2>クイズ結果</h2>
                 <div className="summary-score-large">
-                    <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} />
+                    {pointScore > 0 ? (
+                        <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} />
+                    ) : (
+                        <ScoreDisplay score={score} totalAnswered={total} />
+                    )}
                 </div>
                 <div className="summary-percentage">{percentage}% 正解</div>
                 
-                {/* ランキング表示 */}
-                <div className="summary-ranking">
-                    <div className="ranking-row">
-                        <span className="ranking-label">今回スコア:</span>
-                        <span className="ranking-value">{pointScore.toLocaleString()}</span>
+                {/* ランキング表示（pointScoreがある場合のみ） */}
+                {pointScore > 0 && (
+                    <div className="summary-ranking">
+                        <div className="ranking-row">
+                            <span className="ranking-label">今回スコア:</span>
+                            <span className="ranking-value">{pointScore.toLocaleString()}</span>
+                        </div>
+                        <div className="ranking-row">
+                            <span className="ranking-label">TOP SCORE:</span>
+                            <span className="ranking-value highlight">{highScore.toLocaleString()}</span>
+                        </div>
                     </div>
-                    <div className="ranking-row">
-                        <span className="ranking-label">TOP SCORE:</span>
-                        <span className="ranking-value highlight">{highScore.toLocaleString()}</span>
-                    </div>
-                </div>
+                )}
                 
                 <p className="summary-message">{message}</p>
 

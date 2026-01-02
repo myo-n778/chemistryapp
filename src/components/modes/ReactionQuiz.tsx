@@ -226,6 +226,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       <QuizSummary
         score={score}
         total={totalAnswered}
+        pointScore={pointScore}
         onRestart={handleReset}
         onBack={onBack}
       />

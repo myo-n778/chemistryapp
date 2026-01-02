@@ -333,6 +333,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         <QuizSummary
           score={score}
           total={totalAnswered}
+          pointScore={pointScore}
           onRestart={handleReset}
           onBack={onBack}
         />

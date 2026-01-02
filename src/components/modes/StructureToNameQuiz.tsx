@@ -270,6 +270,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
         <QuizSummary
           score={score}
           total={totalAnswered}
+          pointScore={pointScore}
           onRestart={handleReset}
           onBack={onBack}
         />
