@@ -448,11 +448,12 @@
   }
 
   .structure-container {
-    padding: 8px;
+    padding: 4px;
   }
 
   .question-english {
     font-size: 0.7rem;
+    margin-bottom: 4px;
   }
 
   .structure-container h2 {
