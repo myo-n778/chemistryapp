@@ -169,6 +169,15 @@
   font-weight: bold;
 }
 
+/* モード②（NameToStructureQuiz）：図を80%に縮小（縦横比維持） */
+.option-button-structure .structure-viewer {
+  max-height: 280px; /* 350px * 0.8 = 280px */
+}
+
+.option-button-structure .structure-viewer svg {
+  max-height: 280px; /* 350px * 0.8 = 280px */
+}
+
 .option-button {
   padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 15px);
   font-size: clamp(0.85rem, 1.8vw, 1rem);
@@ -616,11 +625,11 @@
   }
 
   .option-button-structure .structure-viewer {
-    max-height: 50px;
+    max-height: 40px; /* 50px * 0.8 = 40px */
   }
 
   .option-button-structure .structure-viewer svg {
-    max-height: 50px;
+    max-height: 40px; /* 50px * 0.8 = 40px */
   }
 
   /* モード③（CompoundTypeQuiz）用：スマホ横向き時も横並びレイアウト */
@@ -651,10 +660,9 @@
 
   .compound-type-mobile-layout .options-grid-compact {
     flex: 1;
-    display: flex !important;
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 4px;
-    grid-template-columns: none !important;
     margin-top: 0;
   }
 
@@ -790,11 +798,11 @@
   }
 
   .option-button-structure .structure-viewer {
-    max-height: 50px;
+    max-height: 40px; /* 50px * 0.8 = 40px */
   }
 
   .option-button-structure .structure-viewer svg {
-    max-height: 50px;
+    max-height: 40px; /* 50px * 0.8 = 40px */
   }
 
   /* モード③（CompoundTypeQuiz）用：スマホ縦向き時も横並びレイアウト */
@@ -825,10 +833,9 @@
 
   .compound-type-mobile-layout .options-grid-compact {
     flex: 1;
-    display: flex !important;
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 4px;
-    grid-template-columns: none !important;
     margin-top: 0;
   }
 }
@@ -1059,11 +1066,11 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 60px;
+    max-height: 40px; /* 図を縮小して回答群を確実に表示 */
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 60px;
+    max-height: 40px; /* 図を縮小して回答群を確実に表示 */
   }
 
   .reaction-question-line {
@@ -1097,11 +1104,11 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 50px;
+    max-height: 35px; /* 図を縮小して回答群を確実に表示 */
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 50px;
+    max-height: 35px; /* 図を縮小して回答群を確実に表示 */
   }
 
   .reaction-description-area {
