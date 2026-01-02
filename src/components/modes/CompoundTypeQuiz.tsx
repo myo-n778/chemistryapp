@@ -146,11 +146,11 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     }
     setLastQuestionId(currentQuestionId);
     
-    // スコア計算（得点表示モード）
-    if (isCorrect) {
-      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount);
-      setPointScore(prev => prev + points);
-    }
+        // スコア計算（得点表示モード）
+        if (isCorrect) {
+          const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
+          setPointScore(prev => prev + points);
+        }
 
     setSelectedAnswer(answer);
     setShowResult(true);

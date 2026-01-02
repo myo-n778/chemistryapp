@@ -11,9 +11,10 @@ interface NameToStructureQuizProps {
   compounds: Compound[];
   category: Category;
   onBack: () => void;
+  isShuffleMode?: boolean;
 }
 
-export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, onBack }) => {
+export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, onBack, isShuffleMode = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);

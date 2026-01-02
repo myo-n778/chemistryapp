@@ -171,6 +171,7 @@ function App() {
         mode={selectedMode}
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
+        quizSettings={quizSettings}
       />
     </div>
   );

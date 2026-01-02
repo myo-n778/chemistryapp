@@ -1,11 +1,25 @@
 .score-display {
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   font-size: 1rem;
   font-weight: bold;
   color: #ffa500;
   text-shadow: 0 0 10px rgba(255, 165, 0, 0.8), 0 0 20px rgba(255, 165, 0, 0.5);
+}
+
+.top-score-text {
+  font-size: 0.75rem;
+  color: #ffa500;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.6), 0 0 15px rgba(255, 165, 0, 0.4);
+}
+
+.score-text {
+  font-size: 1rem;
+  color: #ffa500;
+  font-weight: bold;
 }
 
 .percentage {

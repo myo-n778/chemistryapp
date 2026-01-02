@@ -57,6 +57,42 @@
     margin-bottom: 30px;
 }
 
+.summary-ranking {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    width: 100%;
+}
+
+.ranking-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 165, 0, 0.2);
+}
+
+.ranking-row:last-child {
+    border-bottom: none;
+}
+
+.ranking-label {
+    font-size: 1rem;
+    color: #aaaaaa;
+}
+
+.ranking-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffa500;
+}
+
+.ranking-value.highlight {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
 .summary-message {
     font-size: 1.1rem;
     margin-bottom: 40px;

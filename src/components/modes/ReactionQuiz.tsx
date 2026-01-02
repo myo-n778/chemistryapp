@@ -13,9 +13,10 @@ interface ReactionQuizProps {
   compounds: Compound[];
   category: Category;
   onBack: () => void;
+  isShuffleMode?: boolean;
 }
 
-export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack }) => {
+export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);

@@ -15,18 +15,19 @@ interface QuizProps {
   mode: QuizMode;
   category: Category;
   onBack: () => void;
+  quizSettings?: { orderMode?: 'sequential' | 'shuffle' };
 }
 
-export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, category, onBack }) => {
+export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, category, onBack, quizSettings }) => {
   switch (mode) {
     case 'structure-to-name':
-      return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
+      return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} />;
     case 'name-to-structure':
-      return <NameToStructureQuiz compounds={compounds} category={category} onBack={onBack} />;
+      return <NameToStructureQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} />;
     case 'compound-type':
-      return <CompoundTypeQuiz compounds={compounds} allCompounds={allCompounds} onBack={onBack} />;
+      return <CompoundTypeQuiz compounds={compounds} allCompounds={allCompounds} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} />;
     case 'reaction':
-      return <ReactionQuiz compounds={allCompounds} category={category} onBack={onBack} />;
+      return <ReactionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} />;
     case 'substitution':
       return <SubstitutionQuiz compounds={compounds} category={category} onBack={onBack} />;
     case 'synthesis':
