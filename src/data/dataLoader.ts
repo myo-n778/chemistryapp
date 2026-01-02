@@ -34,7 +34,8 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 
   // CSVファイルを読み込む（カテゴリごと）
   try {
-    const response = await fetch(`/data/${category}/compounds.csv`);
+    const baseUrl = import.meta.env.BASE_URL;
+    const response = await fetch(`${baseUrl}data/${category}/compounds.csv`);
     if (!response.ok) {
       throw new Error(`Failed to load ${category}/compounds.csv`);
     }
@@ -72,7 +73,8 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
 
   // CSVファイルを読み込む
   try {
-    const response = await fetch(`/data/${category}/reactions.csv`);
+    const baseUrl = import.meta.env.BASE_URL;
+    const response = await fetch(`${baseUrl}data/${category}/reactions.csv`);
     if (!response.ok) {
       throw new Error(`Failed to load ${category}/reactions.csv`);
     }
