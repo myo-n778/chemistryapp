@@ -509,3 +509,234 @@
   }
 }
 
+/* 反応クイズ専用スタイル */
+.reaction-equation-area {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 20px);
+  margin: clamp(10px, 2vh, 20px) 0;
+  flex-wrap: wrap;
+}
+
+.reactant-block,
+.product-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(5px, 1vh, 10px);
+  flex: 0 1 auto;
+  min-width: 150px;
+}
+
+.arrow-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(5px, 1vh, 10px);
+  flex: 0 0 auto;
+}
+
+.reagent-box {
+  padding: clamp(5px, 1vh, 10px) clamp(10px, 2vw, 15px);
+  background: #3a2f2a;
+  border: 2px solid #ffa500;
+  border-radius: clamp(6px, 1vw, 8px);
+  color: #ffffff;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  text-align: center;
+  min-width: 80px;
+}
+
+.reaction-arrow {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: #ffa500;
+  font-weight: bold;
+}
+
+.reactant-block .label,
+.product-block .label {
+  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+  color: #aaaaaa;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.name-box {
+  padding: clamp(5px, 1vh, 8px) clamp(10px, 2vw, 15px);
+  background: #3a2f2a;
+  border: 2px solid #ffa500;
+  border-radius: clamp(6px, 1vw, 8px);
+  color: #ffffff;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  text-align: center;
+  min-width: 120px;
+}
+
+.structure-placeholder {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3a2f2a;
+  border: 2px dashed #666;
+  border-radius: clamp(6px, 1vw, 8px);
+  font-size: 3rem;
+  color: #666;
+}
+
+.placeholder {
+  color: #ffa500;
+  font-weight: bold;
+}
+
+.reaction-quiz-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 15px);
+}
+
+.reaction-question-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(10px, 2vw, 20px);
+  margin-bottom: clamp(5px, 1vh, 10px);
+}
+
+.question-text-inline {
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.result-action-inline {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 15px);
+}
+
+.result-correct {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+}
+
+.result-incorrect {
+  color: #f44336;
+  font-weight: bold;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+}
+
+.next-button-correct,
+.next-button-incorrect {
+  padding: clamp(6px, 1.2vw, 8px) clamp(15px, 3vw, 20px);
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  background: #ffa500;
+  color: #2a1f1a;
+  border: none;
+  border-radius: clamp(6px, 1vw, 8px);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.reaction-description-area {
+  min-height: 30px;
+  margin-bottom: clamp(5px, 1vh, 10px);
+}
+
+.reaction-description-area p {
+  color: #aaaaaa;
+  font-size: clamp(0.75rem, 1.3vw, 0.9rem);
+  text-align: center;
+  margin: 0;
+}
+
+.description-placeholder {
+  visibility: hidden;
+  height: 20px;
+}
+
+.reaction-progress-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.progress-text {
+  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+  color: #aaaaaa;
+}
+
+.progress-bar-mini {
+  width: 100px;
+  height: 4px;
+  background-color: #3a2f2a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill-mini {
+  height: 100%;
+  background: #ffa500;
+  transition: width 0.3s ease;
+}
+
+.reaction-options-grid {
+  margin-top: clamp(10px, 2vh, 15px);
+}
+
+/* スマホ向け（横向き）での反応式レイアウト調整 */
+@media screen and (max-width: 767px) and (orientation: landscape) {
+  .reaction-equation-area {
+    gap: clamp(4px, 1vw, 8px);
+    margin: clamp(4px, 1vh, 8px) 0;
+  }
+
+  .reactant-block,
+  .product-block {
+    min-width: 100px;
+    gap: 2px;
+  }
+
+  .arrow-block {
+    gap: 2px;
+  }
+
+  .reagent-box,
+  .name-box {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+    min-width: 60px;
+  }
+
+  .reaction-arrow {
+    font-size: 1.2rem;
+  }
+
+  .reactant-block .label,
+  .product-block .label {
+    font-size: 0.6rem;
+  }
+
+  .structure-placeholder {
+    width: 80px;
+    height: 80px;
+    font-size: 1.5rem;
+  }
+
+  .reaction-question-line {
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .question-text-inline {
+    font-size: 0.7rem;
+  }
+}
+
