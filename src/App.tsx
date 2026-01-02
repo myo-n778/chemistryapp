@@ -134,7 +134,8 @@ function App() {
   };
 
   // モバイル/タブレット環境で縦向きの場合は回転を促すメッセージを表示（PC環境では表示しない）
-  if (isPortrait && isMobile) {
+  // ただし、クイズ中（selectedModeとquizSettingsが設定されている）場合は表示しない（状態維持のため）
+  if (isPortrait && isMobile && !selectedMode && !quizSettings) {
     return (
       <div className="App orientation-warning">
         <div className="orientation-message">

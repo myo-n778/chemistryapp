@@ -775,13 +775,24 @@
   }
 
   .options-container,
-  .options-container-structure,
   .options-grid-compact {
     grid-template-columns: repeat(2, 1fr);
     gap: 4px;
     margin-top: 4px;
     margin-bottom: 2px;
     flex-shrink: 0;
+  }
+
+  /* モード②：横幅優先をやめ、縦に全て収める */
+  .options-container-structure {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+    margin-top: 4px !important;
+    margin-bottom: 2px !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    justify-content: center !important;
   }
 
   .option-button,
@@ -1065,12 +1076,23 @@
     font-size: 1.5rem;
   }
 
+  /* モード④：横幅優先をやめ、縦に全て収める */
+  .reaction-equation-area {
+    width: auto !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+  }
+
   .reaction-equation-area .structure-viewer {
-    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
+    max-height: 25px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    width: auto !important;
+    max-width: 100% !important;
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
+    max-height: 25px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    width: auto !important;
+    max-width: 100% !important;
   }
 
   .reaction-question-line {
@@ -1103,12 +1125,23 @@
     margin: clamp(4px, 1vh, 8px) 0;
   }
 
+  /* モード④：横幅優先をやめ、縦に全て収める */
+  .reaction-equation-area {
+    width: auto !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+  }
+
   .reaction-equation-area .structure-viewer {
-    max-height: 25px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
+    max-height: 20px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    width: auto !important;
+    max-width: 100% !important;
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 25px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
+    max-height: 20px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    width: auto !important;
+    max-width: 100% !important;
   }
 
   .reaction-description-area {
