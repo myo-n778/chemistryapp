@@ -22,6 +22,24 @@ function App() {
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [loading, setLoading] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // モバイル/タブレット環境かどうかを検出
+  useEffect(() => {
+    const checkDevice = () => {
+      // 画面幅が1024px以下、またはタッチデバイスの場合をモバイル/タブレットとする
+      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 1024;
+      setIsMobile(hasTouch || isSmallScreen);
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+
+    return () => {
+      window.removeEventListener('resize', checkDevice);
+    };
+  }, []);
 
   // 画面の向きを検出
   useEffect(() => {
@@ -92,8 +110,8 @@ function App() {
     return filtered;
   };
 
-  // 縦向きの場合は回転を促すメッセージを表示
-  if (isPortrait && window.innerWidth <= 1024) {
+  // モバイル/タブレット環境で縦向きの場合は回転を促すメッセージを表示（PC環境では表示しない）
+  if (isPortrait && isMobile) {
     return (
       <div className="App orientation-warning">
         <div className="orientation-message">
