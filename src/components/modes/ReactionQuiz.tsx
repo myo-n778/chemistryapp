@@ -124,7 +124,9 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
-    if (currentIndex < reactions.length - 1) {
+    if (totalAnswered >= 10) {
+      setIsFinished(true);
+    } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
@@ -177,7 +179,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     return (
       <QuizSummary
         score={score}
-        total={reactions.length}
+        total={totalAnswered}
         onRestart={handleReset}
         onBack={onBack}
       />

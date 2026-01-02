@@ -71,7 +71,9 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
-    if (currentIndex < compounds.length - 1) {
+    if (totalAnswered >= 10) {
+      setIsFinished(true);
+    } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
@@ -237,7 +239,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       {isFinished && (
         <QuizSummary
           score={score}
-          total={compounds.length}
+          total={totalAnswered}
           onRestart={handleReset}
           onBack={onBack}
         />

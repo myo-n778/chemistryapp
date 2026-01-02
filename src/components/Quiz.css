@@ -625,11 +625,11 @@
   }
 
   .option-button-structure .structure-viewer {
-    max-height: 40px; /* 50px * 0.8 = 40px */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .option-button-structure .structure-viewer svg {
-    max-height: 40px; /* 50px * 0.8 = 40px */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   /* モード③（CompoundTypeQuiz）用：スマホ横向き時も横並びレイアウト */
@@ -661,7 +661,7 @@
   .compound-type-mobile-layout .options-grid-compact {
     flex: 1;
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 4px;
     margin-top: 0;
   }
@@ -798,11 +798,11 @@
   }
 
   .option-button-structure .structure-viewer {
-    max-height: 40px; /* 50px * 0.8 = 40px */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .option-button-structure .structure-viewer svg {
-    max-height: 40px; /* 50px * 0.8 = 40px */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   /* モード③（CompoundTypeQuiz）用：スマホ縦向き時も横並びレイアウト */
@@ -1066,11 +1066,11 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 40px; /* 図を縮小して回答群を確実に表示 */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 40px; /* 図を縮小して回答群を確実に表示 */
+    max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .reaction-question-line {
@@ -1104,11 +1104,11 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 35px; /* 図を縮小して回答群を確実に表示 */
+    max-height: 25px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 35px; /* 図を縮小して回答群を確実に表示 */
+    max-height: 25px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
   .reaction-description-area {

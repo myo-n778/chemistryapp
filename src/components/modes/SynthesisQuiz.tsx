@@ -5,6 +5,7 @@ import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { ProgressBar } from '../shared/ProgressBar';
 import { ResultMessage } from '../shared/ResultMessage';
+import { QuizSummary } from '../shared/QuizSummary';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import '../Quiz.css';
@@ -24,6 +25,7 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPreparing, setShowPreparing] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
@@ -82,13 +84,15 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
-    if (currentIndex < reactions.length - 1) {
+    if (totalAnswered >= 10) {
+      setIsFinished(true);
+    } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
+      setSelectedAnswer(null);
+      setShowResult(false);
     } else {
-      setCurrentIndex(0);
+      setIsFinished(true);
     }
-    setSelectedAnswer(null);
-    setShowResult(false);
     
     setTimeout(() => {
       isProcessingRef.current = false;
@@ -101,6 +105,7 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
     setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
+    setIsFinished(false);
   };
 
   // Enterキー、スペースキーで次に進む
@@ -201,6 +206,15 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
           リセット
         </button>
       </div>
+
+      {isFinished && (
+        <QuizSummary
+          score={score}
+          total={totalAnswered}
+          onRestart={handleReset}
+          onBack={onBack}
+        />
+      )}
     </div>
   );
 };

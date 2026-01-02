@@ -3,6 +3,7 @@ import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
+import { QuizSummary } from '../shared/QuizSummary';
 import '../Quiz.css';
 
 interface StructureToNameQuizProps {
@@ -17,6 +18,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
   const isProcessingRef = useRef(false);
 
   // 化合物が空の場合はエラーメッセージを表示
@@ -81,13 +83,15 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
-    if (currentIndex < compounds.length - 1) {
+    if (totalAnswered >= 10) {
+      setIsFinished(true);
+    } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
+      setSelectedAnswer(null);
+      setShowResult(false);
     } else {
-      setCurrentIndex(0);
+      setIsFinished(true);
     }
-    setSelectedAnswer(null);
-    setShowResult(false);
     
     setTimeout(() => {
       isProcessingRef.current = false;
@@ -100,12 +104,15 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
+    setIsFinished(false);
   };
 
   useEffect(() => {
-    setSelectedAnswer(null);
-    setShowResult(false);
-  }, [currentIndex]);
+    if (!isFinished) {
+      setSelectedAnswer(null);
+      setShowResult(false);
+    }
+  }, [currentIndex, isFinished]);
 
   // Enterキー、スペースキーで次に進む
   useEffect(() => {
@@ -214,6 +221,15 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
           </div>
         </div>
       </div>
+
+      {isFinished && (
+        <QuizSummary
+          score={score}
+          total={totalAnswered}
+          onRestart={handleReset}
+          onBack={onBack}
+        />
+      )}
     </div>
   );
 };
