@@ -1076,7 +1076,7 @@
     font-size: 1.5rem;
   }
 
-  /* モード④：横幅優先をやめ、縦に全て収める */
+  /* モード④：横向きでの見切れ対策 */
   .reaction-equation-area {
     width: auto !important;
     max-width: 100% !important;
@@ -1084,13 +1084,13 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 25px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    max-height: 20px; /* 横向きで選択肢4つが収まるようにさらに縮小 */
     width: auto !important;
     max-width: 100% !important;
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 25px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    max-height: 20px; /* 横向きで選択肢4つが収まるようにさらに縮小 */
     width: auto !important;
     max-width: 100% !important;
   }

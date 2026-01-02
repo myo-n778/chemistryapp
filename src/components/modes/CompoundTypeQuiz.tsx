@@ -79,6 +79,8 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
   const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
   const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
+  const lastTapRef = useRef<number>(0);
+  const tapTimeoutRef = useRef<number | null>(null);
 
   // currentCompoundが存在しない場合の処理
   const currentCompound = compounds[currentIndex];
@@ -168,7 +170,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     
     if (totalAnswered >= 10) {
       // 最高記録を保存
-      saveHighScore(pointScore);
+      saveHighScore(pointScore, score, totalAnswered);
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -182,7 +184,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
       }
     } else {
       // 最高記録を保存
-      saveHighScore(pointScore);
+      saveHighScore(pointScore, score, totalAnswered);
       setIsFinished(true);
     }
     
@@ -227,13 +229,44 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     };
   }, [showResult, currentIndex, compounds.length]);
 
-  // 画面全体をクリック/タップで次に進む
+  // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）
   const handleGlobalInteraction = (e: React.MouseEvent) => {
     if (showResult && !isProcessingRef.current) {
       const target = e.target as HTMLElement;
       // ボタンやインタラクティブな要素以外をクリックした場合に進む
       if (!target.closest('button') && !target.closest('a')) {
+        // PCの場合はシングルクリックで進む
         handleNext();
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button') && !target.closest('a')) {
+        e.preventDefault();
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapRef.current;
+        
+        // 300ms以内に2回タップされたらダブルタップとみなす
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          if (tapTimeoutRef.current !== null) {
+            window.clearTimeout(tapTimeoutRef.current);
+            tapTimeoutRef.current = null;
+          }
+          lastTapRef.current = 0;
+          handleNext();
+        } else {
+          // シングルタップの可能性があるので、タイムアウトを設定
+          lastTapRef.current = now;
+          if (tapTimeoutRef.current !== null) {
+            window.clearTimeout(tapTimeoutRef.current);
+          }
+          tapTimeoutRef.current = window.setTimeout(() => {
+            lastTapRef.current = 0;
+          }, 300) as unknown as number;
+        }
       }
     }
   };
@@ -269,15 +302,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
       </div>
 
       {!isFinished && currentCompound && (
-        <div className="quiz-content" onClick={handleGlobalInteraction} onTouchEnd={(e) => {
-          if (showResult && !isProcessingRef.current) {
-            const target = e.target as HTMLElement;
-            if (!target.closest('button') && !target.closest('a')) {
-              e.preventDefault();
-              handleNext();
-            }
-          }
-        }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+        <div className="quiz-content" onClick={handleGlobalInteraction} onTouchEnd={handleTouchEnd} style={{ cursor: showResult ? 'pointer' : 'default' }}>
           <div className="structure-container" onClick={(e) => { if (showResult && e.target === e.currentTarget) handleNext(); }}>
             <div className="question-header">
               <div className="question-line">

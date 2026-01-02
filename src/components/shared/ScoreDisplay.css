@@ -28,3 +28,15 @@
   font-weight: normal;
 }
 
+.score-animating .score-text {
+  color: #4caf50;
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.5);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.score-animating .score-text {
+  color: #4caf50;
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.5);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+

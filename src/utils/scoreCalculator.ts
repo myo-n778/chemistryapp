@@ -7,6 +7,22 @@ export interface ScoreResult {
   isCorrect: boolean;
 }
 
+const HIGH_SCORE_KEY = 'chemistry-quiz-highscore';
+const SCORE_HISTORY_KEY = 'chemistry-quiz-score-history';
+
+export interface ScoreHistoryEntry {
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  date: string; // ISO date string
+}
+
+export interface HighScoreData {
+  score: number;
+  correctCount: number;
+  totalCount: number;
+}
+
 /**
  * 問題ごとのスコアを計算
  * @param isCorrect 正解かどうか
@@ -46,31 +62,84 @@ export const calculateScore = (
 };
 
 /**
- * 最高記録をlocalStorageから取得
+ * 最高記録をlocalStorageから取得（互換性のため）
  */
 export const getHighScore = (): number => {
+  return getHighScoreWithCount().score;
+};
+
+/**
+ * 最高記録をlocalStorageから取得（正解数付き）
+ */
+export const getHighScoreWithCount = (): HighScoreData => {
   try {
-    const stored = localStorage.getItem('chemistry-quiz-highscore');
+    const history = getScoreHistory();
+    if (history.length > 0) {
+      const topEntry = history[0];
+      return {
+        score: topEntry.score,
+        correctCount: topEntry.correctCount,
+        totalCount: topEntry.totalCount,
+      };
+    }
+    // 互換性のため旧形式も確認
+    const stored = localStorage.getItem(HIGH_SCORE_KEY);
     if (stored) {
-      return parseInt(stored, 10);
+      const score = parseInt(stored, 10);
+      if (score > 0) {
+        return { score, correctCount: 0, totalCount: 0 };
+      }
     }
   } catch (error) {
     console.warn('Failed to get high score from localStorage:', error);
   }
-  return 0;
+  return { score: 0, correctCount: 0, totalCount: 0 };
 };
 
 /**
- * 最高記録をlocalStorageに保存
+ * スコア履歴をlocalStorageから取得
  */
-export const saveHighScore = (score: number): void => {
+export const getScoreHistory = (): ScoreHistoryEntry[] => {
   try {
-    const currentHighScore = getHighScore();
-    if (score > currentHighScore) {
-      localStorage.setItem('chemistry-quiz-highscore', score.toString());
+    const stored = localStorage.getItem(SCORE_HISTORY_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.warn('Failed to get score history from localStorage:', error);
+  }
+  return [];
+};
+
+/**
+ * 最高記録をlocalStorageに保存（互換性のため）
+ */
+export const saveHighScore = (score: number, correctCount: number = 0, totalCount: number = 0): void => {
+  try {
+    const history = getScoreHistory();
+    const newEntry: ScoreHistoryEntry = {
+      score,
+      correctCount,
+      totalCount,
+      date: new Date().toISOString(),
+    };
+    
+    // 新しいエントリを追加
+    history.push(newEntry);
+    
+    // スコアの降順でソート
+    history.sort((a, b) => b.score - a.score);
+    
+    // 上位5件のみ保持
+    const top5 = history.slice(0, 5);
+    
+    localStorage.setItem(SCORE_HISTORY_KEY, JSON.stringify(top5));
+    
+    // 互換性のため最高スコアも保存
+    if (top5.length > 0) {
+      localStorage.setItem(HIGH_SCORE_KEY, top5[0].score.toString());
     }
   } catch (error) {
     console.warn('Failed to save high score to localStorage:', error);
   }
 };
-

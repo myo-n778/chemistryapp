@@ -1,5 +1,5 @@
-import React from 'react';
-import { getHighScore } from '../../utils/scoreCalculator';
+import React, { useState, useEffect } from 'react';
+import { getHighScoreWithCount } from '../../utils/scoreCalculator';
 import './ScoreDisplay.css';
 
 interface ScoreDisplayProps {
@@ -10,13 +10,30 @@ interface ScoreDisplayProps {
 }
 
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, totalAnswered, pointScore, showPoints }) => {
-  const highScore = showPoints ? getHighScore() : 0;
+  const highScoreData = showPoints ? getHighScoreWithCount() : { score: 0, correctCount: 0, totalCount: 0 };
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [prevPointScore, setPrevPointScore] = useState(pointScore || 0);
+
+  // スコア加算時のアニメーション
+  useEffect(() => {
+    if (showPoints && pointScore !== undefined && pointScore > prevPointScore) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 300);
+      setPrevPointScore(pointScore);
+      return () => clearTimeout(timer);
+    }
+  }, [pointScore, showPoints, prevPointScore]);
   
   if (showPoints && pointScore !== undefined) {
     return (
-      <span className="score-display">
-        <span className="top-score-text">TOP SCORE: {highScore.toLocaleString()}</span>
-        <span className="score-text">得点: {pointScore.toLocaleString()}</span>
+      <span className={`score-display ${isAnimating ? 'score-animating' : ''}`}>
+        <span className="top-score-text">
+          TOP SCORE: {highScoreData.score.toLocaleString()}
+          {highScoreData.totalCount > 0 && ` (${highScoreData.correctCount}/${highScoreData.totalCount})`}
+        </span>
+        <span className="score-text">SCORE: {pointScore.toLocaleString()}</span>
         <span className="percentage">
           (正解: {score}/{totalAnswered})
         </span>
@@ -35,4 +52,3 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, totalAnswered
     </span>
   );
 };
-
