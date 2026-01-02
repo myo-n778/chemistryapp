@@ -5,14 +5,31 @@ import { Category } from '../components/CategorySelector';
 import { DATA_SOURCE } from '../config/dataSource';
 import { loadCompoundsFromGAS, loadReactionsFromGAS } from './gasLoader';
 
-const compoundCache: Record<Category, Compound[] | null> = {
+// キャッシュの有効期限（1時間）
+const CACHE_TTL = 60 * 60 * 1000; // 1時間（ミリ秒）
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const compoundCache: Record<Category, CacheEntry<Compound[]> | null> = {
   organic: null,
   inorganic: null,
 };
 
-const reactionCache: Record<Category, ReactionCSVRow[] | null> = {
+const reactionCache: Record<Category, CacheEntry<ReactionCSVRow[]> | null> = {
   organic: null,
   inorganic: null,
+};
+
+/**
+ * キャッシュが有効かどうかをチェック
+ */
+const isCacheValid = <T>(cacheEntry: CacheEntry<T> | null): boolean => {
+  if (!cacheEntry) return false;
+  const now = Date.now();
+  return (now - cacheEntry.timestamp) < CACHE_TTL;
 };
 
 /**
@@ -39,16 +56,20 @@ const fetchWithRetry = async <T>(
 };
 
 export const loadCompounds = async (category: Category): Promise<Compound[]> => {
-  if (compoundCache[category]) {
-    return compoundCache[category]!;
+  // キャッシュが有効な場合はそれを返す
+  if (isCacheValid(compoundCache[category])) {
+    return compoundCache[category]!.data;
   }
+  
+  // キャッシュをクリア
+  compoundCache[category] = null;
 
   // データソースに応じて読み込み方法を切り替え
   if (DATA_SOURCE === 'gas') {
     try {
       const compounds = await fetchWithRetry(() => loadCompoundsFromGAS(category), 2, 1000);
       if (compounds && Array.isArray(compounds) && compounds.length > 0) {
-        compoundCache[category] = compounds;
+        compoundCache[category] = { data: compounds, timestamp: Date.now() };
         return compounds;
       }
       console.warn(`GAS returned empty array for ${category}, falling back to CSV`);
@@ -80,7 +101,7 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
     const compounds = csvToCompounds(csvRows, []);
 
     if (compounds && Array.isArray(compounds)) {
-      compoundCache[category] = compounds;
+      compoundCache[category] = { data: compounds, timestamp: Date.now() };
       return compounds;
     }
     throw new Error('Failed to parse compounds from CSV');
@@ -92,16 +113,20 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 };
 
 export const loadReactions = async (category: Category): Promise<ReactionCSVRow[]> => {
-  if (reactionCache[category]) {
-    return reactionCache[category]!;
+  // キャッシュが有効な場合はそれを返す
+  if (isCacheValid(reactionCache[category])) {
+    return reactionCache[category]!.data;
   }
+  
+  // キャッシュをクリア
+  reactionCache[category] = null;
 
   // データソースに応じて読み込み方法を切り替え
   if (DATA_SOURCE === 'gas') {
     try {
       const reactions = await fetchWithRetry(() => loadReactionsFromGAS(category), 2, 1000);
       if (reactions && Array.isArray(reactions) && reactions.length > 0) {
-        reactionCache[category] = reactions;
+        reactionCache[category] = { data: reactions, timestamp: Date.now() };
         return reactions;
       }
       console.warn(`GAS returned empty array for reactions ${category}, falling back to CSV`);
@@ -131,7 +156,7 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
     const reactions = parseReactionCSV(csvText);
 
     if (reactions && Array.isArray(reactions)) {
-      reactionCache[category] = reactions;
+      reactionCache[category] = { data: reactions, timestamp: Date.now() };
       return reactions;
     }
     throw new Error('Failed to parse reactions from CSV');
