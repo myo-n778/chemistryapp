@@ -17,7 +17,8 @@ export interface ScoreResult {
 export const calculateScore = (
   isCorrect: boolean,
   elapsedSeconds: number,
-  consecutiveCount: number = 0
+  consecutiveCount: number = 0,
+  isShuffleMode: boolean = false
 ): number => {
   if (!isCorrect) {
     return 0;
@@ -34,6 +35,11 @@ export const calculateScore = (
   if (consecutiveCount > 1) {
     const bonusMultiplier = Math.pow(1.1, consecutiveCount - 1);
     baseScore = Math.floor(baseScore * bonusMultiplier);
+  }
+
+  // シャッフルモード倍率
+  if (isShuffleMode) {
+    baseScore = Math.round(baseScore * 1.5);
   }
 
   return baseScore;
