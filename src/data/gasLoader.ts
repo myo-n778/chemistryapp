@@ -15,17 +15,34 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
   }
 
   try {
-    // GASエンドポイントからデータを取得
-    const response = await fetch(`${gasUrl}?type=compounds&category=${category}`, {
-      method: 'GET',
-      mode: 'cors', // CORS対応が必要
-    });
+    // GASエンドポイントからデータを取得（タイムアウト付き）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
+
+    let response: Response;
+    try {
+      response = await fetch(`${gasUrl}?type=compounds&category=${category}`, {
+        method: 'GET',
+        mode: 'cors', // CORS対応が必要
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Request timeout: GAS took too long to respond');
+      }
+      throw fetchError;
+    }
 
     if (!response.ok) {
       throw new Error(`Failed to load compounds from GAS: ${response.statusText}`);
     }
 
     const data = await response.json();
+    if (!data || (typeof data !== 'object')) {
+      throw new Error('Invalid response format from GAS');
+    }
 
     console.log(`[${category}] GAS response received`);
 
@@ -81,16 +98,34 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
   }
 
   try {
-    const response = await fetch(`${gasUrl}?type=reactions&category=${category}`, {
-      method: 'GET',
-      mode: 'cors',
-    });
+    // GASエンドポイントからデータを取得（タイムアウト付き）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
+
+    let response: Response;
+    try {
+      response = await fetch(`${gasUrl}?type=reactions&category=${category}`, {
+        method: 'GET',
+        mode: 'cors',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Request timeout: GAS took too long to respond');
+      }
+      throw fetchError;
+    }
 
     if (!response.ok) {
       throw new Error(`Failed to load reactions from GAS: ${response.statusText}`);
     }
 
     const data = await response.json();
+    if (!data || (typeof data !== 'object')) {
+      throw new Error('Invalid response format from GAS');
+    }
 
     if (data.csv) {
       // CSV形式で返される場合

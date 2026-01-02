@@ -21,6 +21,7 @@ function App() {
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -64,17 +65,26 @@ function App() {
   useEffect(() => {
     if (selectedCategory) {
       setLoading(true);
+      setLoadingError(null);
       loadCompounds(selectedCategory)
         .then(data => {
+          // null/undefinedチェック
+          if (!data || !Array.isArray(data)) {
+            throw new Error('Invalid data format received');
+          }
+
           // 全化合物データを保持（ReactionQuiz用に構造式がなくても名前で使う）
           console.log(`App.tsx: Loaded ${data.length} total compounds`);
 
           // 構造式が有効な化合物をフィルタリング（既存のクイズモード用）
           const valid = data.filter(c =>
+            c &&
             c.structure &&
             c.structure.atoms &&
+            Array.isArray(c.structure.atoms) &&
             c.structure.atoms.length > 0 &&
             c.structure.bonds &&
+            Array.isArray(c.structure.bonds) &&
             c.structure.bonds.length > 0
           );
           console.log(`App.tsx: ${valid.length} compounds have valid structures`);
@@ -82,12 +92,20 @@ function App() {
           // setCompoundsには全データを渡す（構造式がなくても名前検索に使うため）
           setCompounds(data);
           setLoading(false);
+          setLoadingError(null);
         })
         .catch(error => {
           console.error('Failed to load compounds:', error);
           setCompounds([]);
           setLoading(false);
+          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+          setLoadingError(errorMessage);
         });
+    } else {
+      // カテゴリが未選択の場合は状態をリセット
+      setCompounds([]);
+      setLoading(false);
+      setLoadingError(null);
     }
   }, [selectedCategory]);
 
@@ -137,6 +155,31 @@ function App() {
       <div className="App">
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           データを読み込んでいます...
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingError) {
+    return (
+      <div className="App">
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+            データの読み込みに失敗しました
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+            {loadingError}
+          </p>
+          <button
+            className="back-button"
+            onClick={() => {
+              setSelectedCategory(null);
+              setLoadingError(null);
+            }}
+            style={{ marginTop: '20px' }}
+          >
+            カテゴリ選択に戻る
+          </button>
         </div>
       </div>
     );
