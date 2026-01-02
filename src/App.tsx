@@ -25,6 +25,11 @@ function App() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // 初回レンダリング時のデバッグログ
+  useEffect(() => {
+    console.log('App component mounted');
+  }, []);
+
   // モバイル/タブレット環境かどうかを検出
   useEffect(() => {
     const checkDevice = () => {

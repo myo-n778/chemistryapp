@@ -36,10 +36,16 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
     }
 
     if (!response.ok) {
-      throw new Error(`Failed to load compounds from GAS: ${response.statusText}`);
+      throw new Error(`Failed to load compounds from GAS: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      throw new Error('Failed to parse JSON response from GAS');
+    }
+
     if (!data || (typeof data !== 'object')) {
       throw new Error('Invalid response format from GAS');
     }
@@ -119,10 +125,16 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
     }
 
     if (!response.ok) {
-      throw new Error(`Failed to load reactions from GAS: ${response.statusText}`);
+      throw new Error(`Failed to load reactions from GAS: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      throw new Error('Failed to parse JSON response from GAS');
+    }
+
     if (!data || (typeof data !== 'object')) {
       throw new Error('Invalid response format from GAS');
     }
