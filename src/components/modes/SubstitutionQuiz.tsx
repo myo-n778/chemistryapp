@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
@@ -23,6 +23,8 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPreparing, setShowPreparing] = useState(false);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     loadReactions(category).then(data => {
@@ -71,19 +73,15 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     return [correctCompound.name, ...wrongAnswers.map(c => c.name)].sort(() => Math.random() - 0.5);
   }, [compounds, correctCompound.name]);
 
-  const handleAnswer = (answer: string) => {
-    if (showResult) return;
-    
-    setSelectedAnswer(answer);
-    setShowResult(true);
-    setTotalAnswered(prev => prev + 1);
-    
-    if (answer === correctCompound.name) {
-      setScore(prev => prev + 1);
-    }
+  const handleAnswer = (_answer: string) => {
+    setShowPreparing(true);
+    setTimeout(() => setShowPreparing(false), 2000);
   };
 
   const handleNext = () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
@@ -91,6 +89,10 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     }
     setSelectedAnswer(null);
     setShowResult(false);
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   const handleReset = () => {
@@ -101,6 +103,30 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     setTotalAnswered(0);
   };
 
+  // Enterキー、スペースキーで次に進む
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && showResult) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showResult, currentIndex, reactions.length]);
+
+  // 画面全体をクリック/タップで次に進む
+  const handleContentClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('button') && !target.closest('a')) {
+      setShowPreparing(true);
+      setTimeout(() => setShowPreparing(false), 2000);
+    }
+  };
+
   return (
     <div className="quiz-container">
       <div className="quiz-header">
@@ -109,9 +135,21 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         </h1>
       </div>
 
-      <ProgressBar current={currentIndex + 1} total={reactions.length} />
+      <ProgressBar current={currentIndex + 1} total={reactions.length} showResult={showResult} onNext={handleNext} />
 
-      <div className="quiz-content">
+      <div className="quiz-content" onClick={handleContentClick} onTouchEnd={(e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('button') && !target.closest('a')) {
+          e.preventDefault();
+          setShowPreparing(true);
+          setTimeout(() => setShowPreparing(false), 2000);
+        }
+      }} style={{ cursor: 'pointer' }}>
+        {showPreparing && (
+          <div style={{ textAlign: 'center', color: '#ffa500', fontSize: '1.2rem', padding: '20px', fontWeight: 'bold' }}>
+            Preparing...
+          </div>
+        )}
         <div className="structure-container">
           <h2>{currentReaction.description || `「${currentReaction.from}」に${currentReaction.reagent}をしたら何になる？`}</h2>
           {fromCompound && (

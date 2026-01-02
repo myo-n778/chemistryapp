@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
-import { ProgressBar } from '../shared/ProgressBar';
 import '../Quiz.css';
 
 interface StructureToNameQuizProps {
@@ -18,6 +17,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
+  const isProcessingRef = useRef(false);
 
   // 化合物が空の場合はエラーメッセージを表示
   if (compounds.length === 0) {
@@ -78,6 +78,9 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
   };
 
   const handleNext = () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
@@ -85,6 +88,10 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     }
     setSelectedAnswer(null);
     setShowResult(false);
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   const handleReset = () => {
@@ -100,10 +107,11 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     setShowResult(false);
   }, [currentIndex]);
 
-  // Enterキーで次に進む
+  // Enterキー、スペースキーで次に進む
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && showResult) {
+      if ((e.key === 'Enter' || e.key === ' ') && showResult) {
+        e.preventDefault();
         handleNext();
       }
     };
@@ -112,10 +120,14 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showResult, currentIndex, compounds.length]);
 
-  // 画面全体をクリックで次に進む
+  // 画面全体をクリック/タップで次に進む
   const handleContentClick = (e: React.MouseEvent) => {
-    if (showResult && e.target === e.currentTarget) {
-      handleNext();
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
+      if (!target.closest('button') && !target.closest('a')) {
+        handleNext();
+      }
     }
   };
 
@@ -133,30 +145,41 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
               reset
             </button>
           </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {compounds.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / compounds.length) * 100}%` }}></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <ProgressBar current={currentIndex + 1} total={compounds.length} />
-
-      <div className="quiz-content" onClick={handleContentClick} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+      <div className="quiz-content" onClick={handleContentClick} onTouchEnd={(e) => {
+        if (showResult && !isProcessingRef.current) {
+          const target = e.target as HTMLElement;
+          if (!target.closest('button') && !target.closest('a')) {
+            e.preventDefault();
+            handleNext();
+          }
+        }
+      }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
         <div className="structure-container">
           <div className="question-header">
-            <div className="question-english">What is the name of this compound?</div>
-            <div className="question-line">
+            <div className="reaction-question-line">
+              <span className="question-text-inline">What is the name of this compound?</span>
               {showResult && (
-                <span className="result-message-inline">
-                  {selectedAnswer === currentCompound.name ? (
-                    <span className="correct-message-inline">
-                      <span className="message-icon">✓</span>
-                      <span className="english-text">Correct!</span>
-                    </span>
-                  ) : (
-                    <span className="incorrect-message-inline">
-                      <span className="message-icon">✗</span>
-                      <span className="english-text">Wrong</span>
-                    </span>
-                  )}
-                </span>
+                <div className="result-action-inline">
+                  <span className={selectedAnswer === currentCompound.name ? "result-correct" : "result-incorrect"}>
+                    {selectedAnswer === currentCompound.name ? "✓ Correct!" : "✗ Wrong"}
+                  </span>
+                </div>
               )}
             </div>
           </div>

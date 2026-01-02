@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
@@ -23,6 +23,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
+  const isProcessingRef = useRef(false);
 
   // 各問題のパターン（0: toを答える, 1: reagentを答える）を保持
   const [questionPatterns, setQuestionPatterns] = useState<number[]>([]);
@@ -120,6 +121,9 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   };
 
   const handleNext = () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
@@ -127,6 +131,10 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     } else {
       setIsFinished(true);
     }
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   const handleReset = () => {
@@ -201,7 +209,14 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
           </div>
           {/* ProgressBarをヘッダー内に移動 */}
           <div className="reaction-progress-inline">
-            <span className="progress-text">問題 {currentIndex + 1} / {reactions.length}</span>
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {reactions.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
             <div className="progress-bar-mini">
               <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / reactions.length) * 100}%` }}></div>
             </div>
@@ -209,8 +224,25 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         </div>
       </div>
 
-      <div className="quiz-content" onClick={() => showResult && handleNext()} style={{ cursor: showResult ? 'pointer' : 'default' }}>
-        <div className="reaction-quiz-wrapper" onClick={() => showResult && handleNext()}>
+      <div className="quiz-content" onClick={(e) => {
+        if (showResult && !isProcessingRef.current) {
+          const target = e.target as HTMLElement;
+          // ボタンやインタラクティブな要素以外をクリック/タップした場合に進む
+          if (!target.closest('button') && !target.closest('a')) {
+            handleNext();
+          }
+        }
+      }} onTouchEnd={(e) => {
+        if (showResult && !isProcessingRef.current) {
+          const target = e.target as HTMLElement;
+          // ボタンやインタラクティブな要素以外をタップした場合に進む
+          if (!target.closest('button') && !target.closest('a')) {
+            e.preventDefault();
+            handleNext();
+          }
+        }
+      }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+        <div className="reaction-quiz-wrapper">
           {/* 質問文エリア - 余白を最小に */}
           <div className="reaction-question-line">
             <span className="question-text-inline">
@@ -221,12 +253,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
                 <span className={selectedAnswer === correctValue ? "result-correct" : "result-incorrect"}>
                   {selectedAnswer === correctValue ? "✓ Correct!" : "✗ Wrong"}
                 </span>
-                <button
-                  className={selectedAnswer === correctValue ? "next-button-correct" : "next-button-incorrect"}
-                  onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                >
-                  {currentIndex < reactions.length - 1 ? 'Next →' : 'Restart'}
-                </button>
               </div>
             )}
           </div>

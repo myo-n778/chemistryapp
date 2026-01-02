@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
-import { ProgressBar } from '../shared/ProgressBar';
 import { QuizSummary } from '../shared/QuizSummary';
 import '../Quiz.css';
 
@@ -73,6 +72,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const isProcessingRef = useRef(false);
 
   // currentCompoundが存在しない場合の処理
   const currentCompound = compounds[currentIndex];
@@ -134,6 +134,9 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
   };
 
   const handleNext = () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
@@ -141,6 +144,10 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     } else {
       setIsFinished(true);
     }
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   const handleReset = () => {
@@ -174,10 +181,12 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     };
   }, [showResult, currentIndex, compounds.length]);
 
-  // 画面全体をクリックで次に進む
+  // 画面全体をクリック/タップで次に進む
   const handleGlobalInteraction = (e: React.MouseEvent) => {
-    if (showResult) {
-      if (e.target === e.currentTarget) {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
+      if (!target.closest('button') && !target.closest('a')) {
         handleNext();
       }
     }
@@ -197,44 +206,48 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
               reset
             </button>
           </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {compounds.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / compounds.length) * 100}%` }}></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <ProgressBar current={currentIndex + 1} total={compounds.length} />
-
       {!isFinished && currentCompound && (
-        <div className="quiz-content" onClick={handleGlobalInteraction} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+        <div className="quiz-content" onClick={handleGlobalInteraction} onTouchEnd={(e) => {
+          if (showResult && !isProcessingRef.current) {
+            const target = e.target as HTMLElement;
+            if (!target.closest('button') && !target.closest('a')) {
+              e.preventDefault();
+              handleNext();
+            }
+          }
+        }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
           <div className="structure-container" onClick={(e) => { if (showResult && e.target === e.currentTarget) handleNext(); }}>
             <div className="question-header">
-              <div className="question-english-line">
-                <div className="question-english" style={{ transform: 'translateX(-80px)' }}>
-                  Which type is this compound?
-                </div>
-                {showResult && (
-                  <div className="quiz-action-buttons-horizontal">
-                    <span className="result-message-inline">
-                      {selectedAnswer === correctType ? (
-                        <span className="correct-message-inline">
-                          <span className="message-icon">✓</span>
-                          <span className="english-text">Correct!</span>
-                        </span>
-                      ) : (
-                        <span className="incorrect-message-inline">
-                          <span className="message-icon">✗</span>
-                          <span className="english-text">Wrong</span>
-                        </span>
-                      )}
-                    </span>
-                    <button className="next-button-inline-small" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
-                      {currentIndex < compounds.length - 1 ? 'Next →' : 'Restart'}
-                    </button>
-                  </div>
-                )}
-              </div>
               <div className="question-line">
                 <div className="question-name-area">
                   <h2>「{currentCompound.name}」</h2>
                 </div>
+              </div>
+              <div className="reaction-question-line">
+                <span className="question-text-inline">Which type is this compound?</span>
+                {showResult && (
+                  <div className="result-action-inline">
+                    <span className={selectedAnswer === correctType ? "result-correct" : "result-incorrect"}>
+                      {selectedAnswer === correctType ? "✓ Correct!" : "✗ Wrong"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />

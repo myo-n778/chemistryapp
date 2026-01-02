@@ -55,6 +55,12 @@
   font-size: clamp(0.75rem, 1.5vw, 0.85rem);
 }
 
+.progress-text-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -238,6 +244,75 @@
 }
 
 .result-icon {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-weight: bold;
+}
+
+.options-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(6px, 1vw, 8px);
+  margin-bottom: clamp(6px, 1vh, 8px);
+}
+
+.option-button-compact {
+  padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 15px);
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  border: 2px solid #ffa500;
+  border-radius: clamp(6px, 1vw, 8px);
+  background: #2a1f1a;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-family: 'Noto Serif JP', 'Noto Serif', serif;
+}
+
+.option-button-compact:hover:not(:disabled) {
+  background: #ffa500;
+  color: #2a1f1a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 165, 0, 0.6), 0 0 20px rgba(255, 165, 0, 0.4);
+}
+
+.option-button-compact:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.option-button-compact.selected {
+  background: #ffa500;
+  color: #2a1f1a;
+  box-shadow: 0 0 12px rgba(255, 165, 0, 0.6);
+}
+
+.option-button-compact.correct {
+  background: #2a1f1a;
+  border-color: #4caf50;
+  border-width: 3px;
+  color: #ffffff;
+  animation: correctPulse 0.5s ease;
+  box-shadow: 0 0 16px rgba(76, 175, 80, 0.8), 0 0 24px rgba(76, 175, 80, 0.5);
+}
+
+.option-button-compact.incorrect {
+  background: #2a1f1a;
+  border-color: #f44336;
+  border-width: 3px;
+  color: #ffffff;
+  animation: incorrectShake 0.5s ease;
+  box-shadow: 0 0 16px rgba(244, 67, 54, 0.8), 0 0 24px rgba(244, 67, 54, 0.5);
+}
+
+.option-text-small {
+  flex: 1;
+}
+
+.result-icon-small {
   font-size: clamp(1rem, 2vw, 1.2rem);
   font-weight: bold;
 }
@@ -480,14 +555,45 @@
     flex-shrink: 0;
   }
 
+  .structure-container .structure-viewer {
+    max-height: 80px;
+  }
+
+  .structure-container .structure-viewer svg {
+    max-height: 80px;
+  }
+
   .question-english {
     font-size: 0.65rem;
     margin-bottom: 2px;
+    line-height: 1.1;
+  }
+
+  .question-header {
+    margin-bottom: 1px;
+  }
+
+  .question-english-line {
+    margin-bottom: 1px;
+  }
+
+  .question-line {
+    margin-bottom: 1px;
+  }
+
+  .question-name-area {
+    margin-bottom: 1px;
+  }
+
+  .question-name-area h2 {
+    margin: 0;
     line-height: 1.2;
   }
 
   .structure-container h2 {
     font-size: 0.75rem;
+    margin-bottom: 1px;
+    line-height: 1.2;
   }
 
   .options-container {
@@ -504,8 +610,156 @@
     line-height: 1.2;
   }
 
+  .option-button-structure {
+    padding: 4px;
+    min-height: 60px;
+  }
+
+  .option-button-structure .structure-viewer {
+    max-height: 50px;
+  }
+
+  .option-button-structure .structure-viewer svg {
+    max-height: 50px;
+  }
+
   .quiz-progress span {
     font-size: 0.65rem;
+  }
+}
+
+/* スマホ向け（縦向き） */
+@media screen and (max-width: 767px) and (orientation: portrait) {
+  .quiz-container {
+    padding: 2px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .quiz-header {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  .quiz-header h1 {
+    font-size: 0.85rem;
+  }
+
+  .quiz-header-right {
+    gap: 4px;
+  }
+
+  .quiz-header-buttons .back-button,
+  .quiz-header-buttons .reset-button {
+    width: 45px;
+    height: 20px;
+    padding: 2px 6px;
+    font-size: 0.6rem;
+  }
+
+  .quiz-progress {
+    margin-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  .quiz-progress span {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+  }
+
+  .progress-bar {
+    height: 4px;
+  }
+
+  .quiz-content {
+    padding: 4px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .structure-container {
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .structure-container .structure-viewer {
+    max-height: 80px;
+  }
+
+  .structure-container .structure-viewer svg {
+    max-height: 80px;
+  }
+
+  .question-english {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+
+  .question-header {
+    margin-bottom: 1px;
+  }
+
+  .question-english-line {
+    margin-bottom: 1px;
+  }
+
+  .question-line {
+    margin-bottom: 1px;
+  }
+
+  .question-name-area {
+    margin-bottom: 1px;
+  }
+
+  .question-name-area h2 {
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .structure-container h2 {
+    font-size: 0.75rem;
+    margin-bottom: 1px;
+    line-height: 1.2;
+  }
+
+  .options-container,
+  .options-container-structure,
+  .options-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  .option-button,
+  .option-button-compact {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-height: 28px;
+    line-height: 1.2;
+  }
+
+  .option-button-structure {
+    padding: 4px;
+    min-height: 60px;
+  }
+
+  .option-button-structure .structure-viewer {
+    max-height: 50px;
+  }
+
+  .option-button-structure .structure-viewer svg {
+    max-height: 50px;
   }
 }
 
@@ -644,8 +898,8 @@
 }
 
 .reaction-description-area {
-  min-height: 30px;
-  margin-bottom: clamp(5px, 1vh, 10px);
+  min-height: 0;
+  margin-bottom: 2px;
 }
 
 .reaction-description-area p {
@@ -693,6 +947,10 @@
 
 /* スマホ向け（横向き）での反応式レイアウト調整 */
 @media screen and (max-width: 767px) and (orientation: landscape) {
+  .reaction-quiz-wrapper {
+    gap: 4px;
+  }
+
   .reaction-equation-area {
     gap: clamp(4px, 1vw, 8px);
     margin: clamp(4px, 1vh, 8px) 0;
@@ -730,6 +988,14 @@
     font-size: 1.5rem;
   }
 
+  .reaction-equation-area .structure-viewer {
+    max-height: 60px;
+  }
+
+  .reaction-equation-area .structure-viewer svg {
+    max-height: 60px;
+  }
+
   .reaction-question-line {
     gap: 6px;
     margin-bottom: 4px;
@@ -737,6 +1003,44 @@
 
   .question-text-inline {
     font-size: 0.7rem;
+  }
+
+  .reaction-description-area {
+    min-height: 0;
+    margin-bottom: 2px;
+  }
+
+  .reaction-options-grid {
+    margin-top: 4px;
+  }
+}
+
+/* スマホ向け（縦向き）での反応式レイアウト調整 */
+@media screen and (max-width: 767px) and (orientation: portrait) {
+  .reaction-quiz-wrapper {
+    gap: 4px;
+  }
+
+  .reaction-equation-area {
+    gap: clamp(4px, 1vw, 8px);
+    margin: clamp(4px, 1vh, 8px) 0;
+  }
+
+  .reaction-equation-area .structure-viewer {
+    max-height: 70px;
+  }
+
+  .reaction-equation-area .structure-viewer svg {
+    max-height: 70px;
+  }
+
+  .reaction-description-area {
+    min-height: 0;
+    margin-bottom: 2px;
+  }
+
+  .reaction-options-grid {
+    margin-top: 4px;
   }
 }
 

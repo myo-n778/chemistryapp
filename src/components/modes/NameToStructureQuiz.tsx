@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
-import { ProgressBar } from '../shared/ProgressBar';
 import { QuizSummary } from '../shared/QuizSummary';
 import '../Quiz.css';
 
@@ -21,6 +20,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [showAllNames, setShowAllNames] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const isProcessingRef = useRef(false);
 
   // 化合物が空の場合はエラーメッセージを表示
   if (compounds.length === 0) {
@@ -68,6 +68,9 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   };
 
   const handleNext = () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
@@ -76,6 +79,10 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     } else {
       setIsFinished(true);
     }
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   const handleReset = () => {
@@ -111,10 +118,12 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     };
   }, [showResult, currentIndex, compounds.length]);
 
-  // 画面全体をクリックで次に進む（右クリック含む）
+  // 画面全体をクリック/タップで次に進む
   const handleGlobalInteraction = (e: React.MouseEvent) => {
-    if (showResult) {
-      if (e.target === e.currentTarget) {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
+      if (!target.closest('button') && !target.closest('a')) {
         handleNext();
       }
     }
@@ -134,50 +143,56 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
               reset
             </button>
           </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {compounds.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / compounds.length) * 100}%` }}></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <ProgressBar current={currentIndex + 1} total={compounds.length} />
-
       {!isFinished && currentCompound && (
-        <div className="quiz-content" onClick={handleGlobalInteraction} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+        <div className="quiz-content" onClick={handleGlobalInteraction} onTouchEnd={(e) => {
+          if (showResult && !isProcessingRef.current) {
+            const target = e.target as HTMLElement;
+            if (!target.closest('button') && !target.closest('a')) {
+              e.preventDefault();
+              handleNext();
+            }
+          }
+        }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
           <div className="structure-container" onClick={(e) => { if (showResult && e.target === e.currentTarget) handleNext(); }}>
             <div className="question-header">
-              <div className="question-english-line">
-                <div className="question-english">Which structure matches this name?</div>
-                {showResult && (
-                  <div className="quiz-action-buttons">
-                    <button className="next-button-inline-small" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
-                      {currentIndex < compounds.length - 1 ? 'Next →' : 'Restart'}
-                    </button>
-                    <button
-                      className={`show-names-button ${showAllNames ? 'active' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); setShowAllNames(!showAllNames); }}
-                    >
-                      Show Names
-                    </button>
-                  </div>
-                )}
-              </div>
               <div className="question-line">
                 <div className="question-name-area">
                   <h2>「{currentCompound.name}」</h2>
-                  {showResult && (
-                    <span className="result-message-floating">
-                      {selectedAnswer === currentCompound.id ? (
-                        <span className="correct-message-inline">
-                          <span className="message-icon">✓</span>
-                          <span className="english-text">Correct!</span>
-                        </span>
-                      ) : (
-                        <span className="incorrect-message-inline">
-                          <span className="message-icon">✗</span>
-                          <span className="english-text">Wrong</span>
-                        </span>
-                      )}
-                    </span>
-                  )}
                 </div>
+              </div>
+              <div className="reaction-question-line">
+                <span className="question-text-inline">Which structure matches this name?</span>
+                {showResult && (
+                  <div className="result-action-inline">
+                    <span className={selectedAnswer === currentCompound.id ? "result-correct" : "result-incorrect"}>
+                      {selectedAnswer === currentCompound.id ? "✓ Correct!" : "✗ Wrong"}
+                    </span>
+                  </div>
+                )}
+                {showResult && (
+                  <button
+                    className={`show-names-button ${showAllNames ? 'active' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setShowAllNames(!showAllNames); }}
+                  >
+                    Show Names
+                  </button>
+                )}
               </div>
             </div>
 

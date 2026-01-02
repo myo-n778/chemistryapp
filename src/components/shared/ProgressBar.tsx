@@ -4,12 +4,21 @@ import './ProgressBar.css';
 interface ProgressBarProps {
   current: number;
   total: number;
+  showResult?: boolean;
+  onNext?: () => void;
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({ current, total }) => {
+export const ProgressBar: React.FC<ProgressBarProps> = ({ current, total, showResult, onNext }) => {
   return (
     <div className="progress-container">
-      <span className="progress-text">問題 {current} / {total}</span>
+      <div className="progress-text-wrapper">
+        <span className="progress-text">問題 {current} / {total}</span>
+        {showResult && onNext && (
+          <button className="next-button-mobile" onClick={onNext}>
+            Next
+          </button>
+        )}
+      </div>
       <div className="progress-bar">
         <div
           className="progress-fill"

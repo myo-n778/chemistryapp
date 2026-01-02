@@ -19,31 +19,3 @@
   background: transparent;
   border-radius: 6px;
 }
-
-/* スマホ向け（横向き） */
-@media screen and (max-width: 767px) and (orientation: landscape) {
-  .structure-viewer {
-    min-height: 0;
-    margin: 2px 0;
-    max-height: 100px;
-  }
-
-  .structure-viewer svg {
-    min-height: 0;
-    max-height: 100px;
-  }
-}
-
-/* スマホ向け（縦向き） */
-@media screen and (max-width: 767px) and (orientation: portrait) {
-  .structure-viewer {
-    min-height: 0;
-    margin: 2px 0;
-    max-height: 150px;
-  }
-
-  .structure-viewer svg {
-    min-height: 0;
-    max-height: 150px;
-  }
-}
