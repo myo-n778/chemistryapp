@@ -138,16 +138,18 @@
 }
 
 .option-button-structure.correct {
-  background: #4caf50;
+  background: #2a1f1a;
   border-color: #4caf50;
+  border-width: 3px;
   color: #ffffff;
   animation: correctPulse 0.5s ease;
   box-shadow: 0 0 16px rgba(76, 175, 80, 0.8), 0 0 24px rgba(76, 175, 80, 0.5);
 }
 
 .option-button-structure.incorrect {
-  background: #f44336;
+  background: #2a1f1a;
   border-color: #f44336;
+  border-width: 3px;
   color: #ffffff;
   animation: incorrectShake 0.5s ease;
   box-shadow: 0 0 16px rgba(244, 67, 54, 0.8), 0 0 24px rgba(244, 67, 54, 0.5);
@@ -197,16 +199,18 @@
 }
 
 .option-button.correct {
-  background: #4caf50;
+  background: #2a1f1a;
   border-color: #4caf50;
+  border-width: 3px;
   color: #ffffff;
   animation: correctPulse 0.5s ease;
   box-shadow: 0 0 16px rgba(76, 175, 80, 0.8), 0 0 24px rgba(76, 175, 80, 0.5);
 }
 
 .option-button.incorrect {
-  background: #f44336;
+  background: #2a1f1a;
   border-color: #f44336;
+  border-width: 3px;
   color: #ffffff;
   animation: incorrectShake 0.5s ease;
   box-shadow: 0 0 16px rgba(244, 67, 54, 0.8), 0 0 24px rgba(244, 67, 54, 0.5);
