@@ -4,6 +4,7 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
+import { calculateScore, saveHighScore } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import '../Quiz.css';
@@ -23,6 +24,10 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
+  const [pointScore, setPointScore] = useState(0); // 得点表示モード用
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [lastQuestionKey, setLastQuestionKey] = useState<string | null>(null); // 問題IDの代わりにreactionのキーを使用
+  const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
 
   // 各問題のパターン（0: toを答える, 1: reagentを答える）を保持
@@ -37,6 +42,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       const patterns = data.map(() => Math.floor(Math.random() * 2));
       setQuestionPatterns(patterns);
       setLoading(false);
+      setQuestionStartTime(Date.now());
     }).catch(err => {
       console.error("Failed to load reactions:", err);
       setLoading(false);
@@ -125,12 +131,24 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     isProcessingRef.current = true;
     
     if (totalAnswered >= 10) {
+      // 最高記録を保存
+      saveHighScore(pointScore);
       setIsFinished(true);
     } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
+      setQuestionStartTime(Date.now());
+      // 次の問題が異なる場合は連続カウントをリセット
+      const nextReaction = reactions[currentIndex + 1];
+      const nextPattern = questionPatterns[currentIndex + 1];
+      const nextQuestionKey = nextReaction ? `${nextReaction.from}-${nextReaction.to}-${nextPattern}` : '';
+      if (nextQuestionKey !== lastQuestionKey) {
+        setConsecutiveCount(0);
+      }
     } else {
+      // 最高記録を保存
+      saveHighScore(pointScore);
       setIsFinished(true);
     }
     
@@ -204,7 +222,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       <div className="quiz-header">
         <h1>有機化学クイズ</h1>
         <div className="quiz-header-right">
-          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
+          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
           <div className="quiz-header-buttons">
             <button className="back-button" onClick={onBack}>return</button>
             <button className="reset-button" onClick={handleReset}>reset</button>

@@ -3,6 +3,7 @@ import { Compound } from '../../types';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
+import { calculateScore, saveHighScore } from '../../utils/scoreCalculator';
 import '../Quiz.css';
 
 interface CompoundTypeQuizProps {
@@ -72,6 +73,10 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [pointScore, setPointScore] = useState(0); // 得点表示モード用
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
+  const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
 
   // currentCompoundが存在しない場合の処理
@@ -124,11 +129,34 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
   const handleAnswer = (answer: string) => {
     if (showResult) return;
 
+    const isCorrect = answer === correctType;
+    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
+    
+    // 連続正解カウント（同じ問題IDが連続で正解した場合のみ）
+    const currentQuestionId = currentCompound?.id || '';
+    let newConsecutiveCount = 0;
+    if (isCorrect && lastQuestionId === currentQuestionId) {
+      newConsecutiveCount = consecutiveCount + 1;
+      setConsecutiveCount(newConsecutiveCount);
+    } else if (isCorrect) {
+      newConsecutiveCount = 1;
+      setConsecutiveCount(1);
+    } else {
+      setConsecutiveCount(0);
+    }
+    setLastQuestionId(currentQuestionId);
+    
+    // スコア計算（得点表示モード）
+    if (isCorrect) {
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount);
+      setPointScore(prev => prev + points);
+    }
+
     setSelectedAnswer(answer);
     setShowResult(true);
     setTotalAnswered(prev => prev + 1);
 
-    if (answer === correctType) {
+    if (isCorrect) {
       setScore(prev => prev + 1);
     }
   };
@@ -138,12 +166,22 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     isProcessingRef.current = true;
     
     if (totalAnswered >= 10) {
+      // 最高記録を保存
+      saveHighScore(pointScore);
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
+      setQuestionStartTime(Date.now());
+      // 次の問題が異なる場合は連続カウントをリセット（同じ問題IDでなければ）
+      const nextCompound = compounds[currentIndex + 1];
+      if (nextCompound && nextCompound.id !== lastQuestionId) {
+        setConsecutiveCount(0);
+      }
     } else {
+      // 最高記録を保存
+      saveHighScore(pointScore);
       setIsFinished(true);
     }
     
@@ -158,13 +196,18 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
+    setPointScore(0);
     setIsFinished(false);
+    setQuestionStartTime(Date.now());
+    setLastQuestionId(null);
+    setConsecutiveCount(0);
   };
 
   useEffect(() => {
     if (!isFinished) {
       setSelectedAnswer(null);
       setShowResult(false);
+      setQuestionStartTime(Date.now());
     }
   }, [currentIndex, isFinished]);
 
@@ -199,7 +242,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
       <div className="quiz-header">
         <h1>有機化学クイズ</h1>
         <div className="quiz-header-right">
-          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
+          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
           <div className="quiz-header-buttons">
             <button className="back-button" onClick={onBack}>
               return
