@@ -1117,40 +1117,90 @@
 /* スマホ向け（縦向き）での反応式レイアウト調整 */
 @media screen and (max-width: 767px) and (orientation: portrait) {
   .reaction-quiz-wrapper {
-    gap: 4px;
+    gap: 2px;
   }
 
   .reaction-equation-area {
-    gap: clamp(4px, 1vw, 8px);
-    margin: clamp(4px, 1vh, 8px) 0;
+    gap: clamp(2px, 0.5vw, 4px);
+    margin: clamp(2px, 0.5vh, 4px) 0;
+    flex-wrap: wrap;
   }
 
-  /* モード④：横幅優先をやめ、縦に全て収める */
+  /* モード④：縦向きでも全て収まるように調整 */
   .reaction-equation-area {
     width: auto !important;
     max-width: 100% !important;
     justify-content: center !important;
   }
 
+  .reactant-block,
+  .product-block {
+    min-width: 70px;
+    gap: 1px;
+    flex: 0 1 auto;
+  }
+
+  .arrow-block {
+    gap: 1px;
+  }
+
+  .reagent-box,
+  .name-box {
+    padding: 2px 4px;
+    font-size: 0.55rem;
+    min-width: 50px;
+  }
+
+  .reaction-arrow {
+    font-size: 1rem;
+  }
+
+  .reactant-block .label,
+  .product-block .label {
+    font-size: 0.5rem;
+  }
+
+  .structure-placeholder {
+    width: 60px;
+    height: 60px;
+    font-size: 1.2rem;
+  }
+
   .reaction-equation-area .structure-viewer {
-    max-height: 20px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    max-height: 18px; /* 縦向きで選択肢4つが全て収まるように縮小 */
     width: auto !important;
     max-width: 100% !important;
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 20px; /* 選択肢4つが縦に全て収まるようにさらに縮小 */
+    max-height: 18px; /* 縦向きで選択肢4つが全て収まるように縮小 */
     width: auto !important;
     max-width: 100% !important;
   }
 
-  .reaction-description-area {
-    min-height: 0;
+  .reaction-question-line {
+    gap: 4px;
     margin-bottom: 2px;
   }
 
+  .question-text-inline {
+    font-size: 0.65rem;
+  }
+
+  .reaction-description-area {
+    min-height: 0;
+    margin-bottom: 1px;
+    font-size: 0.6rem;
+    line-height: 1.2;
+  }
+
+  .reaction-description-area p {
+    margin: 0;
+    padding: 2px 0;
+  }
+
   .reaction-options-grid {
-    margin-top: 4px;
+    margin-top: 2px;
   }
 }
 
