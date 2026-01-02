@@ -81,7 +81,12 @@ body {
 /* スマホ向け（横向き） */
 @media screen and (max-width: 767px) and (orientation: landscape) {
   .App {
-    padding: 5px;
+    padding: 0;
+    height: 100vh;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    align-items: stretch;
   }
 }
 
