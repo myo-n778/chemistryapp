@@ -22,8 +22,6 @@ function App() {
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
-  const [isPortrait, setIsPortrait] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   // 初回レンダリング時のデバッグログ
   useEffect(() => {
@@ -132,21 +130,6 @@ function App() {
 
     return filtered;
   };
-
-  // モバイル/タブレット環境で縦向きの場合は回転を促すメッセージを表示（PC環境では表示しない）
-  // ただし、クイズ中（selectedModeとquizSettingsが設定されている）場合は表示しない（状態維持のため）
-  if (isPortrait && isMobile && !selectedMode && !quizSettings) {
-    return (
-      <div className="App orientation-warning">
-        <div className="orientation-message">
-          <div className="orientation-icon">🔄</div>
-          <h2>横向きに回転してください</h2>
-          <p>このアプリは横向き表示に対応しています。</p>
-          <p>デバイスを横向きに回転させてください。</p>
-        </div>
-      </div>
-    );
-  }
 
   if (!selectedCategory) {
     return (
