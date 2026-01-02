@@ -186,7 +186,11 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
+    setPointScore(0);
     setIsFinished(false);
+    setQuestionStartTime(Date.now());
+    setLastQuestionKey(null);
+    setConsecutiveCount(0);
     // パターンを再生成
     setQuestionPatterns(reactions.map(() => Math.floor(Math.random() * 2)));
   };
