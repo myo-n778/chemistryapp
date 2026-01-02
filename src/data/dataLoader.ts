@@ -41,12 +41,12 @@ const fetchWithRetry = async <T>(
   retryDelay: number = 1000
 ): Promise<T> => {
   let lastError: Error | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fetchFn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      if (attempt < maxRetries - 1) {
+      if (attempt < maxRetries) {
         console.warn(`Attempt ${attempt + 1} failed, retrying...`, lastError);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
@@ -56,13 +56,15 @@ const fetchWithRetry = async <T>(
 };
 
 export const loadCompounds = async (category: Category): Promise<Compound[]> => {
-  // キャッシュが有効な場合はそれを返す
+  // キャッシュが有効な場合はそれを返す（ただし、空配列はキャッシュしない）
   if (isCacheValid(compoundCache[category])) {
-    return compoundCache[category]!.data;
+    const cachedData = compoundCache[category]!.data;
+    if (cachedData && cachedData.length > 0) {
+      return cachedData;
+    }
+    // キャッシュが空配列の場合は再取得を試みる
+    compoundCache[category] = null;
   }
-  
-  // キャッシュをクリア
-  compoundCache[category] = null;
 
   // データソースに応じて読み込み方法を切り替え
   if (DATA_SOURCE === 'gas') {
@@ -88,7 +90,7 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
       1000
     );
     if (!response.ok) {
-      throw new Error(`Failed to load ${category}/compounds.csv: ${response.statusText}`);
+      throw new Error(`Failed to load ${category}/compounds.csv: ${response.status} ${response.statusText}`);
     }
 
     const csvText = await response.text();
@@ -100,15 +102,16 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
     // プリセットデータは使用せず、外部データのみを使用
     const compounds = csvToCompounds(csvRows, []);
 
-    if (compounds && Array.isArray(compounds)) {
+    if (compounds && Array.isArray(compounds) && compounds.length > 0) {
       compoundCache[category] = { data: compounds, timestamp: Date.now() };
       return compounds;
     }
-    throw new Error('Failed to parse compounds from CSV');
+    throw new Error('Failed to parse compounds from CSV or empty result');
   } catch (error) {
-    console.warn(`Failed to load compounds from CSV for ${category}:`, error);
-    // フォールバック時もプリセットは使用しない
-    return [];
+    console.error(`Failed to load compounds from CSV for ${category}:`, error);
+    // エラー時はキャッシュをクリアして空配列を返す
+    compoundCache[category] = null;
+    throw error; // エラーを再スローしてApp.tsxでエラー表示させる
   }
 };
 
