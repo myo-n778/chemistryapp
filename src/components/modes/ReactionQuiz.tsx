@@ -117,11 +117,34 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const handleAnswer = (answer: string) => {
     if (showResult) return;
 
+    const isCorrect = answer === correctValue;
+    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
+    
+    // 連続正解カウント（同じ問題（reaction + pattern）が連続で正解した場合のみ）
+    const currentQuestionKey = currentReaction ? `${currentReaction.from}-${currentReaction.to}-${currentPattern}` : '';
+    let newConsecutiveCount = 0;
+    if (isCorrect && lastQuestionKey === currentQuestionKey) {
+      newConsecutiveCount = consecutiveCount + 1;
+      setConsecutiveCount(newConsecutiveCount);
+    } else if (isCorrect) {
+      newConsecutiveCount = 1;
+      setConsecutiveCount(1);
+    } else {
+      setConsecutiveCount(0);
+    }
+    setLastQuestionKey(currentQuestionKey);
+    
+    // スコア計算（得点表示モード）
+    if (isCorrect) {
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount);
+      setPointScore(prev => prev + points);
+    }
+
     setSelectedAnswer(answer);
     setShowResult(true);
     setTotalAnswered(prev => prev + 1);
 
-    if (answer === correctValue) {
+    if (isCorrect) {
       setScore(prev => prev + 1);
     }
   };
