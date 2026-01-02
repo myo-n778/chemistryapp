@@ -138,7 +138,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     );
   };
 
-  const bondsToRender = structure.bonds.flatMap((bond, idx) => {
+  const bondsToRender = structure.bonds.flatMap((bond) => {
     if (bond.type === 'single') {
       return [renderBond(bond, 0)];
     } else if (bond.type === 'double') {
@@ -166,7 +166,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         }}
       >
         {structure.atoms
-          .filter(atom => {
+          .filter(() => {
             // 水素原子の表示ルール:
             // 1. スプレッドシートのデータにある場合は表示する
             // (以前のベンゼン環で一律非表示にするロジックを削除)

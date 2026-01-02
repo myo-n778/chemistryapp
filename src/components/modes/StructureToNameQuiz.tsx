@@ -4,7 +4,6 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { ProgressBar } from '../shared/ProgressBar';
-import { ResultMessage } from '../shared/ResultMessage';
 import '../Quiz.css';
 
 interface StructureToNameQuizProps {

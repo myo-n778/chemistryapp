@@ -3,7 +3,6 @@ import { Category } from '../components/CategorySelector';
 import { GAS_URLS } from '../config/dataSource';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
-import { compounds as defaultOrganicCompounds } from './compounds';
 
 /**
  * GASから化合物データを取得
