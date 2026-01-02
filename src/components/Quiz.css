@@ -497,7 +497,7 @@
 @media screen and (max-width: 767px) and (orientation: landscape) {
   .quiz-container {
     padding: 2px;
-    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -556,11 +556,11 @@
   }
 
   .structure-container .structure-viewer {
-    max-height: 80px;
+    max-height: 60px;
   }
 
   .structure-container .structure-viewer svg {
-    max-height: 80px;
+    max-height: 60px;
   }
 
   .question-english {
@@ -623,6 +623,41 @@
     max-height: 50px;
   }
 
+  /* モード③（CompoundTypeQuiz）用：スマホ横向き時も横並びレイアウト */
+  .compound-type-mobile-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper {
+    flex-shrink: 0;
+    width: 45%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer {
+    max-height: 80px;
+    width: 100%;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer svg {
+    max-height: 80px;
+  }
+
+  .compound-type-mobile-layout .options-grid-compact {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    grid-template-columns: none !important;
+    margin-top: 0;
+  }
+
   .quiz-progress span {
     font-size: 0.65rem;
   }
@@ -632,7 +667,7 @@
 @media screen and (max-width: 767px) and (orientation: portrait) {
   .quiz-container {
     padding: 2px;
-    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -691,11 +726,11 @@
   }
 
   .structure-container .structure-viewer {
-    max-height: 80px;
+    max-height: 60px;
   }
 
   .structure-container .structure-viewer svg {
-    max-height: 80px;
+    max-height: 60px;
   }
 
   .question-english {
@@ -760,6 +795,41 @@
 
   .option-button-structure .structure-viewer svg {
     max-height: 50px;
+  }
+
+  /* モード③（CompoundTypeQuiz）用：スマホ縦向き時も横並びレイアウト */
+  .compound-type-mobile-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper {
+    flex-shrink: 0;
+    width: 45%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer {
+    max-height: 100px;
+    width: 100%;
+  }
+
+  .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer svg {
+    max-height: 100px;
+  }
+
+  .compound-type-mobile-layout .options-grid-compact {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    grid-template-columns: none !important;
+    margin-top: 0;
   }
 }
 
@@ -1027,11 +1097,11 @@
   }
 
   .reaction-equation-area .structure-viewer {
-    max-height: 70px;
+    max-height: 50px;
   }
 
   .reaction-equation-area .structure-viewer svg {
-    max-height: 70px;
+    max-height: 50px;
   }
 
   .reaction-description-area {

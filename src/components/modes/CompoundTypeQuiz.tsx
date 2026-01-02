@@ -250,30 +250,34 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
                 )}
               </div>
             </div>
-            <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />
-            <div className="options-grid-compact">
-              {sortedTypes.map((option) => {
-                const isSelected = selectedAnswer === option;
-                const isCorrect = option === correctType;
-                const showCorrect = showResult && isCorrect;
-                const showIncorrect = showResult && isSelected && !isCorrect;
+            <div className="compound-type-mobile-layout">
+              <div className="structure-viewer-wrapper">
+                <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />
+              </div>
+              <div className="options-grid-compact">
+                {sortedTypes.map((option) => {
+                  const isSelected = selectedAnswer === option;
+                  const isCorrect = option === correctType;
+                  const showCorrect = showResult && isCorrect;
+                  const showIncorrect = showResult && isSelected && !isCorrect;
 
-                return (
-                  <button
-                    key={option}
-                    className={`option-button-compact ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAnswer(option);
-                    }}
-                    disabled={showResult}
-                  >
-                    <span className="option-text-small">{option}</span>
-                    {showCorrect && <span className="result-icon-small">✓</span>}
-                    {showIncorrect && <span className="result-icon-small">✗</span>}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={option}
+                      className={`option-button-compact ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAnswer(option);
+                      }}
+                      disabled={showResult}
+                    >
+                      <span className="option-text-small">{option}</span>
+                      {showCorrect && <span className="result-icon-small">✓</span>}
+                      {showIncorrect && <span className="result-icon-small">✗</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
