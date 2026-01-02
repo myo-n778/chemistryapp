@@ -28,43 +28,6 @@ function App() {
     console.log('App component mounted');
   }, []);
 
-  // モバイル/タブレット環境かどうかを検出
-  useEffect(() => {
-    const checkDevice = () => {
-      // 画面幅が1024px以下、またはタッチデバイスの場合をモバイル/タブレットとする
-      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isSmallScreen = window.innerWidth <= 1024;
-      setIsMobile(hasTouch || isSmallScreen);
-    };
-
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-
-    return () => {
-      window.removeEventListener('resize', checkDevice);
-    };
-  }, []);
-
-  // 画面の向きを検出
-  useEffect(() => {
-    const checkOrientation = () => {
-      const isPortraitMode = window.innerHeight > window.innerWidth;
-      setIsPortrait(isPortraitMode);
-    };
-
-    // 初回チェック
-    checkOrientation();
-
-    // リサイズと向き変更を監視
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
-
   useEffect(() => {
     if (selectedCategory) {
       setLoading(true);
