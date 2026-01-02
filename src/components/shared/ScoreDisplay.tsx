@@ -1,4 +1,5 @@
 import React from 'react';
+import { getHighScore } from '../../utils/scoreCalculator';
 import './ScoreDisplay.css';
 
 interface ScoreDisplayProps {
@@ -9,9 +10,12 @@ interface ScoreDisplayProps {
 }
 
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, totalAnswered, pointScore, showPoints }) => {
+  const highScore = showPoints ? getHighScore() : 0;
+  
   if (showPoints && pointScore !== undefined) {
     return (
       <span className="score-display">
+        <span className="top-score-text">TOP SCORE: {highScore.toLocaleString()}</span>
         <span className="score-text">得点: {pointScore.toLocaleString()}</span>
         <span className="percentage">
           (正解: {score}/{totalAnswered})

@@ -1,16 +1,19 @@
 import React from 'react';
 import { ScoreDisplay } from './ScoreDisplay';
+import { getHighScore } from '../../utils/scoreCalculator';
 import './QuizSummary.css';
 
 interface QuizSummaryProps {
     score: number;
     total: number;
+    pointScore: number;
     onRestart: () => void;
     onBack: () => void;
 }
 
-export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, onRestart, onBack }) => {
+export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore, onRestart, onBack }) => {
     const percentage = Math.round((score / total) * 100);
+    const highScore = getHighScore();
 
     let message = 'お疲れ様でした！';
     if (percentage === 100) message = '全問正解！素晴らしい！';
@@ -22,9 +25,22 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, onRestar
             <div className="quiz-summary-card">
                 <h2>クイズ結果</h2>
                 <div className="summary-score-large">
-                    <ScoreDisplay score={score} totalAnswered={total} />
+                    <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} />
                 </div>
                 <div className="summary-percentage">{percentage}% 正解</div>
+                
+                {/* ランキング表示 */}
+                <div className="summary-ranking">
+                    <div className="ranking-row">
+                        <span className="ranking-label">今回スコア:</span>
+                        <span className="ranking-value">{pointScore.toLocaleString()}</span>
+                    </div>
+                    <div className="ranking-row">
+                        <span className="ranking-label">TOP SCORE:</span>
+                        <span className="ranking-value highlight">{highScore.toLocaleString()}</span>
+                    </div>
+                </div>
+                
                 <p className="summary-message">{message}</p>
 
                 <div className="summary-buttons">

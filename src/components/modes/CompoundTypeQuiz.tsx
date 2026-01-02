@@ -10,6 +10,7 @@ interface CompoundTypeQuizProps {
   compounds: Compound[];
   allCompounds: Compound[];
   onBack: () => void;
+  isShuffleMode?: boolean;
 }
 
 // 種類の表記をインテリジェントに集約・正規化する関数
@@ -66,7 +67,7 @@ const PREFERRED_TYPE_ORDER = [
   '芳香族化合物', '油脂', '高分子化合物' // 集約されたカテゴリ
 ];
 
-export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, onBack }) => {
+export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, onBack, isShuffleMode = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);

@@ -83,7 +83,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     
     // スコア計算（得点表示モード）
     if (isCorrect) {
-      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount);
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
       setPointScore(prev => prev + points);
     }
 
