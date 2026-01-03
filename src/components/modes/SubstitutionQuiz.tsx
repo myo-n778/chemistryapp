@@ -69,8 +69,10 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     );
   }
 
-  const fromCompound = compounds.find(c => c.name === currentReaction.from);
-  const toCompound = compounds.find(c => c.name === currentReaction.to);
+  // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
+  const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
+  const fromCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.from));
+  const toCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.to));
   
   if (!fromCompound || !toCompound) {
     return (
