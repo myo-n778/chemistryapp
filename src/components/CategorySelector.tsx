@@ -11,7 +11,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelectCate
   return (
     <div className="category-selector">
       <h1>Chemistry Drill</h1>
-      <p className="category-description">カテゴリを選択してください</p>
+      <p className="category-description">Please select a category</p>
       <div className="category-grid">
         <button 
           className="category-button"
