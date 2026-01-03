@@ -4,7 +4,7 @@ import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
-import { loadCompounds } from './data/dataLoader';
+import { loadCompounds, loadReactions } from './data/dataLoader';
 import { Compound } from './types';
 import './App.css';
 
@@ -22,6 +22,7 @@ function App() {
   const [selectedMode, setSelectedMode] = useState<QuizMode | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
   const [compounds, setCompounds] = useState<Compound[]>([]);
+  const [reactions, setReactions] = useState<number>(0); // モード④⑤用のreactions数
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -59,12 +60,26 @@ function App() {
 
           // setCompoundsには全データを渡す（構造式がなくても名前検索に使うため）
           setCompounds(data);
-          setLoading(false);
-          setLoadingError(null);
+          
+          // モード④⑤用にreactionsデータも読み込む
+          loadReactions(selectedCategory)
+            .then(reactionsData => {
+              console.log(`App.tsx: Loaded ${reactionsData.length} reactions`);
+              setReactions(reactionsData.length);
+              setLoading(false);
+              setLoadingError(null);
+            })
+            .catch(error => {
+              console.error('Failed to load reactions:', error);
+              setReactions(0);
+              setLoading(false);
+              setLoadingError(null); // reactionsの読み込み失敗は致命的ではない
+            });
         })
         .catch(error => {
           console.error('Failed to load compounds:', error);
           setCompounds([]);
+          setReactions(0);
           setLoading(false);
           const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
           setLoadingError(errorMessage);
@@ -72,6 +87,7 @@ function App() {
     } else {
       // カテゴリが未選択の場合は状態をリセット
       setCompounds([]);
+      setReactions(0);
       setLoading(false);
       setLoadingError(null);
     }
@@ -207,11 +223,14 @@ function App() {
     );
   }
 
+  // モード④⑤の場合はreactions数を使用、それ以外はcompounds数を使用
+  const totalQuestionCount = (selectedMode === 'reaction' || selectedMode === 'substitution') ? reactions : compounds.length;
+
   if (!quizSettings) {
     return (
       <div className="App">
         <QuestionCountSelector
-          totalCount={compounds.length}
+          totalCount={totalQuestionCount}
           onSelectSettings={setQuizSettings}
           onBack={() => setSelectedMode(null)}
         />
@@ -224,7 +243,7 @@ function App() {
     return (
       <div className="App">
         <AllQuestionCountSelector
-          totalCount={compounds.length}
+          totalCount={totalQuestionCount}
           orderMode={quizSettings.orderMode || 'sequential'}
           onSelectCount={(count) => {
             // countがundefinedの場合は全件を意味するので、nullを設定してクイズを開始

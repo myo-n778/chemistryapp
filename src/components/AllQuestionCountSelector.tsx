@@ -14,7 +14,10 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
   onBack,
   orderMode 
 }) => {
-  const options = [10, 20, 30, 40];
+  // 35問以下の場合は適切な選択肢を表示（35問も含める）
+  const baseOptions = [10, 20, 30];
+  const additionalOptions = totalCount <= 35 && totalCount > 30 ? [totalCount] : totalCount > 35 ? [40] : [];
+  const options = [...baseOptions, ...additionalOptions];
   const availableOptions = options.filter(count => count <= totalCount);
   
   const handleSelect = (count: number | undefined) => {

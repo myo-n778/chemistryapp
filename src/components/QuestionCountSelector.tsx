@@ -102,12 +102,14 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
         >
           20ずつ
         </button>
-        <button
-          className={`mode-button ${expandedMode === 'batch-40' ? 'expanded' : ''}`}
-          onClick={() => handleModeSelect('batch-40')}
-        >
-          40ずつ
-        </button>
+        {totalCount > 30 && (
+          <button
+            className={`mode-button ${expandedMode === 'batch-40' ? 'expanded' : ''}`}
+            onClick={() => handleModeSelect('batch-40')}
+          >
+            40ずつ
+          </button>
+        )}
       </div>
 
       {/* 範囲選択の展開表示 */}
