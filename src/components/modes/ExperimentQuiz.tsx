@@ -111,6 +111,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
     const isCorrect = selectedOption === currentExperiment.correctAnswer;
     const currentQuestionKey = `${currentExperiment.question}-${currentIndex}`;
+    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
 
     // 連続正解数の計算
     let newConsecutiveCount = 0;
@@ -127,13 +128,19 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
       setLastQuestionId(null);
     }
 
-    const timeSpent = Date.now() - questionStartTime;
-    const newScore = calculateScore(isCorrect, timeSpent, newConsecutiveCount);
-    const newTotalAnswered = totalAnswered + 1;
+    // スコア計算（得点表示モード）- 他のモードと同じ方法
+    if (isCorrect) {
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
+      setPointScore(prev => prev + points);
+    }
 
-    setScore(score + newScore);
-    setTotalAnswered(newTotalAnswered);
+    setSelectedAnswer(selectedOption);
+    setShowResult(true);
+    setTotalAnswered(prev => prev + 1);
 
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+    }
 
     setTimeout(() => {
       isProcessingRef.current = false;
@@ -142,26 +149,46 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
   const handleNext = () => {
     if (isProcessingRef.current) return;
-
-    if (totalAnswered >= maxQuestions) {
-      // クイズ終了
+    isProcessingRef.current = true;
+    
+    const getModeAndRangeKey = () => {
       const mode = `experiment-${category}`;
-      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
         ? getRangeKey('batch-10', quizSettings.startIndex)
         : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
         ? getRangeKey('batch-20', quizSettings.startIndex)
         : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
         ? getRangeKey('batch-40', quizSettings.startIndex)
         : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+
+    // 範囲内の問題数に合わせて終了判定
+    if (totalAnswered >= maxQuestions) {
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
-    } else {
-      // 次の問題へ
-      setCurrentIndex((prev) => prev + 1);
+    } else if (currentIndex < filteredExperiments.length - 1) {
+      setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
       setQuestionStartTime(Date.now());
+      // 次の問題が異なる場合は連続カウントをリセット
+      const nextExperiment = filteredExperiments[currentIndex + 1];
+      if (nextExperiment && `${nextExperiment.question}-${currentIndex + 1}` !== lastQuestionId) {
+        setConsecutiveCount(0);
+      }
+    } else {
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const { mode, rangeKey } = getModeAndRangeKey();
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      setIsFinished(true);
     }
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 300);
   };
 
   // quizSettings.startIndexが変更された時（Next押下時）に状態をリセット
@@ -180,13 +207,64 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     }
   }, [quizSettings?.startIndex]);
 
-  // スコア計算（pointScore更新）
+  // Enterキー、スペースキーで次に進む
   useEffect(() => {
-    if (totalAnswered > 0) {
-      const newPointScore = Math.round((score / totalAnswered) * 100);
-      setPointScore(newPointScore);
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && showResult) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showResult, currentIndex, filteredExperiments.length]);
+
+  // ダブルタップ検出用
+  const lastTapRef = useRef<number>(0);
+  const tapTimeoutRef = useRef<number | null>(null);
+
+  // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）
+  const handleContentClick = (e: React.MouseEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
+      if (!target.closest('button') && !target.closest('a')) {
+        // PCの場合はシングルクリックで進む
+        handleNext();
+      }
     }
-  }, [score, totalAnswered]);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button') && !target.closest('a')) {
+        e.preventDefault();
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapRef.current;
+        
+        // 300ms以内に2回タップされたらダブルタップとみなす
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          if (tapTimeoutRef.current !== null) {
+            window.clearTimeout(tapTimeoutRef.current);
+            tapTimeoutRef.current = null;
+          }
+          lastTapRef.current = 0;
+          handleNext();
+        } else {
+          // シングルタップの可能性があるので、タイムアウトを設定
+          lastTapRef.current = now;
+          if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+          }
+          tapTimeoutRef.current = window.setTimeout(() => {
+            lastTapRef.current = 0;
+          }, 300) as unknown as number;
+        }
+      }
+    }
+  };
 
   // クイズ終了時の処理
   if (isFinished) {
@@ -279,6 +357,14 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
           <div className="reaction-progress-inline">
             <div className="progress-text-wrapper">
               <span className="progress-text">問題 {currentIndex + 1} / {filteredExperiments.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / filteredExperiments.length) * 100}%` }}></div>
             </div>
           </div>
         </div>
@@ -290,7 +376,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         />
       </div>
 
-      <div className="quiz-content">
+      <div className="quiz-content" onClick={handleContentClick} onTouchEnd={handleTouchEnd} style={{ cursor: showResult ? 'pointer' : 'default' }}>
         <div className="question-section">
           <h2 className="question-text">{currentExperiment.question}</h2>
         </div>
@@ -338,9 +424,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
                 <div className="explanation-text">{currentExperiment.explanation}</div>
               </div>
             )}
-            <button className="next-button" onClick={handleNext}>
-              Next
-            </button>
           </div>
         )}
       </div>
