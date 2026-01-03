@@ -161,7 +161,9 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
         <div className="range-selection-container">
           <div className="start-index-grid">
             {ranges10.map(range => {
+              console.log('[QuestionCountSelector] rendering range', range, { mode, category });
               const history = getRangeHistory('batch-10', range.start);
+              console.log('[QuestionCountSelector] history for range', range, history);
               return (
                 <button
                   key={range.start}
