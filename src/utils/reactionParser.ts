@@ -46,9 +46,12 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
     // from または to が空の場合は有効なデータではないとみなす
     if (row.from && row.to) {
       rows.push(row);
+    } else {
+      console.log(`[reactionParser] Skipped row ${i + 1}: from="${row.from}", to="${row.to}"`);
     }
   }
 
+  console.log(`[reactionParser] Parsed ${rows.length} valid reactions from ${lines.length - 1} CSV lines`);
   return rows;
 };
 

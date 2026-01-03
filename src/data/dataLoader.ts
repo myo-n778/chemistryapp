@@ -168,6 +168,7 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
     const reactions = parseReactionCSV(csvText);
 
     if (reactions && Array.isArray(reactions)) {
+      console.log(`[dataLoader] Loaded ${reactions.length} reactions for ${category}`);
       reactionCache[category] = { data: reactions, timestamp: Date.now() };
       return reactions;
     }
