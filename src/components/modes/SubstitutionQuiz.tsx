@@ -36,12 +36,17 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
+    console.log(`Loading reactions for category: ${category}`);
     loadReactions(category).then(data => {
+      console.log(`Loaded ${data.length} reactions:`, data);
       // シャッフルモードの場合は順序をランダムに
       const shuffledData = isShuffleMode ? [...data].sort(() => Math.random() - 0.5) : data;
       setReactions(shuffledData);
       setLoading(false);
       setQuestionStartTime(Date.now());
+    }).catch(err => {
+      console.error("Failed to load reactions:", err);
+      setLoading(false);
     });
   }, [category, isShuffleMode]);
 
