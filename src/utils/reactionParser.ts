@@ -35,9 +35,10 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
     const reagent = clean(values[2]);
     const to = clean(values[3]);
 
-    // ゴミデータ対策: reagentやtoが無効なら行全体をスキップ
-    if (isGarbage(reagent) || isGarbage(to)) {
-      console.log(`[reactionParser] Skipped row ${i + 1}: garbage data (reagent="${reagent}", to="${to}")`);
+    // ゴミデータ対策: reagentが無効なら行全体をスキップ
+    // toは化合物名なので、数字のみでも有効な可能性がある（例: "1-ブロモエタン"の略記など）
+    if (isGarbage(reagent)) {
+      console.log(`[reactionParser] Skipped row ${i + 1}: garbage reagent data (reagent="${reagent}")`);
       continue;
     }
 
