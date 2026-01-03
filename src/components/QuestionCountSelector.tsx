@@ -72,11 +72,20 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
     
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey(questionCountMode, startIndex);
-    console.log('[getRangeHistory]', { modeKey, rangeKey, questionCountMode, startIndex });
-    const history = getScoreHistory(modeKey, rangeKey);
-    console.log('[getRangeHistory] history', history);
+    const storageKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
+    console.log('[getRangeHistory]', { modeKey, rangeKey, storageKey, questionCountMode, startIndex });
     
-    if (history.length === 0) return null;
+    // localStorageから直接確認
+    const rawData = localStorage.getItem(storageKey);
+    console.log('[getRangeHistory] raw localStorage data', rawData);
+    
+    const history = getScoreHistory(modeKey, rangeKey);
+    console.log('[getRangeHistory] history from getScoreHistory', history);
+    
+    if (history.length === 0) {
+      console.log('[getRangeHistory] history is empty, returning null');
+      return null;
+    }
     
     // 最新の日付を取得
     const latestDate = new Date(history[0].date);
