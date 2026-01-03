@@ -88,13 +88,15 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     if (isCorrect && lastQuestionId === currentQuestionId) {
       newConsecutiveCount = consecutiveCount + 1;
       setConsecutiveCount(newConsecutiveCount);
+      setLastQuestionId(currentQuestionId); // 正解した場合のみ更新
     } else if (isCorrect) {
       newConsecutiveCount = 1;
       setConsecutiveCount(1);
+      setLastQuestionId(currentQuestionId); // 正解した場合のみ更新
     } else {
       setConsecutiveCount(0);
+      setLastQuestionId(null); // 間違えた場合はリセット
     }
-    setLastQuestionId(currentQuestionId);
     
     // スコア計算（得点表示モード）
     if (isCorrect) {
@@ -239,7 +241,17 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
       <div className="quiz-header">
         <h1>有機化学Drill</h1>
         <div className="quiz-header-right">
-          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
+          <span className="score-text">{(() => {
+            const mode = `structure-to-name-${category}`;
+            const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+              ? getRangeKey('batch-10', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+              ? getRangeKey('batch-20', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+              ? getRangeKey('batch-40', quizSettings.startIndex)
+              : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+            return <ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} mode={mode} rangeKey={rangeKey} />;
+          })()}</span>
           <div className="quiz-header-buttons">
             <button className="back-button" onClick={onBack}>
               return

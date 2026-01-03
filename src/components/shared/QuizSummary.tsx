@@ -82,7 +82,7 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                 <h2>Result</h2>
                 <div className="summary-score-large">
                     {pointScore > 0 ? (
-                        <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} />
+                        <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} mode={mode} rangeKey={rangeKey} />
                     ) : (
                         <ScoreDisplay score={score} totalAnswered={total} />
                     )}

@@ -131,13 +131,15 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     if (isCorrect && lastQuestionKey === currentQuestionKey) {
       newConsecutiveCount = consecutiveCount + 1;
       setConsecutiveCount(newConsecutiveCount);
+      setLastQuestionKey(currentQuestionKey); // 正解した場合のみ更新
     } else if (isCorrect) {
       newConsecutiveCount = 1;
       setConsecutiveCount(1);
+      setLastQuestionKey(currentQuestionKey); // 正解した場合のみ更新
     } else {
       setConsecutiveCount(0);
+      setLastQuestionKey(null); // 間違えた場合はリセット
     }
-    setLastQuestionKey(currentQuestionKey);
     
     // スコア計算（得点表示モード）
     if (isCorrect) {
