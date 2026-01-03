@@ -13,7 +13,7 @@ interface CompoundTypeQuizProps {
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
-  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  quizSettings?: { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
   totalCount?: number;
   onNextRange?: () => void;
 }
