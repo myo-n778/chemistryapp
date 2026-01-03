@@ -22,6 +22,7 @@ interface QuestionCountSelectorProps {
 }
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
+  console.log('[QuestionCountSelector] props', { mode, category, totalCount });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
