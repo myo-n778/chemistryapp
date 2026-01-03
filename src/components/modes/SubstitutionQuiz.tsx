@@ -3,7 +3,6 @@ import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
-import { ResultMessage } from '../shared/ResultMessage';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
@@ -31,9 +30,11 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const [isFinished, setIsFinished] = useState(false);
   const [pointScore, setPointScore] = useState(0); // 得点表示モード用
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
-  const [lastQuestionKey, setLastQuestionKey] = useState<string | null>(null);
+  const [lastQuestionKey, setLastQuestionKey] = useState<string | null>(null); // 問題IDの代わりにreactionのキーを使用
   const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
+  const lastTapRef = useRef<number>(0);
+  const tapTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     console.log(`Loading reactions for category: ${category}`);
@@ -50,41 +51,25 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     });
   }, [category, isShuffleMode]);
 
+  // キーボード操作のサポート
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showResult && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showResult, currentIndex, reactions.length]);
+
   const currentReaction = reactions[currentIndex];
-  
-  if (loading) {
-    return (
-      <div className="quiz-container">
-        <p style={{ color: '#ffffff' }}>データを読み込んでいます...</p>
-      </div>
-    );
-  }
 
-  if (!currentReaction || reactions.length === 0) {
-    return (
-      <div className="quiz-container">
-        <p style={{ color: '#ffffff' }}>反応データがありません</p>
-        <button className="back-button" onClick={onBack}>モード選択に戻る</button>
-      </div>
-    );
-  }
-
-  // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
-  const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
-  const fromCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.from));
-  const toCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.to));
-  
-  if (!fromCompound || !toCompound) {
-    return (
-      <div className="quiz-container">
-        <p>データが不足しています</p>
-        <button className="back-button" onClick={onBack}>モード選択に戻る</button>
-      </div>
-    );
-  }
-
-  // reagentを答える選択肢を生成
+  // 選択肢の生成（常にreagentを答える）
   const options = useMemo(() => {
+    if (loading || reactions.length === 0 || !currentReaction || isFinished) return [];
+
+    // 試薬reagentを答える
     const correctReagent = currentReaction.reagent;
     const allReagents = Array.from(new Set(reactions.map(r => r.reagent))).filter(r => r !== '');
     const wrongReagents = allReagents
@@ -92,11 +77,37 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       .sort(() => Math.random() - 0.5)
       .slice(0, 3);
     return [correctReagent, ...wrongReagents].sort(() => Math.random() - 0.5);
-  }, [currentIndex, reactions, currentReaction]);
+  }, [currentIndex, reactions, isFinished, loading, currentReaction]);
+
+  // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
+  const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
+  const fromCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.from));
+  const toCompound = compounds.find(c => c?.name && cleanString(c.name) === cleanString(currentReaction?.to));
+
+  // デバッグ: なぜtoCompoundが見つからないのか調査
+  if (currentReaction && !toCompound) {
+    console.log('=== DEBUG: toCompound NOT FOUND ===');
+    console.log('Looking for (raw):', currentReaction.to);
+    console.log('Looking for (cleaned):', cleanString(currentReaction.to));
+
+    // 文字コードを比較
+    const targetChars = [...cleanString(currentReaction.to)].map(c => c.charCodeAt(0));
+    console.log('Target char codes:', targetChars);
+
+    // 同じ名前っぽいものを探す（「クロロメタン」を含むもの）
+    const similarCompounds = compounds.filter(c => c.name.includes('クロロ') || c.name.includes('メタン'));
+    console.log('Similar compounds:', similarCompounds.map(c => ({
+      name: c.name,
+      cleaned: cleanString(c.name),
+      charCodes: [...cleanString(c.name)].map(ch => ch.charCodeAt(0))
+    })));
+  }
+  const correctValue = currentReaction?.reagent;
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
-    const isCorrect = answer === currentReaction.reagent;
+
+    const isCorrect = answer === correctValue;
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     
     // 連続正解カウント（同じ問題が連続で正解した場合のみ）
@@ -120,10 +131,11 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
       setPointScore(prev => prev + points);
     }
-    
+
     setSelectedAnswer(answer);
     setShowResult(true);
     setTotalAnswered(prev => prev + 1);
+
     if (isCorrect) {
       setScore(prev => prev + 1);
     }
@@ -166,8 +178,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
-    }
-    
+    }    
     setTimeout(() => {
       isProcessingRef.current = false;
     }, 300);
@@ -184,40 +195,99 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     setQuestionStartTime(Date.now());
     setLastQuestionKey(null);
     setConsecutiveCount(0);
-    // シャッフルモードの場合は再シャッフル
-    if (isShuffleMode && reactions.length > 0) {
-      const shuffledData = [...reactions].sort(() => Math.random() - 0.5);
-      setReactions(shuffledData);
-    }
   };
 
-  // Enterキー、スペースキーで次に進む
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Enter' || e.key === ' ') && showResult) {
-        e.preventDefault();
-        handleNext();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showResult, currentIndex, reactions.length]);
-
-  // 画面全体をクリック/タップで次に進む
+  // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）
   const handleContentClick = (e: React.MouseEvent) => {
     if (showResult && !isProcessingRef.current) {
       const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
       if (!target.closest('button') && !target.closest('a')) {
+        // PCの場合はシングルクリックで進む
         handleNext();
       }
     }
   };
 
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button') && !target.closest('a')) {
+        e.preventDefault();
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapRef.current;
+        
+        // 300ms以内に2回タップされたらダブルタップとみなす
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          if (tapTimeoutRef.current !== null) {
+            window.clearTimeout(tapTimeoutRef.current);
+            tapTimeoutRef.current = null;
+          }
+          lastTapRef.current = 0;
+          handleNext();
+        } else {
+          // シングルタップの可能性があるので、タイムアウトを設定
+          lastTapRef.current = now;
+          if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+          }
+          tapTimeoutRef.current = window.setTimeout(() => {
+            lastTapRef.current = 0;
+          }, 300) as unknown as number;
+        }
+      }
+    }
+  };
+
+  // 表示ロジックの分岐（Hooksの後）
+  if (loading) {
+    return (
+      <div className="quiz-container">
+        <div className="quiz-header"><h1>Organic Chemistry Drill</h1></div>
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p>データを読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (reactions.length === 0) {
+    return (
+      <div className="quiz-container">
+        <div className="quiz-header"><h1>Organic Chemistry Drill</h1></div>
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p>反応データが見つかりませんでした。</p>
+          <p>スプレッドシートの「reactions」シートにデータがあるか確認してください。</p>
+          <button className="back-button" onClick={onBack} style={{ marginTop: '20px' }}>戻る</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isFinished) {
+    const mode = `substitution-${category}`;
+    const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+      ? getRangeKey('batch-10', quizSettings.startIndex)
+      : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+      ? getRangeKey('batch-20', quizSettings.startIndex)
+      : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+      ? getRangeKey('batch-40', quizSettings.startIndex)
+      : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+    return (
+      <QuizSummary
+        score={score}
+        total={totalAnswered}
+        pointScore={pointScore}
+        onRestart={handleReset}
+        onBack={onBack}
+        mode={mode}
+        rangeKey={rangeKey}
+      />
+    );
+  }
+
   return (
-    <div className="quiz-container">
+    <div className="quiz-container" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={handleTouchEnd}>
       <div className="quiz-header">
         <h1>Organic Chemistry Drill</h1>
         <div className="quiz-header-right">
@@ -255,102 +325,84 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
           </div>
         </div>
       </div>
-
-      <div className="quiz-content" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={(e) => {
-        if (showResult && !isProcessingRef.current) {
-          const target = e.target as HTMLElement;
-          if (!target.closest('button') && !target.closest('a')) {
-            e.preventDefault();
-            handleNext();
-          }
-        }
-      }}>
-        <div className="structure-container">
-          <h2>この反応で、何をしたか？</h2>
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>From</div>
-              {fromCompound && (
-                <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} />
-              )}
-              <div style={{ marginTop: '10px' }}>{currentReaction.from}</div>
-            </div>
-            <div style={{ fontSize: '2rem' }}>→</div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>To</div>
-              {toCompound && (
-                <StructureViewer structure={toCompound.structure} compoundName={toCompound.name} />
-              )}
-              <div style={{ marginTop: '10px' }}>{currentReaction.to}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="options-container">
-          {options.map((option) => {
-            const isSelected = selectedAnswer === option;
-            const isCorrect = option === currentReaction.reagent;
-            const showCorrect = showResult && isCorrect;
-            const showIncorrect = showResult && isSelected && !isCorrect;
-
-            return (
-              <button
-                key={option}
-                className={`option-button ${
-                  showCorrect ? 'correct' : ''
-                } ${
-                  showIncorrect ? 'incorrect' : ''
-                } ${isSelected ? 'selected' : ''}`}
-                onClick={() => handleAnswer(option)}
-                disabled={showResult}
-              >
-                {option}
-                {showCorrect && <span className="result-icon">✓</span>}
-                {showIncorrect && <span className="result-icon">✗</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {showResult && (
-          <>
-            {selectedAnswer === currentReaction.reagent && currentReaction.description && (
-              <div style={{ textAlign: 'center', color: '#ffa500', fontSize: '1rem', padding: '15px', marginTop: '20px' }}>
-                {currentReaction.description}
+        <div className="reaction-quiz-wrapper">
+          {/* 質問文エリア - 余白を最小に */}
+          <div className="reaction-question-line">
+            <span className="question-text-inline">
+              この反応で、何をしたか？
+            </span>
+            {showResult && (
+              <div className="result-action-inline">
+                <span className={selectedAnswer === correctValue ? "result-correct" : "result-incorrect"}>
+                  {selectedAnswer === correctValue ? "✓ Correct!" : "✗ Wrong"}
+                </span>
               </div>
             )}
-            <ResultMessage
-              isCorrect={selectedAnswer === currentReaction.reagent}
-              correctAnswer={currentReaction.reagent}
-              onNext={handleNext}
-              isLast={currentIndex >= reactions.length - 1}
-            />
-          </>
-        )}
-      </div>
+          </div>
 
-      {isFinished && (() => {
-        const mode = `substitution-${category}`;
-        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
-          ? getRangeKey('batch-10', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-          ? getRangeKey('batch-20', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-          ? getRangeKey('batch-40', quizSettings.startIndex)
-          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
-        return (
-          <QuizSummary
-            score={score}
-            total={totalAnswered}
-            pointScore={pointScore}
-            onRestart={handleReset}
-            onBack={onBack}
-            mode={mode}
-            rangeKey={rangeKey}
-          />
-        );
-      })()}
+          {/* 説明文を正解時に表示 */}
+          <div className="reaction-description-area">
+            {currentReaction.description && showResult && selectedAnswer === correctValue ? (
+              <p>{currentReaction.description}</p>
+            ) : (
+              <p className="description-placeholder">&nbsp;</p>
+            )}
+          </div>
+
+          <div className="reaction-equation-area">
+            <div className="reactant-block">
+              <span className="label">Reactant</span>
+              <div className="name-box">{currentReaction.from}</div>
+              {fromCompound && <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} size={200} />}
+            </div>
+
+            <div className="arrow-block">
+              <div className="reagent-box">
+                {!showResult ? <span className="placeholder">?</span> : currentReaction.reagent}
+              </div>
+              <div className="reaction-arrow">→</div>
+            </div>
+
+            <div className="product-block">
+              <span className="label">Product</span>
+              <div className="name-box">
+                {currentReaction.to}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {toCompound ? (
+                  <StructureViewer structure={toCompound.structure} compoundName={toCompound.name} size={200} />
+                ) : (
+                  <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
+                    {/* 図が見つからない場合のフォールバック */}
+                    (NO IMAGE: {currentReaction.to})
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="options-container reaction-options-grid">
+            {options.map((option) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrect = option === correctValue;
+              const showCorrect = showResult && isCorrect;
+              const showIncorrect = showResult && isSelected && !isCorrect;
+
+              return (
+                <button
+                  key={option}
+                  className={`option-button ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); handleAnswer(option); }}
+                  disabled={showResult}
+                >
+                  {option}
+                  {showCorrect && <span className="result-icon">✓</span>}
+                  {showIncorrect && <span className="result-icon">✗</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
     </div>
   );
 };
-
