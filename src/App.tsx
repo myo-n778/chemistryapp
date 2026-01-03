@@ -14,7 +14,7 @@ export interface QuizSettings {
   questionCountMode: QuestionCountMode;
   orderMode?: OrderMode; // Allモードの場合のみ
   startIndex?: number; // 10ずつモードの場合のみ（1-indexed）
-  allQuestionCount?: number; // ALLモードの場合の解く問題数
+  allQuestionCount?: number | null; // ALLモードの場合の解く問題数（nullは全部を意味する）
 }
 
 function App() {
@@ -204,9 +204,10 @@ function App() {
           totalCount={compounds.length}
           orderMode={quizSettings.orderMode || 'sequential'}
           onSelectCount={(count) => {
+            // countがundefinedの場合は全件を意味するので、nullを設定してクイズを開始
             setQuizSettings({
               ...quizSettings,
-              allQuestionCount: count
+              allQuestionCount: count === undefined ? null : count
             });
           }}
           onBack={() => setQuizSettings(null)}

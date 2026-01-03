@@ -62,7 +62,7 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
             className="start-index-button all-button-large"
             onClick={() => handleSelect(undefined)}
           >
-            全部
+            ALL
           </button>
         )}
       </div>

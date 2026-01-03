@@ -27,35 +27,49 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
         }
     };
 
-    // 成績に応じたメッセージ生成
-    const getPerformanceMessage = (): string => {
-        if (pointScore > 0 && history.length > 0) {
-            // ランキングがある場合、現在のスコアの順位を確認
-            const currentRank = history.findIndex(entry => entry.score === pointScore && entry.correctCount === score && entry.totalCount === total) + 1;
-            if (currentRank === 1) {
-                return 'Top Score!';
-            } else if (currentRank <= 3) {
-                return 'Great!';
-            } else if (percentage === 100) {
-                return 'Perfect!';
-            } else if (percentage >= 80) {
-                return 'Excellent!';
-            } else if (percentage >= 50) {
-                return 'Good Job!';
-            } else {
-                return 'Keep Going!';
-            }
+    // 現在のスコアがランクインしたかどうかを判定
+    const isRankIn = (): boolean => {
+        if (pointScore === 0 || history.length === 0) return false;
+        // 現在のスコアが履歴の最初の5件に含まれているか確認
+        const top5 = history.slice(0, 5);
+        const today = new Date().toISOString().split('T')[0];
+        return top5.some(entry => {
+            const entryDate = new Date(entry.date).toISOString().split('T')[0];
+            return entry.score === pointScore && 
+                   entry.correctCount === score && 
+                   entry.totalCount === total &&
+                   entryDate === today;
+        });
+    };
+
+    const rankIn = isRankIn();
+
+    // 通常メッセージを生成
+    const getNormalMessage = (): string => {
+        if (percentage === 100) {
+            return '完璧です！すべて正解できました。';
+        } else if (percentage >= 80) {
+            return '素晴らしい結果です！よく頑張りました。';
+        } else if (percentage >= 50) {
+            return '良い調子です！続けて頑張りましょう。';
         } else {
-            // ランキングがない場合
-            if (percentage === 100) {
-                return 'Perfect!';
-            } else if (percentage >= 80) {
-                return 'Excellent!';
-            } else if (percentage >= 50) {
-                return 'Good Job!';
-            } else {
-                return 'Keep Going!';
-            }
+            return 'もう少し練習が必要です。諦めずに続けましょう。';
+        }
+    };
+
+    // ランクイン時の追加メッセージ
+    const getRankInMessage = (): string => {
+        const currentRank = history.findIndex(entry => 
+            entry.score === pointScore && 
+            entry.correctCount === score && 
+            entry.totalCount === total
+        ) + 1;
+        if (currentRank === 1) {
+            return '🎉 ランキング1位にランクインしました！';
+        } else if (currentRank <= 3) {
+            return `🎉 ランキング${currentRank}位にランクインしました！`;
+        } else {
+            return `🎉 ランキング${currentRank}位にランクインしました！`;
         }
     };
 
@@ -75,18 +89,38 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                 {pointScore > 0 && history.length > 0 && (
                     <div className="summary-ranking">
                         <div className="ranking-title">RANKING</div>
-                        {history.slice(0, 5).map((entry, index) => (
-                            <div key={index} className="ranking-row">
-                                <span className="ranking-rank">#{index + 1}</span>
-                                <span className="ranking-score">{entry.score.toLocaleString()}</span>
-                                <span className="ranking-count">({entry.correctCount}/{entry.totalCount})</span>
-                                <span className="ranking-date">{formatDate(entry.date)}</span>
-                            </div>
-                        ))}
+                        {history.slice(0, 5).map((entry, index) => {
+                            const isCurrentEntry = entry.score === pointScore && 
+                                                   entry.correctCount === score && 
+                                                   entry.totalCount === total;
+                            const entryDate = new Date(entry.date).toISOString().split('T')[0];
+                            const today = new Date().toISOString().split('T')[0];
+                            const isNewEntry = isCurrentEntry && entryDate === today;
+                            
+                            return (
+                                <div 
+                                    key={index} 
+                                    className={`ranking-row ${isNewEntry ? 'ranking-new' : ''}`}
+                                >
+                                    <span className="ranking-rank">#{index + 1}</span>
+                                    <span className="ranking-score">{entry.score.toLocaleString()}</span>
+                                    <span className="ranking-count">({entry.correctCount}/{entry.totalCount})</span>
+                                    <span className="ranking-date">{formatDate(entry.date)}</span>
+                                    {isNewEntry && (
+                                        <span className="ranking-new-badge">New!</span>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
                 
-                <p className="summary-message">{getPerformanceMessage()}</p>
+                <div className="summary-message">
+                    <p className="summary-message-normal">{getNormalMessage()}</p>
+                    {rankIn && (
+                        <p className="summary-message-rankin">{getRankInMessage()}</p>
+                    )}
+                </div>
 
                 <div className="summary-buttons">
                     <button className="summary-button restart" onClick={onRestart}>
