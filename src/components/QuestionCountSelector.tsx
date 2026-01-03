@@ -72,11 +72,18 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
     const rangeKey = getRangeKey(questionCountMode, startIndex);
     let history = getScoreHistory(modeKey, rangeKey);
     
-    // 新しい形式の履歴が見つからない場合、古い形式（chemistry-quiz-score-history）を確認
+    // 新しい形式の履歴が見つからない場合、古い形式（chemistry-quiz-score-history）を直接確認
     if (history.length === 0) {
-      const oldHistory = getScoreHistory(); // mode/rangeKeyなしで呼び出すと古い形式を取得
-      if (oldHistory.length > 0) {
-        history = oldHistory;
+      try {
+        const oldData = localStorage.getItem('chemistry-quiz-score-history');
+        if (oldData) {
+          const parsed = JSON.parse(oldData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            history = parsed;
+          }
+        }
+      } catch (e) {
+        // パースエラーは無視
       }
     }
     
