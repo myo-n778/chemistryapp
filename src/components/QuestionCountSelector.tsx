@@ -67,9 +67,41 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       return null;
     }
     
+    // 保存時と同じ形式でmodeKeyを生成（例: structure-to-name-organic）
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey(questionCountMode, startIndex);
     const history = getScoreHistory(modeKey, rangeKey);
+    
+    // 履歴が見つからない場合、すべてのlocalStorageキーを確認
+    if (history.length === 0) {
+      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('chemistry-quiz-score-history-'));
+      const expectedKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
+      const matchingKeys = allKeys.filter(key => key.includes(modeKey) && key.includes(rangeKey));
+      if (matchingKeys.length > 0) {
+        // キーが見つかったが、getScoreHistoryで取得できていない場合は、直接取得を試みる
+        const directData = localStorage.getItem(matchingKeys[0]);
+        if (directData) {
+          try {
+            const parsed = JSON.parse(directData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const latestDate = new Date(parsed[0].date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const latestDateOnly = new Date(latestDate);
+              latestDateOnly.setHours(0, 0, 0, 0);
+              const isToday = latestDateOnly.getTime() === today.getTime();
+              return {
+                count: parsed.length,
+                latestDate: latestDate,
+                isToday: isToday
+              };
+            }
+          } catch (e) {
+            // パースエラーは無視
+          }
+        }
+      }
+    }
     
     if (history.length === 0) {
       return null;
