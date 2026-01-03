@@ -98,14 +98,37 @@ export const csvToCompounds = (csvRows: CompoundCSVRow[], existingCompounds: Com
     // 構造式データがJSON形式で提供されている場合
     if (row.atoms && row.bonds && row.atoms.trim() !== '' && row.bonds.trim() !== '') {
       try {
-        // 引用符を除去（CSVから取得したデータが引用符で囲まれている場合）
-        // parseCSVLineですでに外側の引用符は処理されているはずだが、
-        // JSON文字列としてのエスケープ癖などを考慮して念のため残すか、
-        // parseCSVLineが正しければJSON.parseでいけるはず。
-
+        // GASから返されるJSON文字列は、エスケープされた引用符を含む場合がある
+        // parseCSVLineで既に外側の引用符は処理されているが、
+        // JSON文字列内のエスケープされた引用符（\"\"）を処理する必要がある
+        let atomsStr = row.atoms.trim();
+        let bondsStr = row.bonds.trim();
+        
+        // 外側の引用符を除去（もしあれば）
+        if ((atomsStr.startsWith('"') && atomsStr.endsWith('"')) || 
+            (atomsStr.startsWith("'") && atomsStr.endsWith("'"))) {
+          atomsStr = atomsStr.slice(1, -1);
+        }
+        if ((bondsStr.startsWith('"') && bondsStr.endsWith('"')) || 
+            (bondsStr.startsWith("'") && bondsStr.endsWith("'"))) {
+          bondsStr = bondsStr.slice(1, -1);
+        }
+        
+        // GASのレスポンスでは、JSON文字列内の引用符が \"\" としてエスケープされている
+        // これを \" に変換（JSON文字列内のエスケープされた引用符を正しく処理）
+        // ただし、既に正しくエスケープされている場合はそのまま
+        // \"\" を \" に変換（エスケープされたダブルクォート2つを1つに）
+        atomsStr = atomsStr.replace(/\\"\\"/g, '\\"');
+        bondsStr = bondsStr.replace(/\\"\\"/g, '\\"');
+        
+        // さらに、連続するダブルクォート（""）を単一のダブルクォート（"）に変換
+        // これは、CSVパーサーが既に処理している可能性があるが、念のため
+        atomsStr = atomsStr.replace(/""/g, '"');
+        bondsStr = bondsStr.replace(/""/g, '"');
+        
         // JSON parseを試みる
-        const atoms = JSON.parse(row.atoms);
-        const bonds = JSON.parse(row.bonds);
+        const atoms = JSON.parse(atomsStr);
+        const bonds = JSON.parse(bondsStr);
 
         if (Array.isArray(atoms) && Array.isArray(bonds) && atoms.length > 0 && bonds.length > 0) {
           return {
@@ -119,9 +142,9 @@ export const csvToCompounds = (csvRows: CompoundCSVRow[], existingCompounds: Com
           };
         }
       } catch (e) {
-        console.warn(`Failed to parse structure JSON for ${row.name}. This might be due to format issues.`);
-        // console.warn(`atoms: ${row.atoms}`); // デバッグ用
-        // console.warn(`bonds: ${row.bonds}`); // デバッグ用
+        console.warn(`Failed to parse structure JSON for ${row.name}:`, e);
+        console.warn(`atoms (first 200 chars): ${row.atoms.substring(0, 200)}`); // デバッグ用
+        console.warn(`bonds (first 200 chars): ${row.bonds.substring(0, 200)}`); // デバッグ用
       }
     }
 

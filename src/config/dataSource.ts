@@ -16,14 +16,20 @@ export const DATA_SOURCE: DataSource = 'gas'; // 'csv' または 'gas'
  * 環境変数から取得。設定されていない場合は空文字列を返す
  */
 export const GAS_URLS: Record<Category, string> = {
-  organic: import.meta.env.VITE_GAS_URL_ORGANIC || '',
-  inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || '',
+  organic: import.meta.env.VITE_GAS_URL_ORGANIC || 'https://script.google.com/macros/s/AKfycbwCnldwaS5elxrV3Iq0Lv0yqbZ9DYT58Y0LHAVeTBlckAm_TXzHWnyWY0apsTy1TS28/exec',
+  inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || 'https://script.google.com/macros/s/AKfycbwCnldwaS5elxrV3Iq0Lv0yqbZ9DYT58Y0LHAVeTBlckAm_TXzHWnyWY0apsTy1TS28/exec',
 };
 
 // 環境変数が設定されているか検証（開発環境のみ警告）
 if (import.meta.env.DEV) {
   if (!GAS_URLS.organic || !GAS_URLS.inorganic) {
     console.warn('GAS URLs are not configured. Please set VITE_GAS_URL_ORGANIC and VITE_GAS_URL_INORGANIC environment variables.');
+  } else {
+    console.log(`[DataSource] GAS URLs configured:`, {
+      organic: GAS_URLS.organic ? '✓' : '✗',
+      inorganic: GAS_URLS.inorganic ? '✓' : '✗',
+      dataSource: DATA_SOURCE
+    });
   }
 }
 

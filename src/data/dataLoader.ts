@@ -68,24 +68,31 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 
   // データソースに応じて読み込み方法を切り替え
   if (DATA_SOURCE === 'gas') {
+    console.log(`[${category}] Attempting to load compounds from GAS...`);
     try {
       const compounds = await fetchWithRetry(() => loadCompoundsFromGAS(category), 2, 1000);
       if (compounds && Array.isArray(compounds) && compounds.length > 0) {
+        console.log(`[${category}] Successfully loaded ${compounds.length} compounds from GAS`);
         compoundCache[category] = { data: compounds, timestamp: Date.now() };
         return compounds;
       }
-      console.warn(`GAS returned empty array for ${category}, falling back to CSV`);
+      console.warn(`[${category}] GAS returned empty array, falling back to CSV`);
     } catch (error) {
-      console.warn(`Failed to load compounds from GAS for ${category}, falling back to CSV:`, error);
+      console.warn(`[${category}] Failed to load compounds from GAS, falling back to CSV:`, error);
       // GASが失敗した場合はCSVにフォールバック
     }
+  } else {
+    console.log(`[${category}] DATA_SOURCE is '${DATA_SOURCE}', loading from CSV`);
   }
 
   // CSVファイルを読み込む（カテゴリごと）
+  console.log(`[${category}] Loading compounds from CSV file...`);
   try {
     const baseUrl = import.meta.env.BASE_URL || '';
+    const csvUrl = `${baseUrl}data/${category}/compounds.csv`;
+    console.log(`[${category}] Fetching CSV from: ${csvUrl}`);
     const response = await fetchWithRetry(
-      () => fetch(`${baseUrl}data/${category}/compounds.csv`),
+      () => fetch(csvUrl),
       2,
       1000
     );
@@ -99,10 +106,12 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
     }
 
     const csvRows = parseCSV(csvText);
+    console.log(`[${category}] Parsed ${csvRows.length} rows from CSV`);
     // プリセットデータは使用せず、外部データのみを使用
     const compounds = csvToCompounds(csvRows, []);
 
     if (compounds && Array.isArray(compounds) && compounds.length > 0) {
+      console.log(`[${category}] Successfully loaded ${compounds.length} compounds from CSV`);
       compoundCache[category] = { data: compounds, timestamp: Date.now() };
       return compounds;
     }

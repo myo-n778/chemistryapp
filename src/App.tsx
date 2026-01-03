@@ -78,9 +78,31 @@ function App() {
   }, [selectedCategory]);
 
   const getFilteredCompounds = () => {
-    if (!quizSettings) return compounds;
+    if (!quizSettings) {
+      // 構造式が有効な化合物のみを返す
+      return compounds.filter(c =>
+        c &&
+        c.structure &&
+        c.structure.atoms &&
+        Array.isArray(c.structure.atoms) &&
+        c.structure.atoms.length > 0 &&
+        c.structure.bonds &&
+        Array.isArray(c.structure.bonds) &&
+        c.structure.bonds.length > 0
+      );
+    }
 
-    let filtered = [...compounds];
+    // まず構造式が有効な化合物のみをフィルタリング
+    let filtered = compounds.filter(c =>
+      c &&
+      c.structure &&
+      c.structure.atoms &&
+      Array.isArray(c.structure.atoms) &&
+      c.structure.atoms.length > 0 &&
+      c.structure.bonds &&
+      Array.isArray(c.structure.bonds) &&
+      c.structure.bonds.length > 0
+    );
 
     // 問題数モードに応じてフィルタリング
     if (quizSettings.questionCountMode === 'batch-10') {
@@ -194,6 +216,31 @@ function App() {
   }
 
   const finalCompounds = getFilteredCompounds();
+
+  // フィルタリング後の化合物が空の場合はエラーメッセージを表示
+  if (finalCompounds.length === 0 && compounds.length > 0) {
+    return (
+      <div className="App">
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+            問題データが見つかりませんでした
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+            構造式が有効な化合物がありません。データを確認してください。
+          </p>
+          <button
+            className="back-button"
+            onClick={() => {
+              setQuizSettings(null);
+            }}
+            style={{ marginTop: '20px' }}
+          >
+            設定に戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleNextRange = () => {
     if (!quizSettings || quizSettings.startIndex === undefined) return;

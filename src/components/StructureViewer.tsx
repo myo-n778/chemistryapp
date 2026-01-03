@@ -42,11 +42,29 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     return 18; // H
   };
 
+  // 原子が存在しない場合はエラーメッセージを表示
+  if (!structure.atoms || structure.atoms.length === 0) {
+    return (
+      <div className="structure-viewer" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+        <p>構造式データがありません</p>
+      </div>
+    );
+  }
+
   // 分子の座標範囲（原子の半径を含む）を計算して見切れを防止
   const minX = Math.min(...structure.atoms.map(a => a.x - getAtomRadius(a.element)));
   const maxX = Math.max(...structure.atoms.map(a => a.x + getAtomRadius(a.element)));
   const minY = Math.min(...structure.atoms.map(a => a.y - getAtomRadius(a.element)));
   const maxY = Math.max(...structure.atoms.map(a => a.y + getAtomRadius(a.element)));
+
+  // 有効な数値かチェック（InfinityやNaNを防ぐ）
+  if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) {
+    return (
+      <div className="structure-viewer" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+        <p>構造式データが無効です</p>
+      </div>
+    );
+  }
 
   // 図を最大化するためマージンを極限（2）に設定
   const padding = 2;
