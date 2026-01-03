@@ -47,33 +47,129 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
 
     const rankIn = isRankIn();
 
-    // 通常メッセージを生成
-    const getNormalMessage = (): string => {
+    // 通常メッセージを生成（7段階、各段階5種類からランダム選択）
+    const getNormalMessage = (): { jp: string; en: string } => {
+        const messages: Record<string, { jp: string[]; en: string[] }> = {
+            '0-19': {
+                jp: [
+                    'まだ足りません！ここから積み上げましょう！',
+                    '今は結果より、向き合ったことが大事です！',
+                    'このままでは届きません！続けましょう！',
+                    '今日のままでは終われませんね！',
+                    'まずは基礎からです！'
+                ],
+                en: ['Not yet!', 'Start again!', 'Keep trying!', 'From here!', 'Go on!']
+            },
+            '20-39': {
+                jp: [
+                    '少し前進しましたが、まだ足りません！',
+                    'この点数で止まる段階ではありません！',
+                    '手応えは出始めています！',
+                    '次で大きく変わります！',
+                    'ここからが勝負です！'
+                ],
+                en: ['Still low!', 'Not enough!', 'Go further!', 'Next step!', 'Try again!']
+            },
+            '40-59': {
+                jp: [
+                    '基礎は見えていますが、まだ不安定です！',
+                    'ここで満足するには早いです！',
+                    '正解が増える余地があります！',
+                    'もう一段、上げましょう！',
+                    'このままでは届きません！'
+                ],
+                en: ['Improve!', 'Not stable!', 'More work!', 'Push on!', 'Again!']
+            },
+            '60-79': {
+                jp: [
+                    '悪くありませんが、合格点ではありません！',
+                    '実力はあります！詰めが必要です！',
+                    'ミスを減らせば一気に伸びます！',
+                    '次は80%を超えましょう！',
+                    'まだ上があります！'
+                ],
+                en: ['Not enough!', 'Push more!', 'Close!', 'Try harder!', 'Next!']
+            },
+            '80-89': {
+                jp: [
+                    '高いですが、まだ完成ではありません！',
+                    'このあたりで止まる人は多いです！',
+                    'あと一段、意識を上げましょう！',
+                    '90%を超える力はあります！',
+                    '満点を目指しましょう！'
+                ],
+                en: ['High, but!', 'Not perfect!', 'One more!', 'Aim higher!', 'Keep going!']
+            },
+            '90-99': {
+                jp: [
+                    'ここまで来たなら、満点を狙えます！',
+                    'ミスはわずか！詰め切りましょう！',
+                    'この差は意識の差です！',
+                    '次は100%です！',
+                    'もう一回、行けます！'
+                ],
+                en: ['Almost!', 'One step!', 'So close!', 'Again!', 'Finish it!']
+            },
+            '100': {
+                jp: [
+                    '到達しました！',
+                    '今回は完璧です！',
+                    'ここまでやり切りました！',
+                    '実力として成立しています！',
+                    '次に進めます！'
+                ],
+                en: ['Perfect!', 'Complete!', 'Achieved!', 'Done!', 'Clear!']
+            }
+        };
+
+        let key: string;
         if (percentage === 100) {
-            return '完璧です！すべて正解できました。';
+            key = '100';
+        } else if (percentage >= 90) {
+            key = '90-99';
         } else if (percentage >= 80) {
-            return '素晴らしい結果です！よく頑張りました。';
-        } else if (percentage >= 50) {
-            return '良い調子です！続けて頑張りましょう。';
+            key = '80-89';
+        } else if (percentage >= 60) {
+            key = '60-79';
+        } else if (percentage >= 40) {
+            key = '40-59';
+        } else if (percentage >= 20) {
+            key = '20-39';
         } else {
-            return 'もう少し練習が必要です。諦めずに続けましょう。';
+            key = '0-19';
         }
+
+        const messageSet = messages[key];
+        const randomIndex = Math.floor(Math.random() * 5);
+        return {
+            jp: messageSet.jp[randomIndex],
+            en: messageSet.en[randomIndex]
+        };
     };
 
-    // ランクイン時の追加メッセージ
-    const getRankInMessage = (): string => {
-        const currentRank = history.findIndex(entry => 
-            entry.score === pointScore && 
-            entry.correctCount === score && 
-            entry.totalCount === total
-        ) + 1;
-        if (currentRank === 1) {
-            return '🎉 ランキング1位にランクインしました！';
-        } else if (currentRank <= 3) {
-            return `🎉 ランキング${currentRank}位にランクインしました！`;
-        } else {
-            return `🎉 ランキング${currentRank}位にランクインしました！`;
-        }
+    // ランクイン時の追加メッセージ（5種類からランダム選択）
+    const getRankInMessage = (): { jp: string; en: string } => {
+        const messages = {
+            jp: [
+                'ランクイン！',
+                '記録更新！',
+                'トップ入り！',
+                '順位入り達成！',
+                '結果が残りました！'
+            ],
+            en: [
+                'Ranked!',
+                'New Record!',
+                'Top Score!',
+                'On the Board!',
+                'You\'re In!'
+            ]
+        };
+        const randomIndex = Math.floor(Math.random() * 5);
+        return {
+            jp: messages.jp[randomIndex],
+            en: messages.en[randomIndex]
+        };
     };
 
     return (
@@ -119,10 +215,26 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                 )}
                 
                 <div className="summary-message">
-                    <p className="summary-message-normal">{getNormalMessage()}</p>
-                    {rankIn && (
-                        <p className="summary-message-rankin">{getRankInMessage()}</p>
-                    )}
+                    {(() => {
+                        const normalMsg = getNormalMessage();
+                        return (
+                            <>
+                                <p className="summary-message-normal">
+                                    {normalMsg.jp}
+                                    <span className="summary-message-en">{normalMsg.en}</span>
+                                </p>
+                                {rankIn && (() => {
+                                    const rankInMsg = getRankInMessage();
+                                    return (
+                                        <p className="summary-message-rankin">
+                                            {rankInMsg.jp}
+                                            <span className="summary-message-en">{rankInMsg.en}</span>
+                                        </p>
+                                    );
+                                })()}
+                            </>
+                        );
+                    })()}
                 </div>
 
                 <div className="summary-buttons">

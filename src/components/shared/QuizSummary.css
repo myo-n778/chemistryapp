@@ -214,6 +214,14 @@
     line-height: 1.4;
 }
 
+.summary-message-en {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 2px;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
 .summary-message-rankin {
     font-size: 1rem;
     margin: 0;
