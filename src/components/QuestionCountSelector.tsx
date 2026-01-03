@@ -22,7 +22,7 @@ interface QuestionCountSelectorProps {
 }
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
-  console.log('[QuestionCountSelector] props', { mode, category, totalCount });
+  console.log('[QuestionCountSelector] Component mounted', { mode, category, totalCount });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
@@ -64,6 +64,7 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
 
   // 取り組み履歴を取得する関数
   const getRangeHistory = (questionCountMode: 'batch-10' | 'batch-20' | 'batch-40', startIndex: number) => {
+    console.log('[getRangeHistory] called', { questionCountMode, startIndex, mode, category });
     if (!mode || !category) {
       console.log('[getRangeHistory] mode or category is missing', { mode, category });
       return null;
