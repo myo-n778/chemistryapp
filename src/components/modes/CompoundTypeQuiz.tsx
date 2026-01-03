@@ -171,8 +171,12 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     isProcessingRef.current = true;
     
     if (totalAnswered >= 10) {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `compound-type-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -185,8 +189,12 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         setConsecutiveCount(0);
       }
     } else {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `compound-type-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     }
     
