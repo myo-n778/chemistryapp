@@ -63,44 +63,50 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
 
   // 取り組み履歴を取得する関数
   const getRangeHistory = (questionCountMode: 'batch-10' | 'batch-20' | 'batch-40', startIndex: number) => {
-    if (!mode || !category) {
-      return null;
+    let history: any[] = [];
+    
+    // まず古い形式（chemistry-quiz-score-history）を直接確認
+    try {
+      const oldData = localStorage.getItem('chemistry-quiz-score-history');
+      if (oldData) {
+        const parsed = JSON.parse(oldData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          history = parsed;
+        }
+      }
+    } catch (e) {
+      // パースエラーは無視
     }
     
-    // 保存時と同じ形式でmodeKeyを生成（例: structure-to-name-organic）
-    const modeKey = `${mode}-${category}`;
-    const rangeKey = getRangeKey(questionCountMode, startIndex);
-    let history = getScoreHistory(modeKey, rangeKey);
-    
-    // 新しい形式の履歴が見つからない場合、古い形式（chemistry-quiz-score-history）を直接確認
-    if (history.length === 0) {
-      try {
-        const oldData = localStorage.getItem('chemistry-quiz-score-history');
-        if (oldData) {
-          const parsed = JSON.parse(oldData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            history = parsed;
-          }
-        }
-      } catch (e) {
-        // パースエラーは無視
-      }
+    // 古い形式が見つからない場合、新しい形式を確認
+    if (history.length === 0 && mode && category) {
+      const modeKey = `${mode}-${category}`;
+      const rangeKey = getRangeKey(questionCountMode, startIndex);
+      history = getScoreHistory(modeKey, rangeKey);
     }
     
     // それでも見つからない場合、localStorageを直接確認
     if (history.length === 0) {
       const allKeys = Object.keys(localStorage).filter(key => key.startsWith('chemistry-quiz-score-history'));
-      // まず新しい形式を探す
-      const expectedKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
-      let matchingKey = allKeys.find(key => key === expectedKey);
-      // 見つからない場合は、modeKeyとrangeKeyを含むキーを探す
-      if (!matchingKey) {
-        matchingKey = allKeys.find(key => key.includes(modeKey) && key.includes(rangeKey));
+      let matchingKey: string | undefined;
+      
+      if (mode && category) {
+        const modeKey = `${mode}-${category}`;
+        const rangeKey = getRangeKey(questionCountMode, startIndex);
+        // まず新しい形式を探す
+        const expectedKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
+        matchingKey = allKeys.find(key => key === expectedKey);
+        // 見つからない場合は、modeKeyとrangeKeyを含むキーを探す
+        if (!matchingKey) {
+          matchingKey = allKeys.find(key => key.includes(modeKey) && key.includes(rangeKey));
+        }
       }
+      
       // それでも見つからない場合は、古い形式（chemistry-quiz-score-history）を探す
       if (!matchingKey) {
         matchingKey = allKeys.find(key => key === 'chemistry-quiz-score-history');
       }
+      
       if (matchingKey) {
         const directData = localStorage.getItem(matchingKey);
         if (directData) {
@@ -115,7 +121,6 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
         }
       }
     }
-    
     
     if (history.length === 0) {
       return null;
