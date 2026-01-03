@@ -14,7 +14,10 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
 
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',');
-    if (values.length < 4) continue; // 必須項目（A-D）がない行はスキップ
+    if (values.length < 4) {
+      console.log(`[reactionParser] Skipped row ${i + 1}: insufficient columns (${values.length} < 4)`);
+      continue; // 必須項目（A-D）がない行はスキップ
+    }
 
     // 値のクリーニング（前後の空白とダブルクォートを削除）
     const clean = (val: string) => val ? val.trim().replace(/^"|"$/g, '') : '';
@@ -33,7 +36,10 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
     const to = clean(values[3]);
 
     // ゴミデータ対策: reagentやtoが無効なら行全体をスキップ
-    if (isGarbage(reagent) || isGarbage(to)) continue;
+    if (isGarbage(reagent) || isGarbage(to)) {
+      console.log(`[reactionParser] Skipped row ${i + 1}: garbage data (reagent="${reagent}", to="${to}")`);
+      continue;
+    }
 
     const row: ReactionCSVRow = {
       type: (clean(values[0]) as 'substitution' | 'synthesis') || 'substitution',
@@ -47,7 +53,7 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
     if (row.from && row.to) {
       rows.push(row);
     } else {
-      console.log(`[reactionParser] Skipped row ${i + 1}: from="${row.from}", to="${row.to}"`);
+      console.log(`[reactionParser] Skipped row ${i + 1}: empty from/to (from="${row.from}", to="${row.to}")`);
     }
   }
 
