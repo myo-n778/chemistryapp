@@ -15,11 +15,6 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
     const percentage = Math.round((score / total) * 100);
     const history = getScoreHistory();
 
-    let message = 'お疲れ様でした！';
-    if (percentage === 100) message = '全問正解！素晴らしい！';
-    else if (percentage >= 80) message = '高得点です！その調子！';
-    else if (percentage >= 50) message = 'まずまずの成績です。';
-
     const formatDate = (isoString: string): string => {
         try {
             const date = new Date(isoString);
@@ -29,6 +24,38 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
             return `${year}/${month}/${day}`;
         } catch {
             return '';
+        }
+    };
+
+    // 成績に応じたメッセージ生成
+    const getPerformanceMessage = (): string => {
+        if (pointScore > 0 && history.length > 0) {
+            // ランキングがある場合、現在のスコアの順位を確認
+            const currentRank = history.findIndex(entry => entry.score === pointScore && entry.correctCount === score && entry.totalCount === total) + 1;
+            if (currentRank === 1) {
+                return 'Top Score!';
+            } else if (currentRank <= 3) {
+                return 'Great!';
+            } else if (percentage === 100) {
+                return 'Perfect!';
+            } else if (percentage >= 80) {
+                return 'Excellent!';
+            } else if (percentage >= 50) {
+                return 'Good Job!';
+            } else {
+                return 'Keep Going!';
+            }
+        } else {
+            // ランキングがない場合
+            if (percentage === 100) {
+                return 'Perfect!';
+            } else if (percentage >= 80) {
+                return 'Excellent!';
+            } else if (percentage >= 50) {
+                return 'Good Job!';
+            } else {
+                return 'Keep Going!';
+            }
         }
     };
 
@@ -43,7 +70,6 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                         <ScoreDisplay score={score} totalAnswered={total} />
                     )}
                 </div>
-                <div className="summary-percentage">{percentage}% 正解</div>
                 
                 {/* ランキング表示（pointScoreがある場合のみ） */}
                 {pointScore > 0 && history.length > 0 && (
@@ -60,14 +86,14 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                     </div>
                 )}
                 
-                <p className="summary-message">{message}</p>
+                <p className="summary-message">{getPerformanceMessage()}</p>
 
                 <div className="summary-buttons">
                     <button className="summary-button restart" onClick={onRestart}>
-                        もう一度解く
+                        Retry
                     </button>
                     <button className="summary-button back" onClick={onBack}>
-                        範囲選択に戻る
+                        Return
                     </button>
                 </div>
             </div>

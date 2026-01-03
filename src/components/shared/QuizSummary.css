@@ -15,14 +15,14 @@
     min-height: 100dvh;
     max-height: 100dvh;
     overflow-y: auto;
-    padding: 20px;
+    padding: 10px;
     box-sizing: border-box;
 }
 
 /* スマホ向け：縦幅に合わせて全画面表示 */
 @media screen and (max-width: 767px) {
     .quiz-summary-overlay {
-        padding: 10px;
+        padding: 5px;
     }
 }
 
@@ -30,28 +30,28 @@
     background: linear-gradient(135deg, #2a1f1a 0%, #3a2f2a 100%);
     border: 2px solid #ff8c00;
     border-radius: 20px;
-    padding: 40px;
+    padding: 20px;
     width: 90%;
     max-width: 600px;
     text-align: center;
     box-shadow: 0 0 30px rgba(255, 140, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
     color: #fff;
-    margin: 20px auto;
+    margin: 10px auto;
     box-sizing: border-box;
 }
 
 /* スマホ向け：パディングとマージンを調整 */
 @media screen and (max-width: 767px) {
     .quiz-summary-card {
-        padding: 20px;
-        margin: 10px auto;
+        padding: 15px;
+        margin: 5px auto;
         max-width: 100%;
     }
 }
 
 .quiz-summary-card h2 {
-    margin-top: 0;
-    font-size: 2rem;
+    margin: 0 0 10px 0;
+    font-size: 1.8rem;
     color: #ff8c00;
     text-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
     font-family: 'Noto Serif JP', serif;
@@ -60,7 +60,8 @@
 /* スマホ向け：タイトルのサイズ調整 */
 @media screen and (max-width: 767px) {
     .quiz-summary-card h2 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
+        margin-bottom: 8px;
     }
 }
 
@@ -72,28 +73,23 @@
     border-radius: 12px;
 }
 
-.summary-percentage {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #81c784;
-    margin-bottom: 30px;
-}
-
-/* スマホ向け：パーセンテージ表示のサイズ調整 */
-@media screen and (max-width: 767px) {
-    .summary-percentage {
-        font-size: 1.2rem;
-        margin-bottom: 20px;
-    }
-}
 
 .summary-ranking {
-    margin: 20px 0;
-    padding: 15px;
+    margin: 10px 0;
+    padding: 12px;
     background: rgba(0, 0, 0, 0.4);
     border-radius: 8px;
     width: 100%;
     border: 1px solid rgba(255, 165, 0, 0.3);
+    box-sizing: border-box;
+}
+
+/* スマホ向け：ランキングの余白調整 */
+@media screen and (max-width: 767px) {
+    .summary-ranking {
+        margin: 8px 0;
+        padding: 10px;
+    }
 }
 
 .ranking-title {
@@ -101,21 +97,38 @@
     font-weight: bold;
     color: #ffa500;
     text-align: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     font-style: italic;
     letter-spacing: 2px;
     text-shadow: 0 0 10px rgba(255, 165, 0, 0.6);
     text-transform: uppercase;
 }
 
+/* スマホ向け：ランキングタイトルのサイズ調整 */
+@media screen and (max-width: 767px) {
+    .ranking-title {
+        font-size: 1rem;
+        margin-bottom: 6px;
+    }
+}
+
 .ranking-row {
     display: grid;
     grid-template-columns: 30px 1fr auto auto;
     align-items: center;
-    gap: 10px;
-    padding: 6px 0;
+    gap: 8px;
+    padding: 4px 0;
     border-bottom: 1px solid rgba(255, 165, 0, 0.15);
     font-size: 0.9rem;
+}
+
+/* スマホ向け：ランキング行の余白調整 */
+@media screen and (max-width: 767px) {
+    .ranking-row {
+        gap: 6px;
+        padding: 3px 0;
+        font-size: 0.8rem;
+    }
 }
 
 .ranking-row:last-child {
@@ -148,34 +161,53 @@
 
 .summary-message {
     font-size: 1.1rem;
-    margin-bottom: 40px;
-    line-height: 1.6;
+    margin: 10px 0;
+    line-height: 1.4;
+    font-weight: bold;
+    color: #ffa500;
 }
 
 /* スマホ向け：メッセージのサイズ調整 */
 @media screen and (max-width: 767px) {
     .summary-message {
         font-size: 1rem;
-        margin-bottom: 30px;
-        line-height: 1.5;
+        margin: 8px 0;
+        line-height: 1.3;
     }
 }
 
 .summary-buttons {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* スマホ向け：ボタン間隔の調整 */
+@media screen and (max-width: 767px) {
+    .summary-buttons {
+        gap: 8px;
+        margin-top: 12px;
+    }
 }
 
 .summary-button {
-    padding: 15px 25px;
-    font-size: 1.1rem;
+    padding: 12px 20px;
+    font-size: 1rem;
     font-weight: bold;
     border: none;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Noto Serif JP', serif;
+}
+
+/* スマホ向け：ボタンのサイズ調整 */
+@media screen and (max-width: 767px) {
+    .summary-button {
+        padding: 10px 18px;
+        font-size: 0.9rem;
+    }
 }
 
 .summary-button.restart {
