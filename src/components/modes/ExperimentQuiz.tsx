@@ -386,26 +386,26 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
             const optionNumber = index + 1;
             const isSelected = selectedAnswer === optionNumber;
             const isCorrect = optionNumber === currentExperiment.correctAnswer;
-            let buttonClass = 'option-button';
-
-            if (showResult) {
-              if (isCorrect) {
-                buttonClass += ' correct';
-              } else if (isSelected && !isCorrect) {
-                buttonClass += ' wrong';
-              }
-            } else if (isSelected) {
-              buttonClass += ' selected';
-            }
+            const showCorrect = showResult && isCorrect;
+            const showIncorrect = showResult && isSelected && !isCorrect;
 
             return (
               <button
                 key={index}
-                className={buttonClass}
-                onClick={() => handleAnswer(optionNumber)}
+                className={`option-button ${
+                  showCorrect ? 'correct' : ''
+                } ${
+                  showIncorrect ? 'incorrect' : ''
+                } ${isSelected ? 'selected' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAnswer(optionNumber);
+                }}
                 disabled={showResult}
               >
                 {option}
+                {showCorrect && <span className="result-icon">✓</span>}
+                {showIncorrect && <span className="result-icon">✗</span>}
               </button>
             );
           })}
