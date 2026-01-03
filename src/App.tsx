@@ -233,6 +233,8 @@ function App() {
           totalCount={totalQuestionCount}
           onSelectSettings={setQuizSettings}
           onBack={() => setSelectedMode(null)}
+          mode={selectedMode}
+          category={selectedCategory}
         />
       </div>
     );
@@ -253,6 +255,8 @@ function App() {
             });
           }}
           onBack={() => setQuizSettings(null)}
+          mode={selectedMode}
+          category={selectedCategory}
         />
       </div>
     );

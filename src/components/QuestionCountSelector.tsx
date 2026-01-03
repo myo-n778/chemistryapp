@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import './QuestionCountSelector.css';
+import { QuizMode } from './ModeSelector';
+import { Category } from './CategorySelector';
+import { getScoreHistory, getRangeKey } from '../utils/scoreCalculator';
 
 export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';
@@ -14,9 +17,11 @@ interface QuestionCountSelectorProps {
   totalCount: number;
   onSelectSettings: (settings: QuizSettings) => void;
   onBack: () => void;
+  mode?: QuizMode;
+  category?: Category;
 }
 
-export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack }) => {
+export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
@@ -55,6 +60,39 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
   const ranges10 = generateRanges(10);
   const ranges20 = generateRanges(20);
   const ranges40 = generateRanges(40);
+
+  // 取り組み履歴を取得する関数
+  const getRangeHistory = (questionCountMode: 'batch-10' | 'batch-20' | 'batch-40', startIndex: number) => {
+    if (!mode || !category) return null;
+    
+    const modeKey = `${mode}-${category}`;
+    const rangeKey = getRangeKey(questionCountMode, startIndex);
+    const history = getScoreHistory(modeKey, rangeKey);
+    
+    if (history.length === 0) return null;
+    
+    // 最新の日付を取得
+    const latestDate = new Date(history[0].date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const latestDateOnly = new Date(latestDate);
+    latestDateOnly.setHours(0, 0, 0, 0);
+    const isToday = latestDateOnly.getTime() === today.getTime();
+    
+    return {
+      count: history.length,
+      latestDate: latestDate,
+      isToday: isToday
+    };
+  };
+
+  // 取り組み回数に応じた色を取得
+  const getHistoryColor = (count: number) => {
+    if (count === 1) return '#888'; // 控えめな色
+    if (count <= 3) return '#ffa500'; // オレンジ
+    if (count <= 5) return '#ff8c00'; // より強いオレンジ
+    return '#ff6b35'; // 最も強い色
+  };
 
   return (
     <div className="question-count-selector">
@@ -116,15 +154,26 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       {expandedMode === 'batch-10' && (
         <div className="range-selection-container">
           <div className="start-index-grid">
-            {ranges10.map(range => (
-              <button
-                key={range.start}
-                className="start-index-button"
-                onClick={() => handleRangeSelect('batch-10', range.start)}
-              >
-                {range.start}-{range.end}
-              </button>
-            ))}
+            {ranges10.map(range => {
+              const history = getRangeHistory('batch-10', range.start);
+              return (
+                <button
+                  key={range.start}
+                  className="start-index-button"
+                  onClick={() => handleRangeSelect('batch-10', range.start)}
+                >
+                  {range.start}-{range.end}
+                  {history && (
+                    <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
+                      <span className="history-count">×{history.count}</span>
+                      <span className={`history-date ${history.isToday ? 'today' : ''}`}>
+                        {history.latestDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                      </span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -132,15 +181,26 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       {expandedMode === 'batch-20' && (
         <div className="range-selection-container">
           <div className="start-index-grid">
-            {ranges20.map(range => (
-              <button
-                key={range.start}
-                className="start-index-button"
-                onClick={() => handleRangeSelect('batch-20', range.start)}
-              >
-                {range.start}-{range.end}
-              </button>
-            ))}
+            {ranges20.map(range => {
+              const history = getRangeHistory('batch-20', range.start);
+              return (
+                <button
+                  key={range.start}
+                  className="start-index-button"
+                  onClick={() => handleRangeSelect('batch-20', range.start)}
+                >
+                  {range.start}-{range.end}
+                  {history && (
+                    <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
+                      <span className="history-count">×{history.count}</span>
+                      <span className={`history-date ${history.isToday ? 'today' : ''}`}>
+                        {history.latestDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                      </span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -148,15 +208,26 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       {expandedMode === 'batch-40' && (
         <div className="range-selection-container">
           <div className="start-index-grid">
-            {ranges40.map(range => (
-              <button
-                key={range.start}
-                className="start-index-button"
-                onClick={() => handleRangeSelect('batch-40', range.start)}
-              >
-                {range.start}-{range.end}
-              </button>
-            ))}
+            {ranges40.map(range => {
+              const history = getRangeHistory('batch-40', range.start);
+              return (
+                <button
+                  key={range.start}
+                  className="start-index-button"
+                  onClick={() => handleRangeSelect('batch-40', range.start)}
+                >
+                  {range.start}-{range.end}
+                  {history && (
+                    <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
+                      <span className="history-count">×{history.count}</span>
+                      <span className={`history-date ${history.isToday ? 'today' : ''}`}>
+                        {history.latestDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                      </span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
