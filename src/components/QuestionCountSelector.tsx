@@ -70,31 +70,37 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
     // 保存時と同じ形式でmodeKeyを生成（例: structure-to-name-organic）
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey(questionCountMode, startIndex);
-    const history = getScoreHistory(modeKey, rangeKey);
+    let history = getScoreHistory(modeKey, rangeKey);
     
-    // 履歴が見つからない場合、すべてのlocalStorageキーを確認
+    // 新しい形式の履歴が見つからない場合、古い形式（chemistry-quiz-score-history）を確認
     if (history.length === 0) {
-      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('chemistry-quiz-score-history-'));
+      const oldHistory = getScoreHistory(); // mode/rangeKeyなしで呼び出すと古い形式を取得
+      if (oldHistory.length > 0) {
+        history = oldHistory;
+      }
+    }
+    
+    // それでも見つからない場合、localStorageを直接確認
+    if (history.length === 0) {
+      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('chemistry-quiz-score-history'));
+      // まず新しい形式を探す
       const expectedKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
-      const matchingKeys = allKeys.filter(key => key.includes(modeKey) && key.includes(rangeKey));
-      if (matchingKeys.length > 0) {
-        // キーが見つかったが、getScoreHistoryで取得できていない場合は、直接取得を試みる
-        const directData = localStorage.getItem(matchingKeys[0]);
+      let matchingKey = allKeys.find(key => key === expectedKey);
+      // 見つからない場合は、modeKeyとrangeKeyを含むキーを探す
+      if (!matchingKey) {
+        matchingKey = allKeys.find(key => key.includes(modeKey) && key.includes(rangeKey));
+      }
+      // それでも見つからない場合は、古い形式（chemistry-quiz-score-history）を探す
+      if (!matchingKey) {
+        matchingKey = allKeys.find(key => key === 'chemistry-quiz-score-history');
+      }
+      if (matchingKey) {
+        const directData = localStorage.getItem(matchingKey);
         if (directData) {
           try {
             const parsed = JSON.parse(directData);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              const latestDate = new Date(parsed[0].date);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const latestDateOnly = new Date(latestDate);
-              latestDateOnly.setHours(0, 0, 0, 0);
-              const isToday = latestDateOnly.getTime() === today.getTime();
-              return {
-                count: parsed.length,
-                latestDate: latestDate,
-                isToday: isToday
-              };
+              history = parsed;
             }
           } catch (e) {
             // パースエラーは無視
@@ -103,11 +109,12 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       }
     }
     
+    
     if (history.length === 0) {
       return null;
     }
     
-    // 最新の日付を取得
+    // 最新の日付を取得（スコアの降順でソートされているので、最初の要素が最新）
     const latestDate = new Date(history[0].date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
