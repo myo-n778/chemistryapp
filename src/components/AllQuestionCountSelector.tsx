@@ -125,7 +125,7 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
               className="start-index-button"
               onClick={() => handleSelect(count)}
             >
-              {count}
+              <span style={{ position: 'relative', zIndex: 1 }}>{count}</span>
               {history && (
                 <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
                   <span className="history-count">×{history.count}</span>
