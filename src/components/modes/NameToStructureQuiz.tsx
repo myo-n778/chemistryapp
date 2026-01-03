@@ -328,6 +328,13 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
           pointScore={pointScore}
           onRestart={handleReset}
           onBack={onBack}
+          onNext={onNextRange}
+          quizSettings={quizSettings}
+          totalCount={totalCount}
+          mode={`name-to-structure-${category}`}
+          rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+            ? getRangeKey('batch-10', quizSettings.startIndex)
+            : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
         />
       )}
     </div>

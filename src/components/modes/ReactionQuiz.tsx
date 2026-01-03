@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
-import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
@@ -208,6 +207,48 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     setQuestionPatterns(reactions.map(() => Math.floor(Math.random() * 2)));
   };
 
+  // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）
+  const handleContentClick = (e: React.MouseEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      // ボタンやインタラクティブな要素以外をクリックした場合に進む
+      if (!target.closest('button') && !target.closest('a')) {
+        // PCの場合はシングルクリックで進む
+        handleNext();
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button') && !target.closest('a')) {
+        e.preventDefault();
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapRef.current;
+        
+        // 300ms以内に2回タップされたらダブルタップとみなす
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          if (tapTimeoutRef.current !== null) {
+            window.clearTimeout(tapTimeoutRef.current);
+            tapTimeoutRef.current = null;
+          }
+          lastTapRef.current = 0;
+          handleNext();
+        } else {
+          // シングルタップの可能性があるので、タイムアウトを設定
+          lastTapRef.current = now;
+          if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+          }
+          tapTimeoutRef.current = window.setTimeout(() => {
+            lastTapRef.current = 0;
+          }, 300) as unknown as number;
+        }
+      }
+    }
+  };
+
   // 表示ロジックの分岐（Hooksの後）
   if (loading) {
     return (
@@ -234,6 +275,10 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   }
 
   if (isFinished) {
+    const mode = `reaction-${category}`;
+    const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+      ? getRangeKey('batch-10', quizSettings.startIndex)
+      : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
     return (
       <QuizSummary
         score={score}
@@ -241,6 +286,11 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         pointScore={pointScore}
         onRestart={handleReset}
         onBack={onBack}
+        onNext={onNextRange}
+        quizSettings={quizSettings}
+        totalCount={totalCount}
+        mode={mode}
+        rangeKey={rangeKey}
       />
     );
   }
