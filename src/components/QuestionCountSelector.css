@@ -275,15 +275,17 @@
 
 .history-count {
   font-weight: bold;
+  text-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
 }
 
 .history-date {
   font-size: 0.55rem;
+  text-shadow: 0 0 3px currentColor, 0 0 6px currentColor;
 }
 
 .history-date.today {
   font-weight: bold;
-  text-shadow: 0 0 4px currentColor;
+  text-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
   animation: todayPulse 2s ease-in-out infinite;
 }
 
@@ -308,19 +310,23 @@
   align-items: flex-end;
   gap: 1px;
   pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
 }
 
 .history-count {
   font-weight: bold;
+  text-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
 }
 
 .history-date {
   font-size: 0.55rem;
+  text-shadow: 0 0 3px currentColor, 0 0 6px currentColor;
 }
 
 .history-date.today {
   font-weight: bold;
-  text-shadow: 0 0 4px currentColor;
+  text-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
   animation: todayPulse 2s ease-in-out infinite;
 }
 
