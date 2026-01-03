@@ -63,11 +63,16 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
 
   // 取り組み履歴を取得する関数
   const getRangeHistory = (questionCountMode: 'batch-10' | 'batch-20' | 'batch-40', startIndex: number) => {
-    if (!mode || !category) return null;
+    if (!mode || !category) {
+      console.log('[getRangeHistory] mode or category is missing', { mode, category });
+      return null;
+    }
     
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey(questionCountMode, startIndex);
+    console.log('[getRangeHistory]', { modeKey, rangeKey, questionCountMode, startIndex });
     const history = getScoreHistory(modeKey, rangeKey);
+    console.log('[getRangeHistory] history', history);
     
     if (history.length === 0) return null;
     

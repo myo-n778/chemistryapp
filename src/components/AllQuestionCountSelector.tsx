@@ -33,11 +33,16 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
 
   // 取り組み履歴を取得する関数（ALLモード用）
   const getAllModeHistory = (allQuestionCount: number | undefined) => {
-    if (!mode || !category) return null;
+    if (!mode || !category) {
+      console.log('[getAllModeHistory] mode or category is missing', { mode, category });
+      return null;
+    }
     
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey('all', undefined, allQuestionCount);
+    console.log('[getAllModeHistory]', { modeKey, rangeKey, allQuestionCount });
     const history = getScoreHistory(modeKey, rangeKey);
+    console.log('[getAllModeHistory] history', history);
     
     if (history.length === 0) return null;
     
