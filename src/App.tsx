@@ -137,6 +137,29 @@ function App() {
     );
   }
 
+  // 無機化学は未実装のため、準備中画面を表示
+  if (selectedCategory === 'inorganic') {
+    return (
+      <div className="App">
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.5rem' }}>
+            準備中
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '1rem' }}>
+            Inorganic Chemistry is under development.
+          </p>
+          <button
+            className="back-button"
+            onClick={() => setSelectedCategory(null)}
+            style={{ marginTop: '20px' }}
+          >
+            ← return
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="App">
@@ -165,7 +188,7 @@ function App() {
             }}
             style={{ marginTop: '20px' }}
           >
-            カテゴリ選択に戻る
+            ← return
           </button>
         </div>
       </div>

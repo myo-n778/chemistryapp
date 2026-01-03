@@ -201,12 +201,7 @@
 }
 
 .all-button-large {
-  width: 100% !important;
-  height: 48px !important;
-  font-size: 1rem !important;
-  background: linear-gradient(135deg, #3a2a1a 0%, #4a3a2a 100%) !important;
-  border-color: #ffa500 !important;
-  color: #ffa500 !important;
+  /* 他のボタンと同じサイズに統一 */
 }
 
 .start-index-grid {

@@ -261,7 +261,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   if (loading) {
     return (
       <div className="quiz-container">
-        <div className="quiz-header"><h1>有機化学Drill</h1></div>
+        <div className="quiz-header"><h1>Organic Chemistry Drill</h1></div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>データを読み込んでいます...</p>
         </div>
@@ -272,7 +272,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   if (reactions.length === 0) {
     return (
       <div className="quiz-container">
-        <div className="quiz-header"><h1>有機化学Drill</h1></div>
+        <div className="quiz-header"><h1>Organic Chemistry Drill</h1></div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>反応データが見つかりませんでした。</p>
           <p>スプレッドシートの「reactions」シートにデータがあるか確認してください。</p>

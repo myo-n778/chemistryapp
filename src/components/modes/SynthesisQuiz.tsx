@@ -139,7 +139,7 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
     <div className="quiz-container">
       <div className="quiz-header">
         <h1>
-          有機化学Drill　<span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
+          Organic Chemistry Drill <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
         </h1>
       </div>
 

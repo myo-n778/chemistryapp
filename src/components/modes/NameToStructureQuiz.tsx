@@ -38,7 +38,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h1>有機化学Drill</h1>
+          <h1>Organic Chemistry Drill</h1>
         </div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>問題データが読み込めませんでした。</p>
