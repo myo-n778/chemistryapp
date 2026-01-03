@@ -353,7 +353,16 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
             <div className="reactant-block">
               <span className="label">Reactant</span>
               <div className="name-box">{currentReaction.from}</div>
-              {fromCompound && <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} size={200} />}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {fromCompound ? (
+                  <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} size={200} />
+                ) : (
+                  <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
+                    {/* 図が見つからない場合のフォールバック */}
+                    (NO IMAGE: {currentReaction.from})
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="arrow-block">
