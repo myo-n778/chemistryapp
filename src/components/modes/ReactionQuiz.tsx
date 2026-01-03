@@ -70,6 +70,22 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   }, [category, isShuffleMode, quizSettings]);
 
   // キーボード操作のサポート
+  // quizSettings.startIndexが変更された時（Next押下時）に状態をリセット
+  useEffect(() => {
+    if (quizSettings?.startIndex !== undefined) {
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setShowResult(false);
+      setScore(0);
+      setTotalAnswered(0);
+      setPointScore(0);
+      setIsFinished(false);
+      setQuestionStartTime(Date.now());
+      setLastQuestionKey(null);
+      setConsecutiveCount(0);
+    }
+  }, [quizSettings?.startIndex]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showResult && (e.key === 'Enter' || e.key === ' ')) {

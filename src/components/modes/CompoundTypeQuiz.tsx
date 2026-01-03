@@ -235,6 +235,22 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     setConsecutiveCount(0);
   };
 
+  // quizSettings.startIndexが変更された時（Next押下時）に状態をリセット
+  useEffect(() => {
+    if (quizSettings?.startIndex !== undefined) {
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setShowResult(false);
+      setScore(0);
+      setTotalAnswered(0);
+      setPointScore(0);
+      setIsFinished(false);
+      setQuestionStartTime(Date.now());
+      setLastQuestionId(null);
+      setConsecutiveCount(0);
+    }
+  }, [quizSettings?.startIndex]);
+
   useEffect(() => {
     if (!isFinished) {
       setSelectedAnswer(null);

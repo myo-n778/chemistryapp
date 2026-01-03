@@ -170,6 +170,23 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     }
   };
 
+  // quizSettings.startIndexが変更された時（Next押下時）に状態をリセット
+  useEffect(() => {
+    if (quizSettings?.startIndex !== undefined) {
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setShowResult(false);
+      setShowExplanation(false);
+      setScore(0);
+      setTotalAnswered(0);
+      setPointScore(0);
+      setIsFinished(false);
+      setQuestionStartTime(Date.now());
+      setLastQuestionId(null);
+      setConsecutiveCount(0);
+    }
+  }, [quizSettings?.startIndex]);
+
   // スコア計算（pointScore更新）
   useEffect(() => {
     if (totalAnswered > 0) {
