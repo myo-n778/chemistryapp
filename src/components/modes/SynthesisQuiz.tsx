@@ -19,7 +19,7 @@ interface SynthesisQuizProps {
   onNextRange?: () => void;
 }
 
-export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, category, onBack, quizSettings, totalCount = 0, onNextRange }) => {
+export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, category, onBack, quizSettings: _quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
