@@ -9,11 +9,14 @@ interface QuizSummaryProps {
     pointScore?: number;
     onRestart: () => void;
     onBack: () => void;
+    mode?: string;
+    rangeKey?: string;
 }
 
-export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore = 0, onRestart, onBack }) => {
+export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore = 0, onRestart, onBack, mode, rangeKey }) => {
     const percentage = Math.round((score / total) * 100);
-    const history = getScoreHistory();
+    // モード×範囲ごとに分離されたランキングを取得
+    const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
 
     const formatDate = (isoString: string): string => {
         try {

@@ -196,7 +196,7 @@ function App() {
     );
   }
 
-  // ALLモードで問題数が未選択の場合
+  // ALLモードで問題数が未選択の場合（undefinedの場合のみ選択画面を表示）
   if (quizSettings.questionCountMode === 'all' && quizSettings.allQuestionCount === undefined) {
     return (
       <div className="App">

@@ -216,6 +216,8 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
           total={totalAnswered}
           onRestart={handleReset}
           onBack={onBack}
+          mode={`substitution-${category}`}
+          rangeKey="all-full"
         />
       )}
     </div>

@@ -216,6 +216,8 @@ export const SynthesisQuiz: React.FC<SynthesisQuizProps> = ({ compounds, categor
           total={totalAnswered}
           onRestart={handleReset}
           onBack={onBack}
+          mode={`synthesis-${category}`}
+          rangeKey="all-full"
         />
       )}
     </div>

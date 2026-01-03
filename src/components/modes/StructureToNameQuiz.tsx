@@ -115,12 +115,21 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
-    if (totalAnswered >= 10) {
-      // 最高記録を保存（モード×範囲ごとに分離）
+    const getModeAndRangeKey = () => {
       const mode = `structure-to-name-${category}`;
       const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
         ? getRangeKey('batch-10', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+        ? getRangeKey('batch-20', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+        ? getRangeKey('batch-40', quizSettings.startIndex)
         : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+
+    if (totalAnswered >= 10) {
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
@@ -135,10 +144,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
       }
     } else {
       // 最高記録を保存（モード×範囲ごとに分離）
-      const mode = `structure-to-name-${category}`;
-      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
-        ? getRangeKey('batch-10', quizSettings.startIndex)
-        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     }
@@ -304,15 +310,27 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
         </div>
       </div>
 
-      {isFinished && (
-        <QuizSummary
-          score={score}
-          total={totalAnswered}
-          pointScore={pointScore}
-          onRestart={handleReset}
-          onBack={onBack}
-        />
-      )}
+      {isFinished && (() => {
+        const mode = `structure-to-name-${category}`;
+        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+          ? getRangeKey('batch-10', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+          ? getRangeKey('batch-20', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+          ? getRangeKey('batch-40', quizSettings.startIndex)
+          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+        return (
+          <QuizSummary
+            score={score}
+            total={totalAnswered}
+            pointScore={pointScore}
+            onRestart={handleReset}
+            onBack={onBack}
+            mode={mode}
+            rangeKey={rangeKey}
+          />
+        );
+      })()}
     </div>
   );
 };
