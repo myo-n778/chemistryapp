@@ -330,7 +330,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
             })}
           </div>
         </div>
-      </div>
     </div>
   );
 };
