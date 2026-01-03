@@ -4,8 +4,9 @@ import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
-import { loadCompounds, loadReactions } from './data/dataLoader';
+import { loadCompounds, loadReactions, loadExperiments } from './data/dataLoader';
 import { Compound } from './types';
+import { ExperimentCSVRow } from './utils/experimentParser';
 import './App.css';
 
 export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
@@ -23,6 +24,7 @@ function App() {
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [reactions, setReactions] = useState<number>(0); // モード④⑤用のreactions数
+  const [experiments, setExperiments] = useState<ExperimentCSVRow[]>([]); // モード⑥用のexperiments
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -66,20 +68,46 @@ function App() {
             .then(reactionsData => {
               console.log(`App.tsx: Loaded ${reactionsData.length} reactions`);
               setReactions(reactionsData.length);
-              setLoading(false);
-              setLoadingError(null);
+              
+              // モード⑥用にexperimentsデータも読み込む
+              loadExperiments(selectedCategory)
+                .then(experimentsData => {
+                  console.log(`App.tsx: Loaded ${experimentsData.length} experiments`);
+                  setExperiments(experimentsData);
+                  setLoading(false);
+                  setLoadingError(null);
+                })
+                .catch(error => {
+                  console.error('Failed to load experiments:', error);
+                  setExperiments([]);
+                  setLoading(false);
+                  setLoadingError(null); // experimentsの読み込み失敗は致命的ではない
+                });
             })
             .catch(error => {
               console.error('Failed to load reactions:', error);
               setReactions(0);
-              setLoading(false);
-              setLoadingError(null); // reactionsの読み込み失敗は致命的ではない
+              // reactionsの読み込み失敗時もexperimentsを試みる
+              loadExperiments(selectedCategory)
+                .then(experimentsData => {
+                  console.log(`App.tsx: Loaded ${experimentsData.length} experiments`);
+                  setExperiments(experimentsData);
+                  setLoading(false);
+                  setLoadingError(null);
+                })
+                .catch(expError => {
+                  console.error('Failed to load experiments:', expError);
+                  setExperiments([]);
+                  setLoading(false);
+                  setLoadingError(null);
+                });
             });
         })
         .catch(error => {
           console.error('Failed to load compounds:', error);
           setCompounds([]);
           setReactions(0);
+          setExperiments([]);
           setLoading(false);
           const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
           setLoadingError(errorMessage);
@@ -88,6 +116,7 @@ function App() {
       // カテゴリが未選択の場合は状態をリセット
       setCompounds([]);
       setReactions(0);
+      setExperiments([]);
       setLoading(false);
       setLoadingError(null);
     }
@@ -223,8 +252,12 @@ function App() {
     );
   }
 
-  // モード④⑤の場合はreactions数を使用、それ以外はcompounds数を使用
-  const totalQuestionCount = (selectedMode === 'reaction' || selectedMode === 'substitution') ? reactions : compounds.length;
+  // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、それ以外はcompounds数を使用
+  const totalQuestionCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
+    ? reactions 
+    : selectedMode === 'experiment' 
+    ? experiments.length 
+    : compounds.length;
 
   if (!quizSettings) {
     return (
@@ -300,8 +333,12 @@ function App() {
     }
     
     const nextStartIndex = quizSettings.startIndex + batchSize;
-    // 境界チェック（モード④⑤の場合はreactions数を使用）
-    const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') ? reactions : compounds.length;
+    // 境界チェック（モード④⑤の場合はreactions数、モード⑥の場合はexperiments数を使用）
+    const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
+      ? reactions 
+      : selectedMode === 'experiment' 
+      ? experiments.length 
+      : compounds.length;
     if (nextStartIndex > maxCount) {
       return; // 次の範囲が存在しない
     }
@@ -318,6 +355,7 @@ function App() {
       <Quiz
         compounds={finalCompounds}
         allCompounds={compounds}
+        experiments={experiments}
         mode={selectedMode}
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}

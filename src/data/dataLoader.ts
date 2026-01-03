@@ -1,9 +1,10 @@
 import { Compound } from '../types';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
+import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
 import { Category } from '../components/CategorySelector';
 import { DATA_SOURCE } from '../config/dataSource';
-import { loadCompoundsFromGAS, loadReactionsFromGAS } from './gasLoader';
+import { loadCompoundsFromGAS, loadReactionsFromGAS, loadExperimentsFromGAS } from './gasLoader';
 
 // キャッシュの有効期限（1時間）
 const CACHE_TTL = 60 * 60 * 1000; // 1時間（ミリ秒）
@@ -19,6 +20,11 @@ const compoundCache: Record<Category, CacheEntry<Compound[]> | null> = {
 };
 
 const reactionCache: Record<Category, CacheEntry<ReactionCSVRow[]> | null> = {
+  organic: null,
+  inorganic: null,
+};
+
+const experimentCache: Record<Category, CacheEntry<ExperimentCSVRow[]> | null> = {
   organic: null,
   inorganic: null,
 };
@@ -175,6 +181,61 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
     throw new Error('Failed to parse reactions from CSV');
   } catch (error) {
     console.warn(`Failed to load reactions from CSV for ${category}:`, error);
+    return [];
+  }
+};
+
+export const loadExperiments = async (category: Category): Promise<ExperimentCSVRow[]> => {
+  // キャッシュが有効な場合はそれを返す
+  if (isCacheValid(experimentCache[category])) {
+    return experimentCache[category]!.data;
+  }
+  
+  // キャッシュをクリア
+  experimentCache[category] = null;
+
+  // データソースに応じて読み込み方法を切り替え
+  if (DATA_SOURCE === 'gas') {
+    try {
+      const experiments = await fetchWithRetry(() => loadExperimentsFromGAS(category), 2, 1000);
+      if (experiments && Array.isArray(experiments) && experiments.length > 0) {
+        experimentCache[category] = { data: experiments, timestamp: Date.now() };
+        return experiments;
+      }
+      console.warn(`GAS returned empty array for experiments ${category}, falling back to CSV`);
+    } catch (error) {
+      console.warn(`Failed to load experiments from GAS for ${category}, falling back to CSV:`, error);
+      // GASが失敗した場合はCSVにフォールバック
+    }
+  }
+
+  // CSVファイルを読み込む
+  try {
+    const baseUrl = import.meta.env.BASE_URL || '';
+    const response = await fetchWithRetry(
+      () => fetch(`${baseUrl}data/${category}/experiment.csv`),
+      2,
+      1000
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to load ${category}/experiment.csv: ${response.statusText}`);
+    }
+
+    const csvText = await response.text();
+    if (!csvText || csvText.trim().length === 0) {
+      throw new Error(`Empty CSV file for ${category}/experiment.csv`);
+    }
+
+    const experiments = parseExperimentCSV(csvText);
+
+    if (experiments && Array.isArray(experiments)) {
+      console.log(`[dataLoader] Loaded ${experiments.length} experiments for ${category}`);
+      experimentCache[category] = { data: experiments, timestamp: Date.now() };
+      return experiments;
+    }
+    throw new Error('Failed to parse experiments from CSV');
+  } catch (error) {
+    console.warn(`Failed to load experiments from CSV for ${category}:`, error);
     return [];
   }
 };

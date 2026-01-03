@@ -2,15 +2,18 @@ import React from 'react';
 import { Compound } from '../types';
 import { QuizMode } from './ModeSelector';
 import { Category } from './CategorySelector';
+import { ExperimentCSVRow } from '../utils/experimentParser';
 import { StructureToNameQuiz } from './modes/StructureToNameQuiz';
 import { NameToStructureQuiz } from './modes/NameToStructureQuiz';
 import { CompoundTypeQuiz } from './modes/CompoundTypeQuiz';
 import { ReactionQuiz } from './modes/ReactionQuiz';
 import { SubstitutionQuiz } from './modes/SubstitutionQuiz';
+import { ExperimentQuiz } from './modes/ExperimentQuiz';
 
 interface QuizProps {
   compounds: Compound[];
   allCompounds: Compound[];
+  experiments: ExperimentCSVRow[];
   mode: QuizMode;
   category: Category;
   onBack: () => void;
@@ -18,7 +21,7 @@ interface QuizProps {
   onNextRange?: () => void;
 }
 
-export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, category, onBack, quizSettings, onNextRange }) => {
+export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, mode, category, onBack, quizSettings, onNextRange }) => {
   switch (mode) {
     case 'structure-to-name':
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
@@ -30,6 +33,8 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, categ
       return <ReactionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'substitution':
       return <SubstitutionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
+    case 'experiment':
+      return <ExperimentQuiz experiments={experiments} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={experiments.length} onNextRange={onNextRange} />;
     default:
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
   }

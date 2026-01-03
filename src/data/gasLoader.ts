@@ -3,6 +3,7 @@ import { Category } from '../components/CategorySelector';
 import { GAS_URLS } from '../config/dataSource';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
+import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
 
 /**
  * GASから化合物データを取得
@@ -150,6 +151,67 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
     }
   } catch (error) {
     console.error(`Failed to load reactions from GAS for ${category}:`, error);
+    return [];
+  }
+};
+
+/**
+ * GASからexperimentシートのデータを取得
+ */
+export const loadExperimentsFromGAS = async (category: Category): Promise<ExperimentCSVRow[]> => {
+  const gasUrl = GAS_URLS[category];
+
+  if (!gasUrl) {
+    throw new Error(`GAS URL not configured for category: ${category}`);
+  }
+
+  try {
+    // GASエンドポイントからデータを取得（タイムアウト付き）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
+
+    let response: Response;
+    try {
+      response = await fetch(`${gasUrl}?type=experiment&category=${category}`, {
+        method: 'GET',
+        mode: 'cors',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Request timeout: GAS took too long to respond');
+      }
+      throw fetchError;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to load experiments from GAS: ${response.status} ${response.statusText}`);
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      throw new Error('Failed to parse JSON response from GAS');
+    }
+
+    if (!data || (typeof data !== 'object')) {
+      throw new Error('Invalid response format from GAS');
+    }
+
+    if (data.csv) {
+      // CSV形式で返される場合
+      return parseExperimentCSV(data.csv);
+    } else if (data.experiments) {
+      // 既にパース済みのexperimentデータが返される場合
+      return data.experiments as ExperimentCSVRow[];
+    } else {
+      throw new Error('Invalid data format from GAS');
+    }
+  } catch (error) {
+    console.error(`Failed to load experiments from GAS for ${category}:`, error);
     return [];
   }
 };
