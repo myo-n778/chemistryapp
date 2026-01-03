@@ -29,7 +29,7 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, categ
     case 'reaction':
       return <ReactionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'substitution':
-      return <SubstitutionQuiz compounds={compounds} category={category} onBack={onBack} />;
+      return <SubstitutionQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     default:
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
   }

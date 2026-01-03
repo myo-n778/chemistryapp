@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
+import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
@@ -41,14 +42,16 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     console.log(`Loading reactions for category: ${category}`);
     loadReactions(category).then(data => {
       console.log(`Loaded ${data.length} reactions:`, data);
-      setReactions(data);
+      // シャッフルモードの場合は順序をランダムに
+      const shuffledData = isShuffleMode ? [...data].sort(() => Math.random() - 0.5) : data;
+      setReactions(shuffledData);
       setLoading(false);
       setQuestionStartTime(Date.now());
     }).catch(err => {
       console.error("Failed to load reactions:", err);
       setLoading(false);
     });
-  }, [category]);
+  }, [category, isShuffleMode]);
 
   // キーボード操作のサポート
   useEffect(() => {
@@ -287,6 +290,43 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
 
   return (
     <div className="quiz-container" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={handleTouchEnd}>
+      <div className="quiz-header">
+        <h1>Organic Chemistry Drill</h1>
+        <div className="quiz-header-right">
+          <span className="score-text">{(() => {
+            const mode = `reaction-${category}`;
+            const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+              ? getRangeKey('batch-10', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+              ? getRangeKey('batch-20', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+              ? getRangeKey('batch-40', quizSettings.startIndex)
+              : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+            return <ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} mode={mode} rangeKey={rangeKey} />;
+          })()}</span>
+          <div className="quiz-header-buttons">
+            <button className="back-button" onClick={onBack}>
+              return
+            </button>
+            <button className="reset-button" onClick={handleReset}>
+              reset
+            </button>
+          </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {reactions.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / reactions.length) * 100}%` }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
         <div className="reaction-quiz-wrapper">
           {/* 質問文エリア - 余白を最小に */}
           <div className="reaction-question-line">

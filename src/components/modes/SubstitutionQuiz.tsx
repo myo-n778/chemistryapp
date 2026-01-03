@@ -3,9 +3,9 @@ import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
-import { ProgressBar } from '../shared/ProgressBar';
 import { ResultMessage } from '../shared/ResultMessage';
 import { QuizSummary } from '../shared/QuizSummary';
+import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import '../Quiz.css';
@@ -14,12 +14,13 @@ interface SubstitutionQuizProps {
   compounds: Compound[];
   category: Category;
   onBack: () => void;
-  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  isShuffleMode?: boolean;
+  quizSettings?: { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
   totalCount?: number;
   onNextRange?: () => void;
 }
 
-export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack, quizSettings: _quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
+export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -28,14 +29,21 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
+  const [pointScore, setPointScore] = useState(0); // 得点表示モード用
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [lastQuestionKey, setLastQuestionKey] = useState<string | null>(null);
+  const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
     loadReactions(category).then(data => {
-      setReactions(data);
+      // シャッフルモードの場合は順序をランダムに
+      const shuffledData = isShuffleMode ? [...data].sort(() => Math.random() - 0.5) : data;
+      setReactions(shuffledData);
       setLoading(false);
+      setQuestionStartTime(Date.now());
     });
-  }, [category]);
+  }, [category, isShuffleMode]);
 
   const currentReaction = reactions[currentIndex];
   
@@ -82,6 +90,30 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const handleAnswer = (answer: string) => {
     if (showResult) return;
     const isCorrect = answer === currentReaction.reagent;
+    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
+    
+    // 連続正解カウント（同じ問題が連続で正解した場合のみ）
+    const currentQuestionKey = currentReaction ? `${currentReaction.from}-${currentReaction.to}` : '';
+    let newConsecutiveCount = 0;
+    if (isCorrect && lastQuestionKey === currentQuestionKey) {
+      newConsecutiveCount = consecutiveCount + 1;
+      setConsecutiveCount(newConsecutiveCount);
+      setLastQuestionKey(currentQuestionKey); // 正解した場合のみ更新
+    } else if (isCorrect) {
+      newConsecutiveCount = 1;
+      setConsecutiveCount(1);
+      setLastQuestionKey(currentQuestionKey); // 正解した場合のみ更新
+    } else {
+      setConsecutiveCount(0);
+      setLastQuestionKey(null); // 間違えた場合はリセット
+    }
+    
+    // スコア計算（得点表示モード）
+    if (isCorrect) {
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
+      setPointScore(prev => prev + points);
+    }
+    
     setSelectedAnswer(answer);
     setShowResult(true);
     setTotalAnswered(prev => prev + 1);
@@ -94,13 +126,38 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
+    const getModeAndRangeKey = () => {
+      const mode = `substitution-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+        ? getRangeKey('batch-20', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+        ? getRangeKey('batch-40', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+
     if (totalAnswered >= 10) {
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const { mode, rangeKey } = getModeAndRangeKey();
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
+      setQuestionStartTime(Date.now());
+      // 次の問題が異なる場合は連続カウントをリセット
+      const nextReaction = reactions[currentIndex + 1];
+      const nextQuestionKey = nextReaction ? `${nextReaction.from}-${nextReaction.to}` : '';
+      if (nextQuestionKey !== lastQuestionKey) {
+        setConsecutiveCount(0);
+      }
     } else {
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const { mode, rangeKey } = getModeAndRangeKey();
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     }
     
@@ -115,7 +172,16 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
+    setPointScore(0);
     setIsFinished(false);
+    setQuestionStartTime(Date.now());
+    setLastQuestionKey(null);
+    setConsecutiveCount(0);
+    // シャッフルモードの場合は再シャッフル
+    if (isShuffleMode && reactions.length > 0) {
+      const shuffledData = [...reactions].sort(() => Math.random() - 0.5);
+      setReactions(shuffledData);
+    }
   };
 
   // Enterキー、スペースキーで次に進む
@@ -146,12 +212,42 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h1>
-          Organic Chemistry Drill <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
-        </h1>
+        <h1>Organic Chemistry Drill</h1>
+        <div className="quiz-header-right">
+          <span className="score-text">{(() => {
+            const mode = `substitution-${category}`;
+            const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+              ? getRangeKey('batch-10', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+              ? getRangeKey('batch-20', quizSettings.startIndex)
+              : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+              ? getRangeKey('batch-40', quizSettings.startIndex)
+              : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+            return <ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} mode={mode} rangeKey={rangeKey} />;
+          })()}</span>
+          <div className="quiz-header-buttons">
+            <button className="back-button" onClick={onBack}>
+              return
+            </button>
+            <button className="reset-button" onClick={handleReset}>
+              reset
+            </button>
+          </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {reactions.length}</span>
+              {showResult && (
+                <button className="next-button-mobile" onClick={handleNext}>
+                  Next
+                </button>
+              )}
+            </div>
+            <div className="progress-bar-mini">
+              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / reactions.length) * 100}%` }}></div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <ProgressBar current={currentIndex + 1} total={reactions.length} showResult={showResult} onNext={handleNext} />
 
       <div className="quiz-content" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={(e) => {
         if (showResult && !isProcessingRef.current) {
@@ -226,25 +322,27 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         )}
       </div>
 
-      <div className="quiz-footer">
-        <button className="back-button" onClick={onBack}>
-          モード選択に戻る
-        </button>
-        <button className="reset-button" onClick={handleReset}>
-          リセット
-        </button>
-      </div>
-
-      {isFinished && (
-        <QuizSummary
-          score={score}
-          total={totalAnswered}
-          onRestart={handleReset}
-          onBack={onBack}
-          mode={`substitution-${category}`}
-          rangeKey="all-full"
-        />
-      )}
+      {isFinished && (() => {
+        const mode = `substitution-${category}`;
+        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+          ? getRangeKey('batch-10', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+          ? getRangeKey('batch-20', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+          ? getRangeKey('batch-40', quizSettings.startIndex)
+          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+        return (
+          <QuizSummary
+            score={score}
+            total={totalAnswered}
+            pointScore={pointScore}
+            onRestart={handleReset}
+            onBack={onBack}
+            mode={mode}
+            rangeKey={rangeKey}
+          />
+        );
+      })()}
     </div>
   );
 };
