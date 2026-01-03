@@ -35,17 +35,13 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const lastTapRef = useRef<number>(0);
   const tapTimeoutRef = useRef<number | null>(null);
 
-  // 各問題のパターン（0: toを答える, 1: reagentを答える）を保持
-  const [questionPatterns, setQuestionPatterns] = useState<number[]>([]);
+  // モード④は常にtoを答えるため、パターンは不要
 
   useEffect(() => {
     console.log(`Loading reactions for category: ${category}`);
     loadReactions(category).then(data => {
       console.log(`Loaded ${data.length} reactions:`, data);
       setReactions(data);
-      // ランダムにパターンを割り振り
-      const patterns = data.map(() => Math.floor(Math.random() * 2));
-      setQuestionPatterns(patterns);
       setLoading(false);
       setQuestionStartTime(Date.now());
     }).catch(err => {
@@ -67,32 +63,20 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   }, [showResult, currentIndex, reactions.length]);
 
   const currentReaction = reactions[currentIndex];
-  const currentPattern = questionPatterns[currentIndex]; // 0: Dを答える, 1: Cを答える
 
-  // 選択肢の生成（Hooksは条件分岐より前に呼ぶ）
+  // 選択肢の生成（常にtoを答える）
   const options = useMemo(() => {
     if (loading || reactions.length === 0 || !currentReaction || isFinished) return [];
 
-    if (currentPattern === 0) {
-      // 物質D（to）を答えるパターン
-      const correctName = currentReaction.to;
-      const allNames = Array.from(new Set(compounds.map(c => c.name)));
-      const wrongNames = allNames
-        .filter(name => name !== correctName)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
-      return [correctName, ...wrongNames].sort(() => Math.random() - 0.5);
-    } else {
-      // 試薬C（reagent）を答えるパターン
-      const correctReagent = currentReaction.reagent;
-      const allReagents = Array.from(new Set(reactions.map(r => r.reagent))).filter(r => r !== '');
-      const wrongReagents = allReagents
-        .filter(r => r !== correctReagent)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
-      return [correctReagent, ...wrongReagents].sort(() => Math.random() - 0.5);
-    }
-  }, [currentIndex, currentPattern, reactions, compounds, isFinished, loading, currentReaction]);
+    // 物質toを答える
+    const correctName = currentReaction.to;
+    const allNames = Array.from(new Set(compounds.map(c => c.name)));
+    const wrongNames = allNames
+      .filter(name => name !== correctName)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+    return [correctName, ...wrongNames].sort(() => Math.random() - 0.5);
+  }, [currentIndex, reactions, compounds, isFinished, loading, currentReaction]);
 
   // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
   const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
@@ -117,7 +101,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       charCodes: [...cleanString(c.name)].map(ch => ch.charCodeAt(0))
     })));
   }
-  const correctValue = currentPattern === 0 ? currentReaction?.to : currentReaction?.reagent;
+  const correctValue = currentReaction?.to;
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
@@ -125,8 +109,8 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     const isCorrect = answer === correctValue;
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     
-    // 連続正解カウント（同じ問題（reaction + pattern）が連続で正解した場合のみ）
-    const currentQuestionKey = currentReaction ? `${currentReaction.from}-${currentReaction.to}-${currentPattern}` : '';
+    // 連続正解カウント（同じ問題が連続で正解した場合のみ）
+    const currentQuestionKey = currentReaction ? `${currentReaction.from}-${currentReaction.to}` : '';
     let newConsecutiveCount = 0;
     if (isCorrect && lastQuestionKey === currentQuestionKey) {
       newConsecutiveCount = consecutiveCount + 1;
@@ -184,8 +168,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       setQuestionStartTime(Date.now());
       // 次の問題が異なる場合は連続カウントをリセット
       const nextReaction = reactions[currentIndex + 1];
-      const nextPattern = questionPatterns[currentIndex + 1];
-      const nextQuestionKey = nextReaction ? `${nextReaction.from}-${nextReaction.to}-${nextPattern}` : '';
+      const nextQuestionKey = nextReaction ? `${nextReaction.from}-${nextReaction.to}` : '';
       if (nextQuestionKey !== lastQuestionKey) {
         setConsecutiveCount(0);
       }
@@ -211,8 +194,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     setQuestionStartTime(Date.now());
     setLastQuestionKey(null);
     setConsecutiveCount(0);
-    // パターンを再生成
-    setQuestionPatterns(reactions.map(() => Math.floor(Math.random() * 2)));
   };
 
   // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）
@@ -310,7 +291,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
           {/* 質問文エリア - 余白を最小に */}
           <div className="reaction-question-line">
             <span className="question-text-inline">
-              {currentPattern === 0 ? "What is the product of this reaction?" : "What is the reagent for this reaction?"}
+              この反応で、何ができるか？
             </span>
             {showResult && (
               <div className="result-action-inline">
@@ -321,9 +302,9 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
             )}
           </div>
 
-          {/* 説明文の枠を常に確保 */}
+          {/* 説明文を最初から表示 */}
           <div className="reaction-description-area">
-            {currentReaction.description && showResult ? (
+            {currentReaction.description ? (
               <p>{currentReaction.description}</p>
             ) : (
               <p className="description-placeholder">&nbsp;</p>
@@ -339,7 +320,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
 
             <div className="arrow-block">
               <div className="reagent-box">
-                {currentPattern === 1 && !showResult ? <span className="placeholder">?</span> : currentReaction.reagent}
+                {currentReaction.reagent}
               </div>
               <div className="reaction-arrow">→</div>
             </div>
@@ -347,10 +328,10 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
             <div className="product-block">
               <span className="label">Product</span>
               <div className="name-box">
-                {currentPattern === 0 && !showResult ? <span className="placeholder">?</span> : currentReaction.to}
+                {!showResult ? <span className="placeholder">?</span> : currentReaction.to}
               </div>
-              {/* 正解後、または最初からProductが見えているパターンの場合に構造式を表示 */}
-              {(currentPattern === 0 && !showResult) ? (
+              {/* 正解後に構造式を表示 */}
+              {!showResult ? (
                 <div className="structure-placeholder">?</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

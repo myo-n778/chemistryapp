@@ -7,8 +7,7 @@ export type QuizMode =
   | 'name-to-structure'
   | 'compound-type'
   | 'reaction'
-  | 'substitution'
-  | 'synthesis';
+  | 'substitution';
 
 interface ModeSelectorProps {
   category: Category;
@@ -57,24 +56,16 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
           className="mode-button"
           onClick={() => onSelectMode('reaction')}
         >
-          <div className="mode-title">④ 反応クイズ</div>
-          <div className="mode-subtitle">A+B→C、A+C→Bなど</div>
+          <div className="mode-title">④ 反応（何ができる）</div>
+          <div className="mode-subtitle">この反応で、何ができるか？</div>
         </button>
 
         <button
           className="mode-button"
           onClick={() => onSelectMode('substitution')}
         >
-          <div className="mode-title">⑤ 置換反応</div>
-          <div className="mode-subtitle">◯◯をしたら何になる？</div>
-        </button>
-
-        <button
-          className="mode-button"
-          onClick={() => onSelectMode('synthesis')}
-        >
-          <div className="mode-title">⑥ 合成反応</div>
-          <div className="mode-subtitle">◯◯に△△をしたらなる？</div>
+          <div className="mode-title">⑤ 反応（何をした）</div>
+          <div className="mode-subtitle">この反応で、何をしたか？</div>
         </button>
       </div>
     </div>

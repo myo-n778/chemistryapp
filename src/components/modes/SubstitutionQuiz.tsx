@@ -27,14 +27,12 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPreparing, setShowPreparing] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
     loadReactions(category).then(data => {
-      const substitutionReactions = data.filter(r => r.type === 'substitution');
-      setReactions(substitutionReactions);
+      setReactions(data);
       setLoading(false);
     });
   }, [category]);
@@ -59,9 +57,9 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
   }
 
   const fromCompound = compounds.find(c => c.name === currentReaction.from);
-  const correctCompound = compounds.find(c => c.name === currentReaction.to);
+  const toCompound = compounds.find(c => c.name === currentReaction.to);
   
-  if (!fromCompound || !correctCompound) {
+  if (!fromCompound || !toCompound) {
     return (
       <div className="quiz-container">
         <p>データが不足しています</p>
@@ -70,17 +68,26 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     );
   }
 
+  // reagentを答える選択肢を生成
   const options = useMemo(() => {
-    const wrongAnswers = compounds
-      .filter(c => c.name !== correctCompound.name)
+    const correctReagent = currentReaction.reagent;
+    const allReagents = Array.from(new Set(reactions.map(r => r.reagent))).filter(r => r !== '');
+    const wrongReagents = allReagents
+      .filter(r => r !== correctReagent)
       .sort(() => Math.random() - 0.5)
       .slice(0, 3);
-    return [correctCompound.name, ...wrongAnswers.map(c => c.name)].sort(() => Math.random() - 0.5);
-  }, [compounds, correctCompound.name]);
+    return [correctReagent, ...wrongReagents].sort(() => Math.random() - 0.5);
+  }, [currentIndex, reactions, currentReaction]);
 
-  const handleAnswer = (_answer: string) => {
-    setShowPreparing(true);
-    setTimeout(() => setShowPreparing(false), 2000);
+  const handleAnswer = (answer: string) => {
+    if (showResult) return;
+    const isCorrect = answer === currentReaction.reagent;
+    setSelectedAnswer(answer);
+    setShowResult(true);
+    setTotalAnswered(prev => prev + 1);
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+    }
   };
 
   const handleNext = () => {
@@ -128,10 +135,11 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
 
   // 画面全体をクリック/タップで次に進む
   const handleContentClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('button') && !target.closest('a')) {
-      setShowPreparing(true);
-      setTimeout(() => setShowPreparing(false), 2000);
+    if (showResult && !isProcessingRef.current) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('button') && !target.closest('a')) {
+        handleNext();
+      }
     }
   };
 
@@ -145,30 +153,40 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
 
       <ProgressBar current={currentIndex + 1} total={reactions.length} showResult={showResult} onNext={handleNext} />
 
-      <div className="quiz-content" onClick={handleContentClick} onTouchEnd={(e) => {
-        const target = e.target as HTMLElement;
-        if (!target.closest('button') && !target.closest('a')) {
-          e.preventDefault();
-          setShowPreparing(true);
-          setTimeout(() => setShowPreparing(false), 2000);
+      <div className="quiz-content" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={(e) => {
+        if (showResult && !isProcessingRef.current) {
+          const target = e.target as HTMLElement;
+          if (!target.closest('button') && !target.closest('a')) {
+            e.preventDefault();
+            handleNext();
+          }
         }
-      }} style={{ cursor: 'pointer' }}>
-        {showPreparing && (
-          <div style={{ textAlign: 'center', color: '#ffa500', fontSize: '1.2rem', padding: '20px', fontWeight: 'bold' }}>
-            Preparing...
-          </div>
-        )}
+      }}>
         <div className="structure-container">
-          <h2>{currentReaction.description || `「${currentReaction.from}」に${currentReaction.reagent}をしたら何になる？`}</h2>
-          {fromCompound && (
-            <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} />
-          )}
+          <h2>この反応で、何をしたか？</h2>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>From</div>
+              {fromCompound && (
+                <StructureViewer structure={fromCompound.structure} compoundName={fromCompound.name} />
+              )}
+              <div style={{ marginTop: '10px' }}>{currentReaction.from}</div>
+            </div>
+            <div style={{ fontSize: '2rem' }}>→</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>To</div>
+              {toCompound && (
+                <StructureViewer structure={toCompound.structure} compoundName={toCompound.name} />
+              )}
+              <div style={{ marginTop: '10px' }}>{currentReaction.to}</div>
+            </div>
+          </div>
         </div>
 
         <div className="options-container">
           {options.map((option) => {
             const isSelected = selectedAnswer === option;
-            const isCorrect = option === correctCompound.name;
+            const isCorrect = option === currentReaction.reagent;
             const showCorrect = showResult && isCorrect;
             const showIncorrect = showResult && isSelected && !isCorrect;
 
@@ -192,12 +210,19 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         </div>
 
         {showResult && (
-          <ResultMessage
-            isCorrect={selectedAnswer === correctCompound.name}
-            correctAnswer={correctCompound.name}
-            onNext={handleNext}
-            isLast={currentIndex >= reactions.length - 1}
-          />
+          <>
+            {selectedAnswer === currentReaction.reagent && currentReaction.description && (
+              <div style={{ textAlign: 'center', color: '#ffa500', fontSize: '1rem', padding: '15px', marginTop: '20px' }}>
+                {currentReaction.description}
+              </div>
+            )}
+            <ResultMessage
+              isCorrect={selectedAnswer === currentReaction.reagent}
+              correctAnswer={currentReaction.reagent}
+              onNext={handleNext}
+              isLast={currentIndex >= reactions.length - 1}
+            />
+          </>
         )}
       </div>
 

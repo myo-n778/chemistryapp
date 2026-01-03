@@ -7,7 +7,6 @@ import { NameToStructureQuiz } from './modes/NameToStructureQuiz';
 import { CompoundTypeQuiz } from './modes/CompoundTypeQuiz';
 import { ReactionQuiz } from './modes/ReactionQuiz';
 import { SubstitutionQuiz } from './modes/SubstitutionQuiz';
-import { SynthesisQuiz } from './modes/SynthesisQuiz';
 
 interface QuizProps {
   compounds: Compound[];
@@ -31,8 +30,6 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, mode, categ
       return <ReactionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'substitution':
       return <SubstitutionQuiz compounds={compounds} category={category} onBack={onBack} />;
-    case 'synthesis':
-      return <SynthesisQuiz compounds={compounds} category={category} onBack={onBack} />;
     default:
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
   }
