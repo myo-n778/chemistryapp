@@ -216,7 +216,7 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
                   className="start-index-button"
                   onClick={() => handleRangeSelect('batch-20', range.start)}
                 >
-                  {range.start}-{range.end}
+                  <span style={{ position: 'relative', zIndex: 1 }}>{range.start}-{range.end}</span>
                   {history && (
                     <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
                       <span className="history-count">×{history.count}</span>
@@ -243,7 +243,7 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
                   className="start-index-button"
                   onClick={() => handleRangeSelect('batch-40', range.start)}
                 >
-                  {range.start}-{range.end}
+                  <span style={{ position: 'relative', zIndex: 1 }}>{range.start}-{range.end}</span>
                   {history && (
                     <span className="range-history" style={{ color: getHistoryColor(history.count) }}>
                       <span className="history-count">×{history.count}</span>
