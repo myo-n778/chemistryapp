@@ -35,7 +35,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h1>有機化学クイズ</h1>
+          <h1>有機化学Practice</h1>
         </div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>問題データが読み込めませんでした。</p>
@@ -211,7 +211,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h1>有機化学クイズ</h1>
+        <h1>有機化学Practice</h1>
         <div className="quiz-header-right">
           <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
           <div className="quiz-header-buttons">

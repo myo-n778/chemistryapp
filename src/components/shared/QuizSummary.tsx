@@ -35,7 +35,7 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
     return (
         <div className="quiz-summary-overlay">
             <div className="quiz-summary-card">
-                <h2>クイズ結果</h2>
+                <h2>Result</h2>
                 <div className="summary-score-large">
                     {pointScore > 0 ? (
                         <ScoreDisplay score={score} totalAnswered={total} pointScore={pointScore} showPoints={true} />
