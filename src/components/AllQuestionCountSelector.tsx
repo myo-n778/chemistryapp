@@ -31,73 +31,55 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
     onSelectCount(count);
   };
 
-  // 取り組み履歴を取得する関数（ALLモード用）
+  // 取り組み履歴を取得する関数（ALLモード用、シンプルに実装）
   const getAllModeHistory = (allQuestionCount: number | undefined) => {
-    if (!mode || !category) {
-      return null;
-    }
-    
-    const modeKey = `${mode}-${category}`;
-    const rangeKey = getRangeKey('all', undefined, allQuestionCount);
-    let history = getScoreHistory(modeKey, rangeKey);
-    
-    // 新しい形式の履歴が見つからない場合、古い形式（chemistry-quiz-score-history）を直接確認
-    if (history.length === 0) {
-      try {
-        const oldData = localStorage.getItem('chemistry-quiz-score-history');
-        if (oldData) {
-          const parsed = JSON.parse(oldData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            history = parsed;
-          }
-        }
-      } catch (e) {
-        // パースエラーは無視
-      }
-    }
-    
-    // それでも見つからない場合、localStorageを直接確認
-    if (history.length === 0) {
-      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('chemistry-quiz-score-history'));
-      // まず新しい形式を探す
-      const expectedKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
-      let matchingKey = allKeys.find(key => key === expectedKey);
-      // 見つからない場合は、modeKeyとrangeKeyを含むキーを探す
-      if (!matchingKey) {
-        matchingKey = allKeys.find(key => key.includes(modeKey) && key.includes(rangeKey));
-      }
-      // それでも見つからない場合は、古い形式（chemistry-quiz-score-history）を探す
-      if (!matchingKey) {
-        matchingKey = allKeys.find(key => key === 'chemistry-quiz-score-history');
-      }
-      if (matchingKey) {
-        const directData = localStorage.getItem(matchingKey);
-        if (directData) {
-          try {
-            const parsed = JSON.parse(directData);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              history = parsed;
-            }
-          } catch (e) {
-            // パースエラーは無視
-          }
+    // まず古い形式（chemistry-quiz-score-history）を直接確認
+    try {
+      const oldData = localStorage.getItem('chemistry-quiz-score-history');
+      if (oldData) {
+        const parsed = JSON.parse(oldData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const latestDate = new Date(parsed[0].date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const latestDateOnly = new Date(latestDate);
+          latestDateOnly.setHours(0, 0, 0, 0);
+          const isToday = latestDateOnly.getTime() === today.getTime();
+          
+          return {
+            count: parsed.length,
+            latestDate: latestDate,
+            isToday: isToday
+          };
         }
       }
+    } catch (e) {
+      // パースエラーは無視
     }
     
-    // 最新の日付を取得
-    const latestDate = new Date(history[0].date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const latestDateOnly = new Date(latestDate);
-    latestDateOnly.setHours(0, 0, 0, 0);
-    const isToday = latestDateOnly.getTime() === today.getTime();
+    // 新しい形式を確認
+    if (mode && category) {
+      const modeKey = `${mode}-${category}`;
+      const rangeKey = getRangeKey('all', undefined, allQuestionCount);
+      const history = getScoreHistory(modeKey, rangeKey);
+      
+      if (history.length > 0) {
+        const latestDate = new Date(history[0].date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const latestDateOnly = new Date(latestDate);
+        latestDateOnly.setHours(0, 0, 0, 0);
+        const isToday = latestDateOnly.getTime() === today.getTime();
+        
+        return {
+          count: history.length,
+          latestDate: latestDate,
+          isToday: isToday
+        };
+      }
+    }
     
-    return {
-      count: history.length,
-      latestDate: latestDate,
-      isToday: isToday
-    };
+    return null;
   };
 
   // 取り組み回数に応じた色を取得
