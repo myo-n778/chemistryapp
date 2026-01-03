@@ -73,7 +73,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
           className="mode-button"
           onClick={() => onSelectMode('experiment')}
         >
-          <div className="mode-title">⑥ 官能基あて</div>
+          <div className="mode-title">⑥ 分類実験</div>
           <div className="mode-subtitle">4択問題</div>
         </button>
       </div>

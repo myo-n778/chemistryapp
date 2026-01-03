@@ -367,6 +367,28 @@
   font-family: 'Noto Serif', serif;
 }
 
+.explanation-section {
+  margin-top: clamp(10px, 2vh, 15px);
+  padding: clamp(10px, 2vw, 15px);
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: clamp(6px, 1vw, 8px);
+}
+
+.explanation-label {
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-weight: bold;
+  color: #ffa500;
+  margin-bottom: clamp(5px, 1vh, 8px);
+}
+
+.explanation-text {
+  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
+  color: #ffffff;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .message-icon {
   font-size: clamp(1rem, 2vw, 1.2rem);
 }

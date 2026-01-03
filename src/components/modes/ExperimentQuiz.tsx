@@ -20,7 +20,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -135,10 +134,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     setScore(score + newScore);
     setTotalAnswered(newTotalAnswered);
 
-    // 正解時のみ解説を表示
-    if (isCorrect) {
-      setShowExplanation(true);
-    }
 
     setTimeout(() => {
       isProcessingRef.current = false;
@@ -165,7 +160,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
       setCurrentIndex((prev) => prev + 1);
       setSelectedAnswer(null);
       setShowResult(false);
-      setShowExplanation(false);
       setQuestionStartTime(Date.now());
     }
   };
@@ -176,7 +170,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
       setCurrentIndex(0);
       setSelectedAnswer(null);
       setShowResult(false);
-      setShowExplanation(false);
       setScore(0);
       setTotalAnswered(0);
       setPointScore(0);
@@ -215,7 +208,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
           setCurrentIndex(0);
           setSelectedAnswer(null);
           setShowResult(false);
-          setShowExplanation(false);
           setScore(0);
           setTotalAnswered(0);
           setIsFinished(false);
@@ -239,27 +231,63 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     currentExperiment.option4,
   ];
 
+  const handleReset = () => {
+    setCurrentIndex(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+    setTotalAnswered(0);
+    setPointScore(0);
+    setIsFinished(false);
+    setQuestionStartTime(Date.now());
+    setLastQuestionId(null);
+    setConsecutiveCount(0);
+  };
+
+  const mode = `experiment-${category}`;
+  const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
+    ? getRangeKey('batch-10', quizSettings.startIndex)
+    : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+    ? getRangeKey('batch-20', quizSettings.startIndex)
+    : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+    ? getRangeKey('batch-40', quizSettings.startIndex)
+    : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h1>Organic Chemistry Drill</h1>
-        <ScoreDisplay 
-          score={pointScore} 
-          totalAnswered={totalAnswered}
-          mode={`experiment-${category}`} 
-          rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-          ? getRangeKey('batch-10', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-          ? getRangeKey('batch-20', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-          ? getRangeKey('batch-40', quizSettings.startIndex)
-          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)} />
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${(totalAnswered / maxQuestions) * 100}%` }}
-          />
+        <h1>有機化学Drill</h1>
+        <div className="quiz-header-right">
+          <span className="score-text">
+            <ScoreDisplay 
+              score={score} 
+              totalAnswered={totalAnswered}
+              pointScore={pointScore} 
+              showPoints={true}
+              mode={mode} 
+              rangeKey={rangeKey} 
+            />
+          </span>
+          <div className="quiz-header-buttons">
+            <button className="back-button" onClick={onBack}>
+              return
+            </button>
+            <button className="reset-button" onClick={handleReset}>
+              reset
+            </button>
+          </div>
+          <div className="reaction-progress-inline">
+            <div className="progress-text-wrapper">
+              <span className="progress-text">問題 {currentIndex + 1} / {filteredExperiments.length}</span>
+            </div>
+          </div>
         </div>
+      </div>
+      <div className="progress-bar">
+        <div
+          className="progress-fill"
+          style={{ width: `${(totalAnswered / maxQuestions) * 100}%` }}
+        />
       </div>
 
       <div className="quiz-content">
@@ -267,7 +295,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
           <h2 className="question-text">{currentExperiment.question}</h2>
         </div>
 
-        <div className="options-section">
+        <div className="options-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(8px, 1.5vw, 12px)' }}>
           {options.map((option, index) => {
             const optionNumber = index + 1;
             const isSelected = selectedAnswer === optionNumber;
@@ -304,7 +332,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
             ) : (
               <div className="result-message wrong-message">Wrong</div>
             )}
-            {showExplanation && currentExperiment.explanation && (
+            {currentExperiment.explanation && (
               <div className="explanation-section">
                 <div className="explanation-label">Explanation:</div>
                 <div className="explanation-text">{currentExperiment.explanation}</div>
