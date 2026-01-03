@@ -47,10 +47,21 @@ function doGet(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       csvData = convertSheetToCSV(sheet);
+    } else if (type === 'experiment') {
+      sheet = spreadsheet.getSheetByName('experiment');
+      if (!sheet) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            error: 'experiment sheet not found. Available sheets: ' + 
+                   spreadsheet.getSheets().map(s => s.getName()).join(', ') 
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      csvData = convertSheetToCSV(sheet);
     } else {
       return ContentService
         .createTextOutput(JSON.stringify({ 
-          error: 'Invalid type. Use "compounds" or "reactions"' 
+          error: 'Invalid type. Use "compounds", "reactions", or "experiment"' 
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }

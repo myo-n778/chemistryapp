@@ -26,6 +26,7 @@
 3. シート名を設定:
    - `compounds` シート: 化合物データ
    - `reactions` シート: 反応データ
+   - `experiment` シート: 4択問題データ（モード⑥用）
 
 4. データ形式は `README_DATA.md` を参照してください
 
@@ -62,6 +63,14 @@ function doGet(e) {
       if (!sheet) {
         return ContentService
           .createTextOutput(JSON.stringify({ error: 'reactions sheet not found' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      csvData = convertSheetToCSV(sheet);
+    } else if (type === 'experiment') {
+      sheet = spreadsheet.getSheetByName('experiment');
+      if (!sheet) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ error: 'experiment sheet not found' }))
           .setMimeType(ContentService.MimeType.JSON);
       }
       csvData = convertSheetToCSV(sheet);
