@@ -61,12 +61,12 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
     };
   };
 
-  // 取り組み回数に応じた色を取得
+  // 取り組み回数に応じた色を取得（光る水色）
   const getHistoryColor = (count: number) => {
-    if (count === 1) return '#888'; // 控えめな色
-    if (count <= 3) return '#ffa500'; // オレンジ
-    if (count <= 5) return '#ff8c00'; // より強いオレンジ
-    return '#ff6b35'; // 最も強い色
+    if (count === 1) return '#4dd0e1'; // 水色
+    if (count <= 3) return '#26c6da'; // より強い水色
+    if (count <= 5) return '#00bcd4'; // さらに強い水色
+    return '#00acc1'; // 最も強い水色
   };
 
   return (
