@@ -275,10 +275,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   }
 
   if (isFinished) {
-    const mode = `reaction-${category}`;
-    const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
-      ? getRangeKey('batch-10', quizSettings.startIndex)
-      : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
     return (
       <QuizSummary
         score={score}
@@ -286,11 +282,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         pointScore={pointScore}
         onRestart={handleReset}
         onBack={onBack}
-        onNext={onNextRange}
-        quizSettings={quizSettings}
-        totalCount={totalCount}
-        mode={mode}
-        rangeKey={rangeKey}
       />
     );
   }

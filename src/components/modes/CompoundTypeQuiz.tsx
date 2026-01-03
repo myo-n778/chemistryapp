@@ -4,7 +4,7 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
-import { calculateScore, saveHighScore } from '../../utils/scoreCalculator';
+import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import '../Quiz.css';
 
 interface CompoundTypeQuizProps {
@@ -13,6 +13,9 @@ interface CompoundTypeQuizProps {
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
+  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  totalCount?: number;
+  onNextRange?: () => void;
 }
 
 // 種類の表記をインテリジェントに集約・正規化する関数
