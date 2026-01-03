@@ -20,7 +20,7 @@ const getScoreHistoryKey = (mode: string, rangeKey: string): string => {
 /**
  * 範囲キーを生成
  */
-export const getRangeKey = (questionCountMode: 'all' | 'batch-10' | 'batch-20' | 'batch-40', startIndex?: number, allQuestionCount?: number): string => {
+export const getRangeKey = (questionCountMode: 'all' | 'batch-10' | 'batch-20' | 'batch-40', startIndex?: number, allQuestionCount?: number | null): string => {
   if (questionCountMode === 'all') {
     if (allQuestionCount !== undefined && allQuestionCount !== null) {
       return `all-${allQuestionCount}`;
