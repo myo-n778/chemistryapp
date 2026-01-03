@@ -17,7 +17,7 @@ interface NameToStructureQuizProps {
   onNextRange?: () => void;
 }
 
-export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
+export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -119,7 +119,15 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       return { mode, rangeKey };
     };
 
-    if (totalAnswered >= 10) {
+    // 範囲内の問題数に合わせて終了判定（範囲内の問題数が指定出題数より少ない場合はその問題数で終了）
+    let expectedQuestions = 10;
+    if (quizSettings?.questionCountMode === 'batch-20') {
+      expectedQuestions = 20;
+    } else if (quizSettings?.questionCountMode === 'batch-40') {
+      expectedQuestions = 40;
+    }
+    const maxQuestions = Math.min(expectedQuestions, compounds.length);
+    if (totalAnswered >= maxQuestions) {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
@@ -357,6 +365,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
             pointScore={pointScore}
             onRestart={handleReset}
             onBack={onBack}
+            onNext={onNextRange}
             mode={mode}
             rangeKey={rangeKey}
           />

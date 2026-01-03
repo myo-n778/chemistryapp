@@ -19,7 +19,7 @@ interface SubstitutionQuizProps {
   onNextRange?: () => void;
 }
 
-export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
+export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -40,8 +40,24 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     console.log(`Loading reactions for category: ${category}`);
     loadReactions(category).then(data => {
       console.log(`Loaded ${data.length} reactions:`, data);
-      // シャッフルモードの場合は順序をランダムに
-      const shuffledData = isShuffleMode ? [...data].sort(() => Math.random() - 0.5) : data;
+      
+      // 範囲フィルタリングを適用
+      let filtered = data;
+      if (quizSettings?.questionCountMode === 'batch-10' && quizSettings.startIndex !== undefined) {
+        const startIdx = quizSettings.startIndex - 1;
+        filtered = data.slice(startIdx, startIdx + 10);
+      } else if (quizSettings?.questionCountMode === 'batch-20' && quizSettings.startIndex !== undefined) {
+        const startIdx = quizSettings.startIndex - 1;
+        filtered = data.slice(startIdx, startIdx + 20);
+      } else if (quizSettings?.questionCountMode === 'batch-40' && quizSettings.startIndex !== undefined) {
+        const startIdx = quizSettings.startIndex - 1;
+        filtered = data.slice(startIdx, startIdx + 40);
+      } else if (quizSettings?.questionCountMode === 'all' && quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
+        filtered = data.slice(0, quizSettings.allQuestionCount);
+      }
+      
+      // シャッフルモードの場合は順序をランダムに（範囲内だけでシャッフル）
+      const shuffledData = isShuffleMode ? [...filtered].sort(() => Math.random() - 0.5) : filtered;
       setReactions(shuffledData);
       setLoading(false);
       setQuestionStartTime(Date.now());
@@ -49,7 +65,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       console.error("Failed to load reactions:", err);
       setLoading(false);
     });
-  }, [category, isShuffleMode]);
+  }, [category, isShuffleMode, quizSettings]);
 
   // キーボード操作のサポート
   useEffect(() => {
@@ -157,7 +173,15 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       return { mode, rangeKey };
     };
 
-    if (totalAnswered >= 10) {
+    // 範囲内の問題数に合わせて終了判定（範囲内の問題数が指定出題数より少ない場合はその問題数で終了）
+    let expectedQuestions = 10;
+    if (quizSettings?.questionCountMode === 'batch-20') {
+      expectedQuestions = 20;
+    } else if (quizSettings?.questionCountMode === 'batch-40') {
+      expectedQuestions = 40;
+    }
+    const maxQuestions = Math.min(expectedQuestions, reactions.length);
+    if (totalAnswered >= maxQuestions) {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
@@ -245,7 +269,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       <div className="quiz-container">
         <div className="quiz-header"><h1>Organic Chemistry Drill</h1></div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p>データを読み込んでいます...</p>
+          <p className="loading-text">loading…</p>
         </div>
       </div>
     );
@@ -273,17 +297,18 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
       : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
       ? getRangeKey('batch-40', quizSettings.startIndex)
       : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
-    return (
-      <QuizSummary
-        score={score}
-        total={totalAnswered}
-        pointScore={pointScore}
-        onRestart={handleReset}
-        onBack={onBack}
-        mode={mode}
-        rangeKey={rangeKey}
-      />
-    );
+        return (
+          <QuizSummary
+            score={score}
+            total={totalAnswered}
+            pointScore={pointScore}
+            onRestart={handleReset}
+            onBack={onBack}
+            onNext={onNextRange}
+            mode={mode}
+            rangeKey={rangeKey}
+          />
+        );
   }
 
   return (

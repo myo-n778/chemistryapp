@@ -180,7 +180,7 @@ function App() {
     return (
       <div className="App">
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          データを読み込んでいます...
+          <p className="loading-text">loading…</p>
         </div>
       </div>
     );
@@ -296,8 +296,9 @@ function App() {
     }
     
     const nextStartIndex = quizSettings.startIndex + batchSize;
-    // 境界チェックを追加
-    if (nextStartIndex > compounds.length) {
+    // 境界チェック（モード④⑤の場合はreactions数を使用）
+    const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') ? reactions : compounds.length;
+    if (nextStartIndex > maxCount) {
       return; // 次の範囲が存在しない
     }
     
@@ -306,6 +307,7 @@ function App() {
       startIndex: nextStartIndex
     });
   };
+  
 
   return (
     <div className="App">

@@ -102,3 +102,19 @@ body {
   }
 }
 
+/* 読み込み中表示 */
+.loading-text {
+  font-size: 1.2rem;
+  color: #ffffff;
+  animation: loading-dots 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-dots {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+

@@ -72,7 +72,7 @@ const PREFERRED_TYPE_ORDER = [
   '芳香族化合物', '油脂', '高分子化合物' // 集約されたカテゴリ
 ];
 
-export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
+export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -187,7 +187,15 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
       return { mode, rangeKey };
     };
 
-    if (totalAnswered >= 10) {
+    // 範囲内の問題数に合わせて終了判定（範囲内の問題数が指定出題数より少ない場合はその問題数で終了）
+    let expectedQuestions = 10;
+    if (quizSettings?.questionCountMode === 'batch-20') {
+      expectedQuestions = 20;
+    } else if (quizSettings?.questionCountMode === 'batch-40') {
+      expectedQuestions = 40;
+    }
+    const maxQuestions = Math.min(expectedQuestions, compounds.length);
+    if (totalAnswered >= maxQuestions) {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
@@ -401,6 +409,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
             pointScore={pointScore}
             onRestart={handleReset}
             onBack={onBack}
+            onNext={onNextRange}
             mode={mode}
             rangeKey={rangeKey}
           />
