@@ -4,7 +4,7 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
-import { calculateScore, saveHighScore } from '../../utils/scoreCalculator';
+import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import '../Quiz.css';
@@ -14,9 +14,12 @@ interface ReactionQuizProps {
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
+  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  totalCount?: number;
+  onNextRange?: () => void;
 }
 
-export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false }) => {
+export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -157,8 +160,12 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     isProcessingRef.current = true;
     
     if (totalAnswered >= 10) {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `reaction-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -173,11 +180,14 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         setConsecutiveCount(0);
       }
     } else {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `reaction-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
-    }
-    
+    }    
     setTimeout(() => {
       isProcessingRef.current = false;
     }, 300);
@@ -202,7 +212,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   if (loading) {
     return (
       <div className="quiz-container">
-        <div className="quiz-header"><h1>有機化学クイズ</h1></div>
+        <div className="quiz-header"><h1>有機化学Drill</h1></div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>データを読み込んでいます...</p>
         </div>
@@ -213,7 +223,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   if (reactions.length === 0) {
     return (
       <div className="quiz-container">
-        <div className="quiz-header"><h1>有機化学クイズ</h1></div>
+        <div className="quiz-header"><h1>有機化学Drill</h1></div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>反応データが見つかりませんでした。</p>
           <p>スプレッドシートの「reactions」シートにデータがあるか確認してください。</p>
@@ -235,84 +245,8 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     );
   }
 
-  // データ不整合ガード
-  if (!currentReaction) {
-    return (
-      <div className="quiz-container">
-        <div className="quiz-header"><h1>有機化学クイズ</h1></div>
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p>データの読み込みに失敗しました。</p>
-          <button className="back-button" onClick={onBack}>戻る</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="quiz-container">
-      <div className="quiz-header">
-        <h1>有機化学Practice</h1>
-        <div className="quiz-header-right">
-          <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
-          <div className="quiz-header-buttons">
-            <button className="back-button" onClick={onBack}>return</button>
-            <button className="reset-button" onClick={handleReset}>reset</button>
-          </div>
-          {/* ProgressBarをヘッダー内に移動 */}
-          <div className="reaction-progress-inline">
-            <div className="progress-text-wrapper">
-              <span className="progress-text">問題 {currentIndex + 1} / {reactions.length}</span>
-              {showResult && (
-                <button className="next-button-mobile" onClick={handleNext}>
-                  Next
-                </button>
-              )}
-            </div>
-            <div className="progress-bar-mini">
-              <div className="progress-fill-mini" style={{ width: `${((currentIndex + 1) / reactions.length) * 100}%` }}></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="quiz-content" onClick={(e) => {
-        if (showResult && !isProcessingRef.current) {
-          const target = e.target as HTMLElement;
-          // ボタンやインタラクティブな要素以外をクリックした場合に進む
-          if (!target.closest('button') && !target.closest('a')) {
-            // PCの場合はシングルクリックで進む
-            handleNext();
-          }
-        }
-      }} onTouchEnd={(e) => {
-        if (showResult && !isProcessingRef.current) {
-          const target = e.target as HTMLElement;
-          if (!target.closest('button') && !target.closest('a')) {
-            e.preventDefault();
-            const now = Date.now();
-            const timeSinceLastTap = now - lastTapRef.current;
-            
-            // 300ms以内に2回タップされたらダブルタップとみなす
-            if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-              if (tapTimeoutRef.current !== null) {
-                window.clearTimeout(tapTimeoutRef.current);
-                tapTimeoutRef.current = null;
-              }
-              lastTapRef.current = 0;
-              handleNext();
-            } else {
-              // シングルタップの可能性があるので、タイムアウトを設定
-              lastTapRef.current = now;
-              if (tapTimeoutRef.current !== null) {
-                window.clearTimeout(tapTimeoutRef.current);
-              }
-              tapTimeoutRef.current = window.setTimeout(() => {
-                lastTapRef.current = 0;
-              }, 300) as unknown as number;
-            }
-          }
-        }
-      }} style={{ cursor: showResult ? 'pointer' : 'default' }}>
+    <div className="quiz-container" style={{ cursor: showResult ? 'pointer' : 'default' }} onClick={handleContentClick} onTouchEnd={handleTouchEnd}>
         <div className="reaction-quiz-wrapper">
           {/* 質問文エリア - 余白を最小に */}
           <div className="reaction-question-line">

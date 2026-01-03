@@ -145,6 +145,61 @@
   margin-bottom: 15px;
 }
 
+.mode-selection-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 10px;
+}
+
+.mode-button {
+  background: rgba(255, 140, 0, 0.2);
+  color: #ff8c00;
+  border: 2px solid #ff8c00;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.mode-button:hover {
+  background: rgba(255, 140, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.3);
+}
+
+.mode-button.expanded {
+  background: rgba(255, 140, 0, 0.4);
+  border-color: #ffa500;
+  box-shadow: 0 0 15px rgba(255, 140, 0, 0.5);
+}
+
+.range-selection-container {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 10px;
+  padding: 0 10px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .all-button-large {
   width: 100% !important;
   height: 48px !important;

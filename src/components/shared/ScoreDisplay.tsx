@@ -7,10 +7,12 @@ interface ScoreDisplayProps {
   totalAnswered: number;
   pointScore?: number; // 得点表示モード用のポイントスコア
   showPoints?: boolean; // 得点表示モードかどうか
+  mode?: string; // クイズモード（例: 'structure-to-name-organic'）
+  rangeKey?: string; // 範囲キー（例: '1-10', 'all'）
 }
 
-export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, totalAnswered, pointScore, showPoints }) => {
-  const highScoreData = showPoints ? getHighScoreWithCount() : { score: 0, correctCount: 0, totalCount: 0 };
+export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, totalAnswered, pointScore, showPoints, mode, rangeKey }) => {
+  const highScoreData = showPoints ? getHighScoreWithCount(mode, rangeKey) : { score: 0, correctCount: 0, totalCount: 0 };
   const [isAnimating, setIsAnimating] = useState(false);
   const [prevPointScore, setPrevPointScore] = useState(pointScore || 0);
 

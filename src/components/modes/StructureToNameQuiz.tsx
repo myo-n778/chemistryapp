@@ -4,7 +4,7 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
-import { calculateScore, saveHighScore } from '../../utils/scoreCalculator';
+import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import '../Quiz.css';
 
 interface StructureToNameQuizProps {
@@ -12,9 +12,12 @@ interface StructureToNameQuizProps {
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
+  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  totalCount?: number;
+  onNextRange?: () => void;
 }
 
-export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compounds, onBack, isShuffleMode = false }) => {
+export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -32,7 +35,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h1>有機化学Practice</h1>
+          <h1>有機化学Drill</h1>
         </div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>問題データが読み込めませんでした。</p>
@@ -52,7 +55,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h1>有機化学Practice</h1>
+          <h1>有機化学Drill</h1>
         </div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>問題データにエラーがあります。</p>
@@ -113,8 +116,12 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
     isProcessingRef.current = true;
     
     if (totalAnswered >= 10) {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `structure-to-name-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -127,8 +134,12 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
         setConsecutiveCount(0);
       }
     } else {
-      // 最高記録を保存
-      saveHighScore(pointScore, score, totalAnswered);
+      // 最高記録を保存（モード×範囲ごとに分離）
+      const mode = `structure-to-name-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       setIsFinished(true);
     }
     
@@ -220,7 +231,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h1>有機化学クイズ</h1>
+        <h1>有機化学Drill</h1>
         <div className="quiz-header-right">
           <span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} pointScore={pointScore} showPoints={true} /></span>
           <div className="quiz-header-buttons">

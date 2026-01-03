@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import './QuestionCountSelector.css';
 
-export type QuestionCountMode = 'all' | 'batch-10';
+export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';
 export interface QuizSettings {
   questionCountMode: QuestionCountMode;
   orderMode?: OrderMode;
   startIndex?: number;
+  allQuestionCount?: number; // ALLモードの場合の解く問題数（undefined = 全部）
 }
 
 interface QuestionCountSelectorProps {
@@ -17,33 +18,43 @@ interface QuestionCountSelectorProps {
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack }) => {
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('sequential');
+  const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
-  const handleStartIndexSelect = (index: number) => {
+  const handleModeSelect = (mode: QuestionCountMode) => {
+    if (mode === 'all') {
+      // ALLモードは問題数選択が必要なため、特別な値を設定
+      onSelectSettings({
+        questionCountMode: 'all',
+        orderMode: orderMode,
+        allQuestionCount: undefined // 問題数選択が必要
+      });
+    } else {
+      // その他のモードは範囲選択を展開
+      setExpandedMode(expandedMode === mode ? null : mode);
+    }
+  };
+
+  const handleRangeSelect = (mode: QuestionCountMode, startIndex: number) => {
     onSelectSettings({
-      questionCountMode: 'batch-10',
-      startIndex: index,
+      questionCountMode: mode,
+      startIndex: startIndex,
       orderMode: orderMode
     });
   };
 
-  const handleAllSelect = () => {
-    onSelectSettings({
-      questionCountMode: 'all',
-      orderMode: orderMode
-    });
-  };
-
-  // 10問ずつの範囲を生成
-  const generateRanges = () => {
+  // 範囲を生成する関数
+  const generateRanges = (batchSize: number) => {
     const ranges = [];
-    for (let i = 1; i <= totalCount; i += 10) {
-      const end = Math.min(i + 9, totalCount);
+    for (let i = 1; i <= totalCount; i += batchSize) {
+      const end = Math.min(i + batchSize - 1, totalCount);
       ranges.push({ start: i, end: end });
     }
     return ranges;
   };
 
-  const ranges = generateRanges();
+  const ranges10 = generateRanges(10);
+  const ranges20 = generateRanges(20);
+  const ranges40 = generateRanges(40);
 
   return (
     <div className="question-count-selector">
@@ -71,28 +82,82 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       </div>
       <p className="question-count-description">出題する範囲を選択してください（右上で順序を切り替え）</p>
 
-      <div className="all-modes-container-single">
+      {/* モード選択ボタン */}
+      <div className="mode-selection-container">
         <button
-          className="start-index-button all-button-large"
-          onClick={handleAllSelect}
+          className={`mode-button ${expandedMode === 'all' ? 'expanded' : ''}`}
+          onClick={() => handleModeSelect('all')}
         >
           All Questions
         </button>
+        <button
+          className={`mode-button ${expandedMode === 'batch-10' ? 'expanded' : ''}`}
+          onClick={() => handleModeSelect('batch-10')}
+        >
+          10ずつ
+        </button>
+        <button
+          className={`mode-button ${expandedMode === 'batch-20' ? 'expanded' : ''}`}
+          onClick={() => handleModeSelect('batch-20')}
+        >
+          20ずつ
+        </button>
+        <button
+          className={`mode-button ${expandedMode === 'batch-40' ? 'expanded' : ''}`}
+          onClick={() => handleModeSelect('batch-40')}
+        >
+          40ずつ
+        </button>
       </div>
 
-      <div className="start-index-grid">
-        {/* 範囲セレクトボタン */}
-        {ranges.map(range => (
-          <button
-            key={range.start}
-            className="start-index-button"
-            onClick={() => handleStartIndexSelect(range.start)}
-          >
-            {range.start}-{range.end}
-          </button>
-        ))}
-      </div>
+      {/* 範囲選択の展開表示 */}
+      {expandedMode === 'batch-10' && (
+        <div className="range-selection-container">
+          <div className="start-index-grid">
+            {ranges10.map(range => (
+              <button
+                key={range.start}
+                className="start-index-button"
+                onClick={() => handleRangeSelect('batch-10', range.start)}
+              >
+                {range.start}-{range.end}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {expandedMode === 'batch-20' && (
+        <div className="range-selection-container">
+          <div className="start-index-grid">
+            {ranges20.map(range => (
+              <button
+                key={range.start}
+                className="start-index-button"
+                onClick={() => handleRangeSelect('batch-20', range.start)}
+              >
+                {range.start}-{range.end}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {expandedMode === 'batch-40' && (
+        <div className="range-selection-container">
+          <div className="start-index-grid">
+            {ranges40.map(range => (
+              <button
+                key={range.start}
+                className="start-index-button"
+                onClick={() => handleRangeSelect('batch-40', range.start)}
+              >
+                {range.start}-{range.end}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

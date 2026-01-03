@@ -1,0 +1,6 @@
+```
+VITE_GAS_URL_ORGANIC=https://script.google.com/macros/s/AKfycbwCnldwaS5elxrV3Iq0Lv0yqbZ9DYT58Y0LHAVeTBlckAm_TXzHWnyWY0apsTy1TS28/exec
+VITE_GAS_URL_INORGANIC=https://script.google.com/macros/s/AKfycbwCnldwaS5elxrV3Iq0Lv0yqbZ9DYT58Y0LHAVeTBlckAm_TXzHWnyWY0apsTy1TS28/exec
+VITE_SPREADSHEET_ID_ORGANIC=1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0
+VITE_SPREADSHEET_ID_INORGANIC=1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0
+```

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
+import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
@@ -9,6 +10,7 @@ import '../Quiz.css';
 interface CompoundTypeQuizProps {
   compounds: Compound[];
   allCompounds: Compound[];
+  category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
 }
@@ -67,7 +69,7 @@ const PREFERRED_TYPE_ORDER = [
   '芳香族化合物', '油脂', '高分子化合物' // 集約されたカテゴリ
 ];
 
-export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, onBack, isShuffleMode = false }) => {
+export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, category, onBack, isShuffleMode = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);

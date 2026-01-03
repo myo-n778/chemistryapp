@@ -3,16 +3,18 @@ import { Quiz } from './components/Quiz';
 import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
+import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
 import { loadCompounds } from './data/dataLoader';
 import { Compound } from './types';
 import './App.css';
 
-export type QuestionCountMode = 'all' | 'batch-10';
+export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';
 export interface QuizSettings {
   questionCountMode: QuestionCountMode;
   orderMode?: OrderMode; // Allモードの場合のみ
   startIndex?: number; // 10ずつモードの場合のみ（1-indexed）
+  allQuestionCount?: number; // ALLモードの場合の解く問題数
 }
 
 function App() {
@@ -84,6 +86,17 @@ function App() {
     if (quizSettings.questionCountMode === 'batch-10') {
       const startIdx = (quizSettings.startIndex || 1) - 1;
       filtered = filtered.slice(startIdx, startIdx + 10);
+    } else if (quizSettings.questionCountMode === 'batch-20') {
+      const startIdx = (quizSettings.startIndex || 1) - 1;
+      filtered = filtered.slice(startIdx, startIdx + 20);
+    } else if (quizSettings.questionCountMode === 'batch-40') {
+      const startIdx = (quizSettings.startIndex || 1) - 1;
+      filtered = filtered.slice(startIdx, startIdx + 40);
+    } else if (quizSettings.questionCountMode === 'all') {
+      // ALLモード：問題数が指定されている場合はその数だけ、nullの場合は全部
+      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
+        filtered = filtered.slice(0, quizSettings.allQuestionCount);
+      }
     }
 
     // 順番モードに応じてソート
@@ -161,7 +174,48 @@ function App() {
     );
   }
 
+  // ALLモードで問題数が未選択の場合
+  if (quizSettings.questionCountMode === 'all' && quizSettings.allQuestionCount === undefined) {
+    return (
+      <div className="App">
+        <AllQuestionCountSelector
+          totalCount={compounds.length}
+          orderMode={quizSettings.orderMode || 'sequential'}
+          onSelectCount={(count) => {
+            setQuizSettings({
+              ...quizSettings,
+              allQuestionCount: count
+            });
+          }}
+          onBack={() => setQuizSettings(null)}
+        />
+      </div>
+    );
+  }
+
   const finalCompounds = getFilteredCompounds();
+
+  const handleNextRange = () => {
+    if (!quizSettings || quizSettings.startIndex === undefined) return;
+    
+    let batchSize = 10;
+    if (quizSettings.questionCountMode === 'batch-20') {
+      batchSize = 20;
+    } else if (quizSettings.questionCountMode === 'batch-40') {
+      batchSize = 40;
+    }
+    
+    const nextStartIndex = quizSettings.startIndex + batchSize;
+    // 境界チェックを追加
+    if (nextStartIndex > compounds.length) {
+      return; // 次の範囲が存在しない
+    }
+    
+    setQuizSettings({
+      ...quizSettings,
+      startIndex: nextStartIndex
+    });
+  };
 
   return (
     <div className="App">
@@ -172,6 +226,7 @@ function App() {
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
         quizSettings={quizSettings}
+        onNextRange={handleNextRange}
       />
     </div>
   );

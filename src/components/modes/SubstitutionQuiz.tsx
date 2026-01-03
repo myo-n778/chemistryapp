@@ -14,9 +14,12 @@ interface SubstitutionQuizProps {
   compounds: Compound[];
   category: Category;
   onBack: () => void;
+  quizSettings?: { questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number };
+  totalCount?: number;
+  onNextRange?: () => void;
 }
 
-export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack }) => {
+export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, category, onBack, quizSettings, totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -136,7 +139,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
     <div className="quiz-container">
       <div className="quiz-header">
         <h1>
-          有機化学Practice　<span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
+          有機化学Drill　<span className="score-text"><ScoreDisplay score={score} totalAnswered={totalAnswered} /></span>
         </h1>
       </div>
 

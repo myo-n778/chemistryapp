@@ -10,6 +10,35 @@ export interface ScoreResult {
 const HIGH_SCORE_KEY = 'chemistry-quiz-highscore';
 const SCORE_HISTORY_KEY = 'chemistry-quiz-score-history';
 
+/**
+ * スコア履歴のキーを生成（モード×範囲ごとに分離）
+ */
+const getScoreHistoryKey = (mode: string, rangeKey: string): string => {
+  return `chemistry-quiz-score-history-${mode}-${rangeKey}`;
+};
+
+/**
+ * 範囲キーを生成
+ */
+export const getRangeKey = (questionCountMode: 'all' | 'batch-10' | 'batch-20' | 'batch-40', startIndex?: number, allQuestionCount?: number): string => {
+  if (questionCountMode === 'all') {
+    if (allQuestionCount !== undefined && allQuestionCount !== null) {
+      return `all-${allQuestionCount}`;
+    }
+    return 'all-full';
+  } else if (questionCountMode === 'batch-10' && startIndex !== undefined) {
+    const endIndex = startIndex + 9;
+    return `${startIndex}-${endIndex}`;
+  } else if (questionCountMode === 'batch-20' && startIndex !== undefined) {
+    const endIndex = startIndex + 19;
+    return `${startIndex}-${endIndex}`;
+  } else if (questionCountMode === 'batch-40' && startIndex !== undefined) {
+    const endIndex = startIndex + 39;
+    return `${startIndex}-${endIndex}`;
+  }
+  return 'unknown';
+};
+
 export interface ScoreHistoryEntry {
   score: number;
   correctCount: number;
@@ -70,10 +99,12 @@ export const getHighScore = (): number => {
 
 /**
  * 最高記録をlocalStorageから取得（正解数付き）
+ * @param mode クイズモード
+ * @param rangeKey 範囲キー（getRangeKeyで生成）
  */
-export const getHighScoreWithCount = (): HighScoreData => {
+export const getHighScoreWithCount = (mode?: string, rangeKey?: string): HighScoreData => {
   try {
-    const history = getScoreHistory();
+    const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
     if (history.length > 0) {
       const topEntry = history[0];
       return {
@@ -82,12 +113,14 @@ export const getHighScoreWithCount = (): HighScoreData => {
         totalCount: topEntry.totalCount,
       };
     }
-    // 互換性のため旧形式も確認
-    const stored = localStorage.getItem(HIGH_SCORE_KEY);
-    if (stored) {
-      const score = parseInt(stored, 10);
-      if (score > 0) {
-        return { score, correctCount: 0, totalCount: 0 };
+    // 互換性のため旧形式も確認（mode/rangeKeyが指定されている場合はスキップ）
+    if (!mode || !rangeKey) {
+      const stored = localStorage.getItem(HIGH_SCORE_KEY);
+      if (stored) {
+        const score = parseInt(stored, 10);
+        if (score > 0) {
+          return { score, correctCount: 0, totalCount: 0 };
+        }
       }
     }
   } catch (error) {
@@ -98,25 +131,64 @@ export const getHighScoreWithCount = (): HighScoreData => {
 
 /**
  * スコア履歴をlocalStorageから取得
+ * @param mode クイズモード（指定された場合、そのモード×範囲の履歴のみ取得）
+ * @param rangeKey 範囲キー（指定された場合、その範囲の履歴のみ取得）
  */
-export const getScoreHistory = (): ScoreHistoryEntry[] => {
+export const getScoreHistory = (mode?: string, rangeKey?: string): ScoreHistoryEntry[] => {
   try {
-    const stored = localStorage.getItem(SCORE_HISTORY_KEY);
+    const key = mode && rangeKey ? getScoreHistoryKey(mode, rangeKey) : SCORE_HISTORY_KEY;
+    const stored = localStorage.getItem(key);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        console.warn('Invalid score history format, resetting');
+        localStorage.removeItem(key);
+        return [];
+      }
+      // 各エントリの検証
+      const valid = parsed.filter(entry => {
+        if (!entry || typeof entry !== 'object') return false;
+        return typeof entry.score === 'number' && 
+               typeof entry.correctCount === 'number' &&
+               typeof entry.totalCount === 'number' &&
+               typeof entry.date === 'string' &&
+               entry.score >= 0 &&
+               entry.correctCount >= 0 &&
+               entry.totalCount >= 0;
+      });
+      return valid;
     }
   } catch (error) {
     console.warn('Failed to get score history from localStorage:', error);
+    // 破損データを削除
+    const key = mode && rangeKey ? getScoreHistoryKey(mode, rangeKey) : SCORE_HISTORY_KEY;
+    try {
+      localStorage.removeItem(key);
+    } catch (removeError) {
+      // localStorage.removeItem が失敗することは稀だが、念のため
+    }
   }
   return [];
 };
 
 /**
- * 最高記録をlocalStorageに保存（互換性のため）
+ * 最高記録をlocalStorageに保存
+ * @param score スコア
+ * @param correctCount 正解数
+ * @param totalCount 総問題数
+ * @param mode クイズモード（指定された場合、そのモード×範囲に保存）
+ * @param rangeKey 範囲キー（指定された場合、その範囲に保存）
  */
-export const saveHighScore = (score: number, correctCount: number = 0, totalCount: number = 0): void => {
+export const saveHighScore = (
+  score: number, 
+  correctCount: number = 0, 
+  totalCount: number = 0,
+  mode?: string,
+  rangeKey?: string
+): void => {
   try {
-    const history = getScoreHistory();
+    const key = mode && rangeKey ? getScoreHistoryKey(mode, rangeKey) : SCORE_HISTORY_KEY;
+    const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
     const newEntry: ScoreHistoryEntry = {
       score,
       correctCount,
@@ -133,11 +205,13 @@ export const saveHighScore = (score: number, correctCount: number = 0, totalCoun
     // 上位5件のみ保持
     const top5 = history.slice(0, 5);
     
-    localStorage.setItem(SCORE_HISTORY_KEY, JSON.stringify(top5));
+    localStorage.setItem(key, JSON.stringify(top5));
     
-    // 互換性のため最高スコアも保存
-    if (top5.length > 0) {
-      localStorage.setItem(HIGH_SCORE_KEY, top5[0].score.toString());
+    // 互換性のため最高スコアも保存（mode/rangeKeyが指定されている場合はスキップ）
+    if (!mode || !rangeKey) {
+      if (top5.length > 0) {
+        localStorage.setItem(HIGH_SCORE_KEY, top5[0].score.toString());
+      }
     }
   } catch (error) {
     console.warn('Failed to save high score to localStorage:', error);

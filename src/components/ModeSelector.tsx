@@ -17,7 +17,7 @@ interface ModeSelectorProps {
 }
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMode, onBack }) => {
-  const categoryName = category === 'organic' ? '有機化学' : '無機化学';
+  const categoryName = category === 'organic' ? 'Organic Chemistry' : 'Inorganic Chemistry';
 
   return (
     <div className="mode-selector">
@@ -25,7 +25,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
         <button className="back-to-category-button" onClick={onBack}>
           ← カテゴリ選択に戻る
         </button>
-        <h1>{categoryName}クイズ</h1>
+        <h1>{categoryName} Drill</h1>
       </div>
       <p className="mode-description">モードを選択してください</p>
       <div className="mode-grid">

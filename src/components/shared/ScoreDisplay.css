@@ -23,9 +23,10 @@
 }
 
 .percentage {
-  font-size: 0.8rem;
-  color: #aaaaaa;
-  font-weight: normal;
+  font-size: 0.75rem;
+  color: #ffa500;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.6), 0 0 15px rgba(255, 165, 0, 0.4);
 }
 
 .score-animating .score-text {
