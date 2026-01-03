@@ -22,7 +22,6 @@ interface QuestionCountSelectorProps {
 }
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
-  console.log('[QuestionCountSelector] Component mounted', { mode, category, totalCount });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
@@ -64,26 +63,15 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
 
   // 取り組み履歴を取得する関数
   const getRangeHistory = (questionCountMode: 'batch-10' | 'batch-20' | 'batch-40', startIndex: number) => {
-    console.log('[getRangeHistory] called', { questionCountMode, startIndex, mode, category });
     if (!mode || !category) {
-      console.log('[getRangeHistory] mode or category is missing', { mode, category });
       return null;
     }
     
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey(questionCountMode, startIndex);
-    const storageKey = `chemistry-quiz-score-history-${modeKey}-${rangeKey}`;
-    console.log('[getRangeHistory]', { modeKey, rangeKey, storageKey, questionCountMode, startIndex });
-    
-    // localStorageから直接確認
-    const rawData = localStorage.getItem(storageKey);
-    console.log('[getRangeHistory] raw localStorage data', rawData);
-    
     const history = getScoreHistory(modeKey, rangeKey);
-    console.log('[getRangeHistory] history from getScoreHistory', history);
     
     if (history.length === 0) {
-      console.log('[getRangeHistory] history is empty, returning null');
       return null;
     }
     
@@ -171,9 +159,7 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
         <div className="range-selection-container">
           <div className="start-index-grid">
             {ranges10.map(range => {
-              console.log('[QuestionCountSelector] rendering range', range, { mode, category });
               const history = getRangeHistory('batch-10', range.start);
-              console.log('[QuestionCountSelector] history for range', range, history);
               return (
                 <button
                   key={range.start}

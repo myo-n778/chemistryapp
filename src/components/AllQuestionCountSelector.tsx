@@ -21,7 +21,6 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
   mode,
   category
 }) => {
-  console.log('[AllQuestionCountSelector] props', { mode, category, totalCount });
   // 35問以下の場合は適切な選択肢を表示（35問も含める）
   const baseOptions = [10, 20, 30];
   const additionalOptions = totalCount <= 35 && totalCount > 30 ? [totalCount] : totalCount > 35 ? [40] : [];
@@ -35,15 +34,12 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
   // 取り組み履歴を取得する関数（ALLモード用）
   const getAllModeHistory = (allQuestionCount: number | undefined) => {
     if (!mode || !category) {
-      console.log('[getAllModeHistory] mode or category is missing', { mode, category });
       return null;
     }
     
     const modeKey = `${mode}-${category}`;
     const rangeKey = getRangeKey('all', undefined, allQuestionCount);
-    console.log('[getAllModeHistory]', { modeKey, rangeKey, allQuestionCount });
     const history = getScoreHistory(modeKey, rangeKey);
-    console.log('[getAllModeHistory] history', history);
     
     if (history.length === 0) return null;
     
