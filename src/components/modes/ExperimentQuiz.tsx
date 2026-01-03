@@ -378,7 +378,16 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
       <div className="quiz-content" onClick={handleContentClick} onTouchEnd={handleTouchEnd} style={{ cursor: showResult ? 'pointer' : 'default' }}>
         <div className="question-section">
-          <h2 className="question-text">{currentExperiment.question}</h2>
+          <div className="reaction-question-line">
+            <span className="question-text-inline">{currentExperiment.question}</span>
+            {showResult && (
+              <div className="result-action-inline">
+                <span className={selectedAnswer === currentExperiment.correctAnswer ? "result-correct" : "result-incorrect"}>
+                  {selectedAnswer === currentExperiment.correctAnswer ? "✓ Correct!" : "✗ Wrong"}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="options-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(8px, 1.5vw, 12px)' }}>
@@ -411,19 +420,10 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
           })}
         </div>
 
-        {showResult && (
-          <div className="result-section">
-            {selectedAnswer === currentExperiment.correctAnswer ? (
-              <div className="result-message correct-message">Correct!</div>
-            ) : (
-              <div className="result-message wrong-message">Wrong</div>
-            )}
-            {currentExperiment.explanation && (
-              <div className="explanation-section">
-                <div className="explanation-label">Explanation:</div>
-                <div className="explanation-text">{currentExperiment.explanation}</div>
-              </div>
-            )}
+        {showResult && currentExperiment.explanation && (
+          <div className="explanation-section">
+            <div className="explanation-label">Explanation:</div>
+            <div className="explanation-text">{currentExperiment.explanation}</div>
           </div>
         )}
       </div>
