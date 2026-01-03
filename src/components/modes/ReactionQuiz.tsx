@@ -18,7 +18,7 @@ interface ReactionQuizProps {
   onNextRange?: () => void;
 }
 
-export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount = 0, onNextRange }) => {
+export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
