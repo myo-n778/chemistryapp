@@ -31,55 +31,34 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
     onSelectCount(count);
   };
 
-  // 取り組み履歴を取得する関数（ALLモード用、シンプルに実装）
+  // 取り組み履歴を取得する関数（ALLモード用、範囲×モードごとに分離）
   const getAllModeHistory = (allQuestionCount: number | undefined) => {
-    // まず古い形式（chemistry-quiz-score-history）を直接確認
-    try {
-      const oldData = localStorage.getItem('chemistry-quiz-score-history');
-      if (oldData) {
-        const parsed = JSON.parse(oldData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const latestDate = new Date(parsed[0].date);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const latestDateOnly = new Date(latestDate);
-          latestDateOnly.setHours(0, 0, 0, 0);
-          const isToday = latestDateOnly.getTime() === today.getTime();
-          
-          return {
-            count: parsed.length,
-            latestDate: latestDate,
-            isToday: isToday
-          };
-        }
-      }
-    } catch (e) {
-      // パースエラーは無視
+    if (!mode || !category) {
+      return null;
     }
     
-    // 新しい形式を確認
-    if (mode && category) {
-      const modeKey = `${mode}-${category}`;
-      const rangeKey = getRangeKey('all', undefined, allQuestionCount);
-      const history = getScoreHistory(modeKey, rangeKey);
-      
-      if (history.length > 0) {
-        const latestDate = new Date(history[0].date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const latestDateOnly = new Date(latestDate);
-        latestDateOnly.setHours(0, 0, 0, 0);
-        const isToday = latestDateOnly.getTime() === today.getTime();
-        
-        return {
-          count: history.length,
-          latestDate: latestDate,
-          isToday: isToday
-        };
-      }
+    // 新しい形式（範囲×モードごとに分離された履歴）を取得
+    const modeKey = `${mode}-${category}`;
+    const rangeKey = getRangeKey('all', undefined, allQuestionCount);
+    const history = getScoreHistory(modeKey, rangeKey);
+    
+    if (history.length === 0) {
+      return null;
     }
     
-    return null;
+    // 最新の日付を取得
+    const latestDate = new Date(history[0].date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const latestDateOnly = new Date(latestDate);
+    latestDateOnly.setHours(0, 0, 0, 0);
+    const isToday = latestDateOnly.getTime() === today.getTime();
+    
+    return {
+      count: history.length,
+      latestDate: latestDate,
+      isToday: isToday
+    };
   };
 
   // 取り組み回数に応じた色を取得
