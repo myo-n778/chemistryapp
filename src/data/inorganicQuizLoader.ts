@@ -83,7 +83,28 @@ export const loadInorganicQuizQuestions = async (): Promise<InorganicReaction[]>
     // シートデータを配列に変換（ヘッダー行なし、1行目からデータ）
     const sheetData = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: '' }) as any[][];
     
+    // デバッグログ：読み込んだシート名、ヘッダ行、最初の1問
+    console.log(`[inorganicQuizLoader] ===== DEBUG INFO =====`);
+    console.log(`[inorganicQuizLoader] 1) 読み込んだシート名: "${targetSheetName}"`);
+    
+    // ヘッダ行（1行目）を取得
+    const headerRow = sheetData.length > 0 ? sheetData[0] : [];
+    console.log(`[inorganicQuizLoader] 2) ヘッダ行（1行目）:`, headerRow);
+    console.log(`[inorganicQuizLoader] ヘッダ行の列数: ${headerRow.length}`);
+    console.log(`[inorganicQuizLoader] ヘッダ行の内容（列インデックス付き）:`);
+    headerRow.forEach((cell, index) => {
+      // Excel列名を計算（A, B, ..., Z, AA, AB, ...）
+      let columnName = '';
+      let num = index;
+      while (num >= 0) {
+        columnName = String.fromCharCode(65 + (num % 26)) + columnName;
+        num = Math.floor(num / 26) - 1;
+      }
+      console.log(`[inorganicQuizLoader]   列${columnName} (インデックス${index}): "${cell}"`);
+    });
+    
     const reactions: InorganicReaction[] = [];
+    let firstQuestionLogged = false;
     
     // 各行を処理（1行目から開始、ヘッダー行は無視）
     for (let i = 0; i < sheetData.length; i++) {
@@ -183,6 +204,24 @@ export const loadInorganicQuizQuestions = async (): Promise<InorganicReaction[]>
         },
         answer_hint: String(correctIndex), // 正解インデックスをanswer_hintにも格納
       };
+      
+      // 最初の1問のデバッグログ
+      if (!firstQuestionLogged) {
+        console.log(`[inorganicQuizLoader] 3) 取得した最初の1問ぶんのオブジェクト:`);
+        console.log(`[inorganicQuizLoader]   {`);
+        console.log(`[inorganicQuizLoader]     question_text: "${questionText}",`);
+        console.log(`[inorganicQuizLoader]     choice_A: "${choice1}",`);
+        console.log(`[inorganicQuizLoader]     choice_B: "${choice2}",`);
+        console.log(`[inorganicQuizLoader]     choice_C: "${choice3}",`);
+        console.log(`[inorganicQuizLoader]     choice_D: "${choice4}",`);
+        console.log(`[inorganicQuizLoader]     correct_index: ${correctIndex} (正解番号: ${correctAnswer}),`);
+        console.log(`[inorganicQuizLoader]     explanation: "${explanation}",`);
+        console.log(`[inorganicQuizLoader]     row_index: ${i + 1},`);
+        console.log(`[inorganicQuizLoader]     format: ${hasJColumn && hasKColumn ? '新形式（J列=反応物、K列=生成物）' : '旧形式（A列=問題文、B〜E列=選択肢）'}`);
+        console.log(`[inorganicQuizLoader]   }`);
+        console.log(`[inorganicQuizLoader] ===== END DEBUG INFO =====`);
+        firstQuestionLogged = true;
+      }
       
       reactions.push(reaction);
     }
