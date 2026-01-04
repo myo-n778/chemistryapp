@@ -355,30 +355,71 @@ function App() {
   }
 
   const handleNextRange = () => {
-    if (!quizSettings || quizSettings.startIndex === undefined) return;
+    if (!quizSettings) return;
     
-    let batchSize = 10;
-    if (quizSettings.questionCountMode === 'batch-20') {
-      batchSize = 20;
-    } else if (quizSettings.questionCountMode === 'batch-40') {
-      batchSize = 40;
+    // batch-10/20/40モードの場合のみ次の範囲へ進む
+    if (quizSettings.questionCountMode === 'batch-10' || 
+        quizSettings.questionCountMode === 'batch-20' || 
+        quizSettings.questionCountMode === 'batch-40') {
+      if (quizSettings.startIndex === undefined) return;
+      
+      let batchSize = 10;
+      if (quizSettings.questionCountMode === 'batch-20') {
+        batchSize = 20;
+      } else if (quizSettings.questionCountMode === 'batch-40') {
+        batchSize = 40;
+      }
+      
+      const nextStartIndex = quizSettings.startIndex + batchSize;
+      // 境界チェック
+      const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
+        ? reactions 
+        : selectedMode === 'experiment' 
+        ? experiments.length 
+        : selectedMode?.startsWith('inorganic-mode-')
+        ? inorganicReactions.length
+        : compounds.length;
+      if (nextStartIndex > maxCount) {
+        return; // 次の範囲が存在しない
+      }
+      
+      setQuizSettings({
+        ...quizSettings,
+        startIndex: nextStartIndex
+      });
+    }
+  };
+
+  // 次の範囲が存在するかどうかを判定
+  const hasNextRange = (): boolean => {
+    if (!quizSettings) return false;
+    
+    // batch-10/20/40モードの場合のみチェック
+    if (quizSettings.questionCountMode === 'batch-10' || 
+        quizSettings.questionCountMode === 'batch-20' || 
+        quizSettings.questionCountMode === 'batch-40') {
+      if (quizSettings.startIndex === undefined) return false;
+      
+      let batchSize = 10;
+      if (quizSettings.questionCountMode === 'batch-20') {
+        batchSize = 20;
+      } else if (quizSettings.questionCountMode === 'batch-40') {
+        batchSize = 40;
+      }
+      
+      const nextStartIndex = quizSettings.startIndex + batchSize;
+      // 境界チェック
+      const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
+        ? reactions 
+        : selectedMode === 'experiment' 
+        ? experiments.length 
+        : selectedMode?.startsWith('inorganic-mode-')
+        ? inorganicReactions.length
+        : compounds.length;
+      return nextStartIndex <= maxCount;
     }
     
-    const nextStartIndex = quizSettings.startIndex + batchSize;
-    // 境界チェック（モード④⑤の場合はreactions数、モード⑥の場合はexperiments数を使用）
-    const maxCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
-      ? reactions 
-      : selectedMode === 'experiment' 
-      ? experiments.length 
-      : compounds.length;
-    if (nextStartIndex > maxCount) {
-      return; // 次の範囲が存在しない
-    }
-    
-    setQuizSettings({
-      ...quizSettings,
-      startIndex: nextStartIndex
-    });
+    return false;
   };
   
 
@@ -393,7 +434,7 @@ function App() {
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
         quizSettings={quizSettings}
-        onNextRange={handleNextRange}
+        onNextRange={hasNextRange() ? handleNextRange : undefined}
       />
     </div>
   );
