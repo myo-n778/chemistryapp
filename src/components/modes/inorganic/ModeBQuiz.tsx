@@ -5,7 +5,8 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
-import { InorganicVisualViewer } from '../../InorganicVisualViewer';
+import { TeXRenderer } from '../../TeXRenderer';
+import { extractLeftSideWithArrow } from '../../../utils/inorganicDisplayHelper';
 import '../../Quiz.css';
 
 interface ModeBQuizProps {
@@ -239,20 +240,34 @@ export const ModeBQuiz: React.FC<ModeBQuizProps> = ({
     <div className="quiz-container">
       <div className="quiz-header">
         <h1>Inorganic Chemistry Drill - Mode B</h1>
-        <ScoreDisplay
-          score={score}
-          totalAnswered={totalAnswered}
-          pointScore={pointScore}
-          showPoints={true}
-          mode={`inorganic-mode-b-${category}`}
-          rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-            ? getRangeKey('batch-10', quizSettings.startIndex)
-            : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-            ? getRangeKey('batch-20', quizSettings.startIndex)
-            : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-            ? getRangeKey('batch-40', quizSettings.startIndex)
-            : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
-        />
+        <div className="quiz-header-right">
+          <span className="score-text">
+            <ScoreDisplay
+              score={score}
+              totalAnswered={totalAnswered}
+              pointScore={pointScore}
+              showPoints={true}
+              mode={`inorganic-mode-b-${category}`}
+              rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
+                ? getRangeKey('batch-10', quizSettings.startIndex)
+                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+                ? getRangeKey('batch-20', quizSettings.startIndex)
+                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+                ? getRangeKey('batch-40', quizSettings.startIndex)
+                : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
+            />
+          </span>
+          <div className="quiz-header-buttons">
+            <button className="back-button" onClick={onBack}>
+              return
+            </button>
+            {showResult && (
+              <button className="next-button-inline" onClick={handleNext}>
+                Next
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="quiz-progress">
@@ -268,32 +283,44 @@ export const ModeBQuiz: React.FC<ModeBQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応で観察される現象は？</h2>
           <div className="question-text">
-            <p><strong>反応物:</strong> {currentReaction.reactants_desc || currentReaction.equation_tex}</p>
+            {currentReaction.equation_tex_mhchem ? (
+              <div style={{ marginBottom: '10px' }}>
+                <TeXRenderer
+                  equation={extractLeftSideWithArrow(currentReaction.equation_tex_mhchem)}
+                  displayMode={true}
+                />
+              </div>
+            ) : currentReaction.equation_tex ? (
+              <div style={{ marginBottom: '10px' }}>
+                <TeXRenderer
+                  equation={extractLeftSideWithArrow(currentReaction.equation_tex)}
+                  displayMode={true}
+                />
+              </div>
+            ) : (
+              <p><strong>反応物:</strong> {currentReaction.reactants_desc}</p>
+            )}
           </div>
-          {currentReaction.tags_norm && currentReaction.tags_norm.length > 0 && (
-            <div className="visual-area">
-              <InorganicVisualViewer reaction={currentReaction} width={400} height={300} />
-            </div>
-          )}
         </div>
 
-        <div className="choices-area">
+        <div className="options-container reaction-options-grid">
           {choices.choices.map((choice, index) => {
             const isSelected = selectedAnswer === index;
             const isCorrectChoice = index === choices.correctIndex;
-            let buttonClass = 'choice-button';
-            if (showResult) {
-              if (isCorrectChoice) buttonClass += ' correct';
-              else if (isSelected && !isCorrectChoice) buttonClass += ' incorrect';
-            } else if (isSelected) buttonClass += ' selected';
+            const showCorrect = showResult && isCorrectChoice;
+            const showIncorrect = showResult && isSelected && !isCorrectChoice;
+
             return (
               <button
                 key={index}
-                className={buttonClass}
+                className={`option-button ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
-                {choice}
+                <span style={{ flex: 1, textAlign: 'left' }}>{choice}</span>
+                {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
+                {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
               </button>
             );
           })}
@@ -306,6 +333,23 @@ export const ModeBQuiz: React.FC<ModeBQuizProps> = ({
             </div>
             <div className="result-explanation">
               <p><strong>正解:</strong> {currentReaction.observations}</p>
+              {currentReaction.equation_tex_mhchem ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex_mhchem}
+                    displayMode={true}
+                  />
+                </div>
+              ) : currentReaction.equation_tex ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex}
+                    displayMode={true}
+                  />
+                </div>
+              ) : null}
               {currentReaction.products_desc && (
                 <p><strong>生成物:</strong> {currentReaction.products_desc}</p>
               )}
@@ -313,9 +357,6 @@ export const ModeBQuiz: React.FC<ModeBQuizProps> = ({
                 <p><strong>補足:</strong> {currentReaction.notes}</p>
               )}
             </div>
-            <button className="next-button" onClick={handleNext}>
-              次へ
-            </button>
           </div>
         )}
       </div>
