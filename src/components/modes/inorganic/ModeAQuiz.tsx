@@ -94,12 +94,33 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
   const maxQuestions = Math.min(expectedQuestions, actualAvailableQuestions);
   const currentReaction = filteredReactions[currentIndex];
 
-  // 選択肢を生成（「生成物 :」などのプレフィックスを削除）
+  // 選択肢を生成
   const choices = useMemo(() => {
     if (!currentReaction) return { choices: [], correctIndex: 0 };
-    const correctAnswer = currentReaction.products_desc.replace(/^生成物\s*[:：]\s*/i, '').trim();
+    
+    // 新しいExcel形式（quiz-で始まるID）の場合は、products_descから選択肢を取得
+    if (currentReaction.id.startsWith('quiz-')) {
+      try {
+        const choicesArray = JSON.parse(currentReaction.products_desc);
+        if (Array.isArray(choicesArray) && choicesArray.length === 4) {
+          const correctIndex = parseInt(currentReaction.conditions || currentReaction.answer_hint || '0', 10);
+          if (correctIndex >= 0 && correctIndex < 4) {
+            // 選択肢は既に正しい順序で格納されているので、そのまま使用
+            return {
+              choices: choicesArray,
+              correctIndex: correctIndex
+            };
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse quiz choices:', e);
+      }
+    }
+    
+    // 既存形式の場合は従来の処理
+    const correctAnswer = cleanProductDescription(currentReaction.products_desc);
     const distractors = generateDistractors(currentReaction, reactions, 'products_desc', 3).map(d => 
-      d.replace(/^生成物\s*[:：]\s*/i, '').trim()
+      cleanProductDescription(d)
     );
     return shuffleChoices(correctAnswer, distractors);
   }, [currentReaction, reactions]);
@@ -295,25 +316,39 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応で生成される物質は？</h2>
           <div className="question-text">
-            {currentReaction.equation_tex_mhchem ? (
-              <div style={{ marginBottom: '10px' }}>
-                <TeXRenderer
-                  equation={currentReaction.equation_tex_mhchem}
-                  displayMode={true}
-                />
-              </div>
-            ) : currentReaction.equation_tex ? (
-              <div style={{ marginBottom: '10px' }}>
-                <TeXRenderer
-                  equation={currentReaction.equation_tex}
-                  displayMode={true}
-                />
-              </div>
+            {/* 新しいExcel形式の場合は、問題文（反応物）のみをTeXで表示 */}
+            {currentReaction.id.startsWith('quiz-') ? (
+              currentReaction.equation_tex_mhchem || currentReaction.reactants_desc ? (
+                <div style={{ marginBottom: '10px' }}>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex_mhchem || currentReaction.reactants_desc}
+                    displayMode={true}
+                  />
+                </div>
+              ) : null
             ) : (
-              <p><strong>反応物:</strong> {currentReaction.reactants_desc}</p>
-            )}
-            {currentReaction.conditions && (
-              <p><strong>条件:</strong> {currentReaction.conditions}</p>
+              <>
+                {currentReaction.equation_tex_mhchem ? (
+                  <div style={{ marginBottom: '10px' }}>
+                    <TeXRenderer
+                      equation={currentReaction.equation_tex_mhchem}
+                      displayMode={true}
+                    />
+                  </div>
+                ) : currentReaction.equation_tex ? (
+                  <div style={{ marginBottom: '10px' }}>
+                    <TeXRenderer
+                      equation={currentReaction.equation_tex}
+                      displayMode={true}
+                    />
+                  </div>
+                ) : (
+                  <p><strong>反応物:</strong> {currentReaction.reactants_desc}</p>
+                )}
+                {currentReaction.conditions && !currentReaction.conditions.match(/^\d+$/) && (
+                  <p><strong>条件:</strong> {currentReaction.conditions}</p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -332,7 +367,12 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
               >
-                {choice}
+                {/* 新しいExcel形式の場合は選択肢もTeXで表示 */}
+                {currentReaction.id.startsWith('quiz-') ? (
+                  <TeXRenderer equation={choice} displayMode={false} />
+                ) : (
+                  choice
+                )}
                 {showCorrect && <span className="result-icon">✓</span>}
                 {showIncorrect && <span className="result-icon">✗</span>}
               </button>
@@ -346,29 +386,53 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
               {isCorrect ? '正解！' : '不正解'}
             </div>
             <div className="result-explanation">
-              <p><strong>正解:</strong> {cleanProductDescription(currentReaction.products_desc)}</p>
-              {currentReaction.equation_tex_mhchem ? (
-                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
-                  <p><strong>反応式:</strong></p>
-                  <TeXRenderer
-                    equation={currentReaction.equation_tex_mhchem}
-                    displayMode={true}
-                  />
-                </div>
-              ) : currentReaction.equation_tex ? (
-                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
-                  <p><strong>反応式:</strong></p>
-                  <TeXRenderer
-                    equation={currentReaction.equation_tex}
-                    displayMode={true}
-                  />
-                </div>
-              ) : null}
-              {currentReaction.observations && (
-                <p><strong>観察:</strong> {currentReaction.observations}</p>
-              )}
-              {currentReaction.notes && (
-                <p><strong>補足:</strong> {currentReaction.notes}</p>
+              {/* 新しいExcel形式の場合は、正解選択肢をTeXで表示 */}
+              {currentReaction.id.startsWith('quiz-') ? (
+                <>
+                  <p><strong>正解:</strong></p>
+                  <div style={{ marginBottom: '10px' }}>
+                    <TeXRenderer
+                      equation={choices.choices[choices.correctIndex]}
+                      displayMode={true}
+                    />
+                  </div>
+                  {currentReaction.notes && (
+                    <div style={{ marginTop: '10px' }}>
+                      <p><strong>解説:</strong></p>
+                      <TeXRenderer
+                        equation={currentReaction.notes}
+                        displayMode={true}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p><strong>正解:</strong> {cleanProductDescription(currentReaction.products_desc)}</p>
+                  {currentReaction.equation_tex_mhchem ? (
+                    <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                      <p><strong>反応式:</strong></p>
+                      <TeXRenderer
+                        equation={currentReaction.equation_tex_mhchem}
+                        displayMode={true}
+                      />
+                    </div>
+                  ) : currentReaction.equation_tex ? (
+                    <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                      <p><strong>反応式:</strong></p>
+                      <TeXRenderer
+                        equation={currentReaction.equation_tex}
+                        displayMode={true}
+                      />
+                    </div>
+                  ) : null}
+                  {currentReaction.observations && (
+                    <p><strong>観察:</strong> {currentReaction.observations}</p>
+                  )}
+                  {currentReaction.notes && (
+                    <p><strong>補足:</strong> {currentReaction.notes}</p>
+                  )}
+                </>
               )}
             </div>
             <button className="next-button" onClick={handleNext}>
