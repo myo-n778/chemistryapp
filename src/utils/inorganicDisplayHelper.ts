@@ -93,7 +93,6 @@ export const extractLeftSideWithArrow = (equation: string): string => {
   ];
   
   let leftSide = equation;
-  let foundArrow = false;
   let isTeXFormat = equation.includes('\\') || equation.includes('\\ce');
   
   // 最初に見つかった矢印で分割
@@ -101,20 +100,16 @@ export const extractLeftSideWithArrow = (equation: string): string => {
     const match = equation.match(pattern);
     if (match && match.index !== undefined) {
       leftSide = equation.substring(0, match.index).trim();
-      foundArrow = true;
       break;
     }
   }
   
-  // 矢印が見つからなかった場合は、そのまま返す（既に左辺のみの可能性）
-  if (!foundArrow) {
-    // 既に矢印が含まれていない場合は、そのまま返す
-    return equation;
-  }
-  
+  // 矢印が見つからなかった場合でも、左辺の末尾に矢印を追加
+  // J列（反応物）には矢印が含まれていないので、必ず矢印を追加する
   // 左辺の末尾に矢印を追加（TeX形式の場合は\\rightarrow、それ以外は→）
+  // \ce{...}形式の場合は、そのまま\ce{...} \rightarrowとする
   if (isTeXFormat) {
-    // TeX形式の場合
+    // TeX形式の場合（\ce{...}形式も含む）
     return leftSide + ' \\rightarrow';
   } else {
     // 通常のテキスト形式の場合
