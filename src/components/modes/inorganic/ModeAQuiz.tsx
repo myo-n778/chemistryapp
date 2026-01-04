@@ -366,15 +366,18 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 className={`option-button ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
-                {/* 新しいExcel形式の場合は選択肢もTeXで表示 */}
-                {currentReaction.id.startsWith('quiz-') ? (
-                  <TeXRenderer equation={choice} displayMode={false} />
-                ) : (
-                  choice
-                )}
-                {showCorrect && <span className="result-icon">✓</span>}
-                {showIncorrect && <span className="result-icon">✗</span>}
+                <span style={{ flex: 1, textAlign: 'left' }}>
+                  {/* 新しいExcel形式の場合は選択肢もTeXで表示 */}
+                  {currentReaction.id.startsWith('quiz-') ? (
+                    <TeXRenderer equation={choice} displayMode={false} />
+                  ) : (
+                    choice
+                  )}
+                </span>
+                {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
+                {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
               </button>
             );
           })}
