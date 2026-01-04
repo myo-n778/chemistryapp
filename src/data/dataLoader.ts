@@ -1,10 +1,11 @@
-import { Compound } from '../types';
+import { Compound, InorganicReaction } from '../types';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
 import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
 import { Category } from '../components/CategorySelector';
 import { DATA_SOURCE } from '../config/dataSource';
 import { loadCompoundsFromGAS, loadReactionsFromGAS, loadExperimentsFromGAS } from './gasLoader';
+import { loadInorganicReactions } from './inorganicLoader';
 
 // キャッシュの有効期限（1時間）
 const CACHE_TTL = 60 * 60 * 1000; // 1時間（ミリ秒）
@@ -236,6 +237,18 @@ export const loadExperiments = async (category: Category): Promise<ExperimentCSV
     throw new Error('Failed to parse experiments from CSV');
   } catch (error) {
     console.warn(`Failed to load experiments from CSV for ${category}:`, error);
+    return [];
+  }
+};
+
+/**
+ * 無機化学反応データを読み込む
+ */
+export const loadInorganicReactionsData = async (): Promise<InorganicReaction[]> => {
+  try {
+    return await loadInorganicReactions();
+  } catch (error) {
+    console.error('Failed to load inorganic reactions:', error);
     return [];
   }
 };

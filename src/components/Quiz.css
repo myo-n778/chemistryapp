@@ -1226,3 +1226,12 @@
   }
 }
 
+.question-text .blank {
+  display: inline-block;
+  min-width: 100px;
+  height: 1.5em;
+  border-bottom: 2px solid #ffa500;
+  margin: 0 5px;
+  vertical-align: middle;
+}
+

@@ -4,8 +4,8 @@ import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
-import { loadCompounds, loadReactions, loadExperiments } from './data/dataLoader';
-import { Compound } from './types';
+import { loadCompounds, loadReactions, loadExperiments, loadInorganicReactionsData } from './data/dataLoader';
+import { Compound, InorganicReaction } from './types';
 import { ExperimentCSVRow } from './utils/experimentParser';
 import './App.css';
 
@@ -25,6 +25,7 @@ function App() {
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [reactions, setReactions] = useState<number>(0); // モード④⑤用のreactions数
   const [experiments, setExperiments] = useState<ExperimentCSVRow[]>([]); // モード⑥用のexperiments
+  const [inorganicReactions, setInorganicReactions] = useState<InorganicReaction[]>([]); // 無機化学用
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -182,28 +183,29 @@ function App() {
     );
   }
 
-  // 無機化学は未実装のため、準備中画面を表示
-  if (selectedCategory === 'inorganic') {
-    return (
-      <div className="App">
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.5rem' }}>
-            準備中
-          </p>
-          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '1rem' }}>
-            Inorganic Chemistry is under development.
-          </p>
-          <button
-            className="back-button"
-            onClick={() => setSelectedCategory(null)}
-            style={{ marginTop: '20px' }}
-          >
-            ← return
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // 無機化学データの読み込み
+  useEffect(() => {
+    if (selectedCategory === 'inorganic') {
+      setLoading(true);
+      setLoadingError(null);
+      loadInorganicReactionsData()
+        .then(data => {
+          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
+          setInorganicReactions(data);
+          setLoading(false);
+          setLoadingError(null);
+        })
+        .catch(error => {
+          console.error('Failed to load inorganic reactions:', error);
+          setInorganicReactions([]);
+          setLoading(false);
+          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+          setLoadingError(errorMessage);
+        });
+    } else {
+      setInorganicReactions([]);
+    }
+  }, [selectedCategory]);
 
   if (loading) {
     return (
@@ -252,11 +254,13 @@ function App() {
     );
   }
 
-  // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、それ以外はcompounds数を使用
+  // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
   const totalQuestionCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
     ? reactions 
     : selectedMode === 'experiment' 
     ? experiments.length 
+    : selectedMode?.startsWith('inorganic-mode-')
+    ? inorganicReactions.length
     : compounds.length;
 
   if (!quizSettings) {
@@ -356,6 +360,7 @@ function App() {
         compounds={finalCompounds}
         allCompounds={compounds}
         experiments={experiments}
+        inorganicReactions={inorganicReactions}
         mode={selectedMode}
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}

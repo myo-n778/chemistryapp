@@ -366,3 +366,4 @@ const handleNext = () => {
 
 **MEDIUM/LOW項目**: 順次対応で問題なし。開発環境の脆弱性（esbuild）は本番に影響しないため、優先度は低い。
 
+

@@ -1,0 +1,43 @@
+.tex-renderer {
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.tex-toggle {
+  margin: 10px 0;
+}
+
+.tex-toggle-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tex-toggle-button {
+  padding: 5px 15px;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.tex-toggle-button:hover {
+  background-color: #e0e0e0;
+}
+
+.tex-toggle-button.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+}
+
+.tex-toggle-content {
+  min-height: 40px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
