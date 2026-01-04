@@ -5,6 +5,7 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
+import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
 
 interface ModeAQuizProps {
@@ -92,11 +93,14 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
   const maxQuestions = Math.min(expectedQuestions, actualAvailableQuestions);
   const currentReaction = filteredReactions[currentIndex];
 
-  // 選択肢を生成
+  // 選択肢を生成（「生成物 :」などのプレフィックスを削除）
   const choices = useMemo(() => {
     if (!currentReaction) return { choices: [], correctIndex: 0 };
-    const distractors = generateDistractors(currentReaction, reactions, 'products_desc', 3);
-    return shuffleChoices(currentReaction.products_desc, distractors);
+    const correctAnswer = currentReaction.products_desc.replace(/^生成物\s*[:：]\s*/i, '').trim();
+    const distractors = generateDistractors(currentReaction, reactions, 'products_desc', 3).map(d => 
+      d.replace(/^生成物\s*[:：]\s*/i, '').trim()
+    );
+    return shuffleChoices(correctAnswer, distractors);
   }, [currentReaction, reactions]);
 
   useEffect(() => {
@@ -290,37 +294,46 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応で生成される物質は？</h2>
           <div className="question-text">
-            <p><strong>反応物:</strong> {currentReaction.reactants_desc}</p>
+            {currentReaction.equation_tex_mhchem ? (
+              <div style={{ marginBottom: '10px' }}>
+                <TeXRenderer
+                  equation={currentReaction.equation_tex_mhchem}
+                  displayMode={true}
+                />
+              </div>
+            ) : currentReaction.equation_tex ? (
+              <div style={{ marginBottom: '10px' }}>
+                <TeXRenderer
+                  equation={currentReaction.equation_tex}
+                  displayMode={true}
+                />
+              </div>
+            ) : (
+              <p><strong>反応物:</strong> {currentReaction.reactants_desc}</p>
+            )}
             {currentReaction.conditions && (
               <p><strong>条件:</strong> {currentReaction.conditions}</p>
             )}
           </div>
         </div>
 
-        <div className="choices-area">
+        <div className="options-container reaction-options-grid">
           {choices.choices.map((choice, index) => {
             const isSelected = selectedAnswer === index;
             const isCorrectChoice = index === choices.correctIndex;
-            let buttonClass = 'choice-button';
-
-            if (showResult) {
-              if (isCorrectChoice) {
-                buttonClass += ' correct';
-              } else if (isSelected && !isCorrectChoice) {
-                buttonClass += ' incorrect';
-              }
-            } else if (isSelected) {
-              buttonClass += ' selected';
-            }
+            const showCorrect = showResult && isCorrectChoice;
+            const showIncorrect = showResult && isSelected && !isCorrectChoice;
 
             return (
               <button
                 key={index}
-                className={buttonClass}
+                className={`option-button ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
               >
                 {choice}
+                {showCorrect && <span className="result-icon">✓</span>}
+                {showIncorrect && <span className="result-icon">✗</span>}
               </button>
             );
           })}
@@ -333,6 +346,23 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
             </div>
             <div className="result-explanation">
               <p><strong>正解:</strong> {currentReaction.products_desc}</p>
+              {currentReaction.equation_tex_mhchem ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex_mhchem}
+                    displayMode={true}
+                  />
+                </div>
+              ) : currentReaction.equation_tex ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex}
+                    displayMode={true}
+                  />
+                </div>
+              ) : null}
               {currentReaction.observations && (
                 <p><strong>観察:</strong> {currentReaction.observations}</p>
               )}
