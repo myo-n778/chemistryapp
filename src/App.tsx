@@ -37,12 +37,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // 無機化学の場合は別のuseEffectで処理するためスキップ
+    // 無機化学の場合はスキップ
     if (selectedCategory === 'inorganic') {
-      return;
-    }
-    
-    if (selectedCategory) {
+      // 無機化学の場合は何もしない（別のuseEffectで処理）
+    } else if (selectedCategory) {
       setLoading(true);
       setLoadingError(null);
       loadCompounds(selectedCategory)
@@ -192,37 +190,37 @@ function App() {
 
   // 無機化学データの読み込み
   useEffect(() => {
-    if (selectedCategory !== 'inorganic') {
+    if (selectedCategory === 'inorganic') {
+      let isMounted = true;
+      setInorganicLoading(true);
+      setInorganicLoadingError(null);
+      
+      loadInorganicReactionsData()
+        .then(data => {
+          if (!isMounted) return;
+          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
+          setInorganicReactions(data);
+          setInorganicLoading(false);
+          setInorganicLoadingError(null);
+        })
+        .catch(error => {
+          if (!isMounted) return;
+          console.error('Failed to load inorganic reactions:', error);
+          setInorganicReactions([]);
+          setInorganicLoading(false);
+          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+          setInorganicLoadingError(errorMessage);
+        });
+      
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      // 無機化学以外の場合は状態をリセット
       setInorganicReactions([]);
       setInorganicLoading(false);
       setInorganicLoadingError(null);
-      return;
     }
-
-    let isMounted = true;
-    setInorganicLoading(true);
-    setInorganicLoadingError(null);
-    
-    loadInorganicReactionsData()
-      .then(data => {
-        if (!isMounted) return;
-        console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
-        setInorganicReactions(data);
-        setInorganicLoading(false);
-        setInorganicLoadingError(null);
-      })
-      .catch(error => {
-        if (!isMounted) return;
-        console.error('Failed to load inorganic reactions:', error);
-        setInorganicReactions([]);
-        setInorganicLoading(false);
-        const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-        setInorganicLoadingError(errorMessage);
-      });
-    
-    return () => {
-      isMounted = false;
-    };
     // loadInorganicReactionsDataは外部からインポートされた関数で変更されないため、依存配列に含めない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
