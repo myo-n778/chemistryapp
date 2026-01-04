@@ -5,6 +5,8 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
+import { translateFamily, translateVariant, cleanProductDescription } from '../../../utils/inorganicDisplayHelper';
+import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
 
 interface ModeCQuizProps {
@@ -85,22 +87,24 @@ export const ModeCQuiz: React.FC<ModeCQuizProps> = ({
     const sameFamily = reactions.filter(r => r.family === currentReaction.family && r.id !== currentReaction.id);
     const distractors = sameFamily
       .filter(r => r.variant && r.variant !== currentReaction.variant)
-      .map(r => r.products_desc)
+      .map(r => cleanProductDescription(r.products_desc))
       .filter((desc, index, self) => desc && self.indexOf(desc) === index)
       .slice(0, 3);
     
     // 不足する場合は通常の誤答生成を使用
     while (distractors.length < 3) {
-      const additional = generateDistractors(currentReaction, reactions, 'products_desc', 1);
+      const additional = generateDistractors(currentReaction, reactions, 'products_desc', 1).map(d => cleanProductDescription(d));
       additional.forEach(d => {
-        if (!distractors.includes(d) && d !== currentReaction.products_desc) {
+        const cleanedCorrect = cleanProductDescription(currentReaction.products_desc);
+        if (!distractors.includes(d) && d !== cleanedCorrect) {
           distractors.push(d);
         }
       });
       if (distractors.length >= 3) break;
     }
     
-    return shuffleChoices(currentReaction.products_desc, distractors.slice(0, 3));
+    const cleanedCorrect = cleanProductDescription(currentReaction.products_desc);
+    return shuffleChoices(cleanedCorrect, distractors.slice(0, 3));
   }, [currentReaction, reactions]);
 
   useEffect(() => {
@@ -285,28 +289,31 @@ export const ModeCQuiz: React.FC<ModeCQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この条件で生成される物質は？</h2>
           <div className="question-text">
-            <p><strong>反応ファミリー:</strong> {currentReaction.family}</p>
-            <p><strong>条件:</strong> {currentReaction.conditions}</p>
+            {currentReaction.family && (
+              <p><strong>反応の種類:</strong> {translateFamily(currentReaction.family)}</p>
+            )}
+            {currentReaction.conditions && (
+              <p><strong>条件:</strong> {currentReaction.conditions}</p>
+            )}
           </div>
         </div>
 
-        <div className="choices-area">
+        <div className="options-container reaction-options-grid">
           {choices.choices.map((choice, index) => {
             const isSelected = selectedAnswer === index;
             const isCorrectChoice = index === choices.correctIndex;
-            let buttonClass = 'choice-button';
-            if (showResult) {
-              if (isCorrectChoice) buttonClass += ' correct';
-              else if (isSelected && !isCorrectChoice) buttonClass += ' incorrect';
-            } else if (isSelected) buttonClass += ' selected';
+            const showCorrect = showResult && isCorrectChoice;
+            const showIncorrect = showResult && isSelected && !isCorrectChoice;
             return (
               <button
                 key={index}
-                className={buttonClass}
+                className={`option-button ${showCorrect ? 'correct' : ''} ${showIncorrect ? 'incorrect' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleAnswer(index)}
                 disabled={showResult}
               >
                 {choice}
+                {showCorrect && <span className="result-icon">✓</span>}
+                {showIncorrect && <span className="result-icon">✗</span>}
               </button>
             );
           })}
@@ -318,9 +325,26 @@ export const ModeCQuiz: React.FC<ModeCQuizProps> = ({
               {isCorrect ? '正解！' : '不正解'}
             </div>
             <div className="result-explanation">
-              <p><strong>正解:</strong> {currentReaction.products_desc}</p>
+              <p><strong>正解:</strong> {cleanProductDescription(currentReaction.products_desc)}</p>
+              {currentReaction.equation_tex_mhchem ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex_mhchem}
+                    displayMode={true}
+                  />
+                </div>
+              ) : currentReaction.equation_tex ? (
+                <div style={{ marginTop: '10px', marginBottom: '10px' }}>
+                  <p><strong>反応式:</strong></p>
+                  <TeXRenderer
+                    equation={currentReaction.equation_tex}
+                    displayMode={true}
+                  />
+                </div>
+              ) : null}
               {currentReaction.variant && (
-                <p><strong>バリアント:</strong> {currentReaction.variant}</p>
+                <p><strong>反応パターン:</strong> {translateVariant(currentReaction.variant)}</p>
               )}
               {currentReaction.notes && (
                 <p><strong>補足:</strong> {currentReaction.notes}</p>
