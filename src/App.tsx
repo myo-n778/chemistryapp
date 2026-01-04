@@ -36,6 +36,7 @@ function App() {
     console.log('App component mounted');
   }, []);
 
+  // 有機化学データの読み込み
   useEffect(() => {
     // 無機化学の場合はスキップ
     if (selectedCategory === 'inorganic') {
@@ -128,6 +129,43 @@ function App() {
     }
   }, [selectedCategory]);
 
+  // 無機化学データの読み込み
+  useEffect(() => {
+    if (selectedCategory === 'inorganic') {
+      let isMounted = true;
+      setInorganicLoading(true);
+      setInorganicLoadingError(null);
+      
+      loadInorganicReactionsData()
+        .then(data => {
+          if (!isMounted) return;
+          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
+          setInorganicReactions(data);
+          setInorganicLoading(false);
+          setInorganicLoadingError(null);
+        })
+        .catch(error => {
+          if (!isMounted) return;
+          console.error('Failed to load inorganic reactions:', error);
+          setInorganicReactions([]);
+          setInorganicLoading(false);
+          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+          setInorganicLoadingError(errorMessage);
+        });
+      
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      // 無機化学以外の場合は状態をリセット
+      setInorganicReactions([]);
+      setInorganicLoading(false);
+      setInorganicLoadingError(null);
+    }
+    // loadInorganicReactionsDataは外部からインポートされた関数で変更されないため、依存配列に含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
+
   const getFilteredCompounds = () => {
     if (!quizSettings) {
       // 構造式が有効な化合物のみを返す
@@ -180,6 +218,7 @@ function App() {
     return filtered;
   };
 
+  // すべてのHooksの後に条件分岐を配置
   if (!selectedCategory) {
     return (
       <div className="App">
@@ -187,43 +226,6 @@ function App() {
       </div>
     );
   }
-
-  // 無機化学データの読み込み
-  useEffect(() => {
-    if (selectedCategory === 'inorganic') {
-      let isMounted = true;
-      setInorganicLoading(true);
-      setInorganicLoadingError(null);
-      
-      loadInorganicReactionsData()
-        .then(data => {
-          if (!isMounted) return;
-          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
-          setInorganicReactions(data);
-          setInorganicLoading(false);
-          setInorganicLoadingError(null);
-        })
-        .catch(error => {
-          if (!isMounted) return;
-          console.error('Failed to load inorganic reactions:', error);
-          setInorganicReactions([]);
-          setInorganicLoading(false);
-          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-          setInorganicLoadingError(errorMessage);
-        });
-      
-      return () => {
-        isMounted = false;
-      };
-    } else {
-      // 無機化学以外の場合は状態をリセット
-      setInorganicReactions([]);
-      setInorganicLoading(false);
-      setInorganicLoadingError(null);
-    }
-    // loadInorganicReactionsDataは外部からインポートされた関数で変更されないため、依存配列に含めない
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
 
   // ローディング状態のチェック（有機化学または無機化学）
   const isLoading = selectedCategory === 'inorganic' ? inorganicLoading : loading;
