@@ -1,0 +1,160 @@
+# 高校無機化学・選択式問題WEBアプリ 仕様書（完全版）
+
+## 1. アプリの目的
+- 日本の **高校無機化学（入試想定）** を対象とした練習問題WEBアプリ
+- **すべて選択式**
+- 問題・選択肢・図は **データベースから自動生成**
+- 条件違い・類似反応を体系的に学べることを重視
+
+---
+
+## 2. データ構造（前提）
+
+### 2.1 データ元
+- Excel / Spreadsheet を **ビルド時に JSON 化**して使用
+- 2シート構成：
+  - **一覧モード**：表示・編集・管理用（TeXなし）
+  - **TEX形式モード**：TeX（mhchem）レンダリング専用
+
+### 2.2 一覧モード（主にロジック・UI用）
+| 列名 | 内容 |
+|---|---|
+| id | 反応ID |
+| topic | 分野（沈殿・酸化還元・電気分解など） |
+| type | 反応タイプ |
+| equation_tex | プレーン表示用反応式（→ ↑ ↓ ⇄、Unicode下付・上付） |
+| reactants_desc | 反応前物質の説明 |
+| products_desc | 反応後物質の説明 |
+| conditions | 条件（温度・濃淡・電極など） |
+| operation | 操作（加熱・混合・電気分解など） |
+| observations | 観察（色・沈殿・気体・臭い） |
+| notes | 補足 |
+| family | 反応ファミリー（類似反応グループ） |
+| variant | ファミリー内の違い |
+| difficulty | 難易度 |
+| state_tags | 元データ由来の状態タグ |
+| tags_norm | **規格化タグ**（後述） |
+| ask_types_json | 出題タイプ候補 |
+| question_templates_json | 問題文テンプレ |
+| answer_hint | 解答種別ヒント |
+
+※ 一覧モードでは `\ce{}` は使わない
+
+### 2.3 TEX形式モード（表示専用）
+- `equation_tex` は **mhchem の \ce{...}**
+- 矢印・気体・沈殿は `\rightarrow \uparrow \downarrow \rightleftharpoons`
+- UIで切替表示可能
+
+---
+
+## 3. 規格化タグ（tags_norm）
+
+### 3.1 目的
+- 図生成
+- 誤答生成
+- 出題モード制御
+
+### 3.2 例
+- `precip`
+- `gas`
+- `color`
+- `color:yellow`
+- `color:yellow_green`
+- `electrochem`
+- `equilibrium`
+- `complex`
+- `smell:pungent`
+
+※ 色覚配慮のため **色タグ＋テキスト併用**
+
+---
+
+## 4. 問題形式（すべて選択式）
+
+### 共通仕様
+- 原則 **4択**
+- 正答1＋誤答3
+- 誤答は以下の優先順位で生成：
+  1. 同 `family`
+  2. 同 `tags_norm`
+  3. 同元素系
+  4. ランダム（最終手段）
+
+---
+
+## 5. 問題モード一覧
+
+### モードA：反応 → 生成物
+- 使用列：`reactants_desc`, `conditions(任意)`, `products_desc`
+
+### モードB：反応 → 観察
+- 使用列：`reactants_desc or equation_tex`, `observations`
+- 図：`tags_norm`
+
+### モードC：条件 → 結果（分岐）
+- 使用列：`family`, `conditions`, `products_desc`
+- 誤答：同 `family` の別 `variant`
+
+### モードD：図を見て答える
+- D-1 図→物質：図=`tags_norm+observations`, 正答=`products_desc`
+- D-2 図→反応式：図=`tags_norm`, 正答=`equation_tex(TEX形式)`
+- D-3 図→観察：図=`tags_norm`, 正答=`observations`
+
+### モードE：空欄補充（語を選ぶ）
+- E-1 生成物：空欄=`products_desc`
+- E-2 観察語：空欄=`observations`
+- E-3 条件・操作：空欄=`conditions/operation`
+※ 空欄複数はタブで1つずつ回答
+
+### モードF：式 → 意味
+- 提示：`equation_tex(TEX形式)`
+- 正答：`observations` / `products_desc`
+
+### モードG：識別・比較
+- 問い：`tags_norm` / `observations`
+- 選択肢：`equation_tex` or `reactants_desc`
+- 判定：`tags_norm` / `family`
+
+---
+
+## 6. 図（ビジュアル）仕様
+- 実写不要。SVG + CSS で表現。
+- 常にALTテキスト併記。
+- 要素：沈殿（↓＋色ラベル）、気体（↑＋色/臭い）、電気分解（電極＋↑↓）、溶液色（背景色＋説明）
+
+---
+
+## 7. UI共通構成
+- Header：モード・難易度・設定
+- Progress：問題番号・スコア・タイマー
+- Prompt Area：テキスト / TeX / 図
+- Choice Area：4択
+- Result Panel：正誤＋解説（`reactants_desc/products_desc/observations/conditions`＋誤答理由）
+
+---
+
+## 8. 採点・正規化
+- 選択式なので最終判定はID比較。
+- 表示の揺れ（上付/下付・空白・電荷表記）は正規化。
+
+---
+
+## 9. 技術・実装注意
+- xlsx→JSON はビルド時変換
+- KaTeX/MathJax は mhchem 対応必須
+- TeX描画はXSS対策
+- 教室回線を想定してPWA（キャッシュ）検討
+
+---
+
+## 10. 開発優先順（推奨）
+1. A/B/C/D/E
+2. 図生成（SVG）
+3. 誤答生成ロジック
+4. F/G
+5. 学習ログ・復習
+
+---
+
+## 11. 実装指示文（Antigravity/Cursor貼り付け用）
+この仕様書に従って、高校無機化学の選択式問題WEBアプリを実装してください。問題は複数モードを持ち、選択肢・図・問題文はすべてデータベースから自動生成します。反応式は通常表示とTeX（mhchem）表示を切り替え可能にしてください。
