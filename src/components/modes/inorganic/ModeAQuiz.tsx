@@ -5,6 +5,7 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
+import { cleanProductDescription } from '../../../utils/inorganicDisplayHelper';
 import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
 
@@ -345,7 +346,7 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
               {isCorrect ? '正解！' : '不正解'}
             </div>
             <div className="result-explanation">
-              <p><strong>正解:</strong> {currentReaction.products_desc}</p>
+              <p><strong>正解:</strong> {cleanProductDescription(currentReaction.products_desc)}</p>
               {currentReaction.equation_tex_mhchem ? (
                 <div style={{ marginTop: '10px', marginBottom: '10px' }}>
                   <p><strong>反応式:</strong></p>
