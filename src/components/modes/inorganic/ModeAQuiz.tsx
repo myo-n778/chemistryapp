@@ -378,14 +378,19 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <span style={{ flex: 1, textAlign: 'left' }}>
-                  {/* 選択肢もTeX形式で表示（新しいExcel形式またはTeX形式の文字列の場合） */}
+                  {/* 選択肢もTeX形式で表示（新しいExcel形式の場合は必ずTeX、既存形式の場合はTeX形式の文字列の場合のみ） */}
                   {(() => {
-                    // 選択肢がTeX形式かどうかを判定（\ce, \rightarrow, _{, ^{等を含む場合はTeX形式）
-                    const isTeXFormat = choice.includes('\\') || choice.includes('_{') || choice.includes('^{') || 
-                                        choice.includes('→') || choice.includes('\\ce') || 
-                                        choice.match(/[A-Z][a-z]?\d+/); // 化学式パターン（例: H2O, CO2）
+                    // 新しいExcel形式の場合は必ずTeXで表示
+                    if (currentReaction.id.startsWith('quiz-')) {
+                      return <TeXRenderer equation={choice} displayMode={false} />;
+                    }
                     
-                    if (currentReaction.id.startsWith('quiz-') || isTeXFormat) {
+                    // 既存形式の場合、TeX形式の文字列が含まれている場合のみTeXで表示
+                    // \ce, \rightarrow, _{, ^{等を含む場合はTeX形式と判定
+                    const isTeXFormat = choice.includes('\\') || choice.includes('_{') || choice.includes('^{') || 
+                                        choice.includes('→') || choice.includes('\\ce');
+                    
+                    if (isTeXFormat) {
                       return <TeXRenderer equation={choice} displayMode={false} />;
                     }
                     return choice;
