@@ -54,51 +54,6 @@
 
 ---
 
-### モードC：条件 → 結果（分岐）
-
-#### 読み込み元（reactions.xlsxの一覧モードシート）
-- **問題文（条件）**: `conditions`列
-- **反応ファミリー**: `family`列（表示用に日本語変換）
-- **正解（生成物）**: `products_desc`列
-- **バリアント**: `variant`列（表示用に日本語変換）
-- **反応式**: `equation_tex_mhchem`列 または `equation_tex`列
-- **解説**: `notes`列
-
-#### 表示内容
-- **問題文エリア**: 反応の種類（`family`を日本語変換）+ 条件（`conditions`）をテキストで表示
-- **選択肢**: `products_desc`から生成（正解1つ + 誤答3つ）をテキストで表示
-- **正解表示**: `products_desc`をテキストで表示 + 反応式（`equation_tex_mhchem`または`equation_tex`）をTeX形式で表示
-- **解説**: `notes` + 反応パターン（`variant`を日本語変換）をテキストで表示
-
----
-
-### モードD：図を見て答える
-
-#### 読み込み元（reactions.xlsxの一覧モードシート）
-
-##### サブモードD-1：図 → 物質
-- **問題文（図）**: `tags_norm`列 + `observations`列
-- **正解（生成物）**: `products_desc`列
-
-##### サブモードD-2：図 → 反応式
-- **問題文（図）**: `tags_norm`列
-- **正解（反応式）**: `equation_tex_mhchem`列 または `equation_tex`列
-
-##### サブモードD-3：図 → 観察
-- **問題文（図）**: `tags_norm`列
-- **正解（観察）**: `observations`列
-
-#### 表示内容
-- **問題文エリア**: 図（`tags_norm`に基づくSVG表示、InorganicVisualViewer）
-- **選択肢**: 
-  - D-1: `products_desc`から生成（正解1つ + 誤答3つ）をテキストで表示
-  - D-2: `equation_tex_mhchem`または`equation_tex`から生成（正解1つ + 誤答3つ）をTeX形式で表示
-  - D-3: `observations`から生成（正解1つ + 誤答3つ）をテキストで表示
-- **正解表示**: サブモードに応じた正解フィールドを表示
-- **補足**: `observations`、`products_desc`をテキストで表示
-
----
-
 ### モードE：空欄補充（語を選ぶ）
 
 #### 読み込み元（reactions.xlsxの一覧モードシート）
@@ -165,9 +120,7 @@
 | モード | Excelファイル | シート名 | 問題文 | 選択肢 | 正解 | 解説 | その他 |
 |--------|--------------|----------|--------|--------|------|------|--------|
 | A | 無機反応一覧_最新版_TEXモード_JK整形.xlsx | 問題バンク_TEX | J列（反応物）<br>TeX形式 | K〜N列（生成物）<br>TeX形式 | O列（正解番号） | P列（解説）<br>TeX形式 | - |
-| B | reactions.xlsx | 一覧モードシート | `reactants_desc`<br>または`equation_tex`<br>テキスト | `observations`から生成<br>テキスト | `observations`<br>テキスト | - | `tags_norm`（図表示）<br>`products_desc`（補足） |
-| C | reactions.xlsx | 一覧モードシート | `conditions`<br>+ `family`（日本語変換）<br>テキスト | `products_desc`から生成<br>テキスト | `products_desc`<br>テキスト | `notes`<br>テキスト | `variant`（反応パターン、日本語変換）<br>`equation_tex_mhchem`（反応式、TeX形式） |
-| D | reactions.xlsx | 一覧モードシート | `tags_norm`<br>（図表示） | サブモード依存<br>テキスト/TeX形式 | サブモード依存<br>テキスト/TeX形式 | - | D-1: `products_desc`<br>D-2: `equation_tex_mhchem`<br>D-3: `observations` |
+| B | reactions.xlsx | 一覧モードシート | `reactants_desc`<br>または`equation_tex`<br>テキスト | `observations`から生成<br>テキスト | `observations`<br>テキスト | - | `products_desc`（補足） |
 | E | reactions.xlsx | 一覧モードシート | `reactants_desc`<br>+ 空欄<br>テキスト | サブモード依存<br>テキスト | サブモード依存<br>テキスト | `notes`<br>テキスト | E-1: `products_desc`<br>E-2: `observations`<br>E-3: `conditions`/`operation` |
 | F | reactions.xlsx | 一覧モードシート | `equation_tex_mhchem`<br>または`equation_tex`<br>TeX形式 | `observations`<br>または`products_desc`<br>テキスト | `observations`<br>または`products_desc`<br>テキスト | - | `products_desc`、`observations`（補足） |
 | G | reactions.xlsx | 一覧モードシート | `tags_norm`（図表示）<br>または`observations`<br>テキスト | `equation_tex_mhchem`<br>または`reactants_desc`<br>TeX形式/テキスト | 選択肢タイプ依存<br>TeX形式/テキスト | - | `products_desc`（補足）<br>`family`（判定用） |

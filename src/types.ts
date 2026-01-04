@@ -24,7 +24,7 @@ export interface Bond {
 }
 
 // 無機化学用の型定義
-export type InorganicQuizMode = 'mode-a' | 'mode-b' | 'mode-c' | 'mode-d' | 'mode-e' | 'mode-f' | 'mode-g';
+export type InorganicQuizMode = 'mode-a' | 'mode-b' | 'mode-e' | 'mode-f' | 'mode-g';
 
 export interface InorganicReaction {
   id: string;

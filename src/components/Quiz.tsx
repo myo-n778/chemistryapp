@@ -11,8 +11,6 @@ import { SubstitutionQuiz } from './modes/SubstitutionQuiz';
 import { ExperimentQuiz } from './modes/ExperimentQuiz';
 import { ModeAQuiz } from './modes/inorganic/ModeAQuiz';
 import { ModeBQuiz } from './modes/inorganic/ModeBQuiz';
-import { ModeCQuiz } from './modes/inorganic/ModeCQuiz';
-import { ModeDQuiz } from './modes/inorganic/ModeDQuiz';
 import { ModeEQuiz } from './modes/inorganic/ModeEQuiz';
 import { ModeFQuiz } from './modes/inorganic/ModeFQuiz';
 import { ModeGQuiz } from './modes/inorganic/ModeGQuiz';
@@ -47,10 +45,6 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
       return <ModeAQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     case 'inorganic-mode-b':
       return <ModeBQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
-    case 'inorganic-mode-c':
-      return <ModeCQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
-    case 'inorganic-mode-d':
-      return <ModeDQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     case 'inorganic-mode-e':
       return <ModeEQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     case 'inorganic-mode-f':

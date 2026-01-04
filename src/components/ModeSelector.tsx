@@ -11,8 +11,6 @@ export type QuizMode =
   | 'experiment'
   | 'inorganic-mode-a'
   | 'inorganic-mode-b'
-  | 'inorganic-mode-c'
-  | 'inorganic-mode-d'
   | 'inorganic-mode-e'
   | 'inorganic-mode-f'
   | 'inorganic-mode-g';
@@ -101,23 +99,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('inorganic-mode-b')}
             >
               <div className="mode-title">モードB：反応 → 観察</div>
-              <div className="mode-subtitle">反応から観察を選ぶ（図付き）</div>
-            </button>
-
-            <button
-              className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-c')}
-            >
-              <div className="mode-title">モードC：条件 → 結果</div>
-              <div className="mode-subtitle">条件から結果を選ぶ（分岐）</div>
-            </button>
-
-            <button
-              className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-d')}
-            >
-              <div className="mode-title">モードD：図を見て答える</div>
-              <div className="mode-subtitle">図から物質・反応式・観察を選ぶ</div>
+              <div className="mode-subtitle">反応から観察を選ぶ</div>
             </button>
 
             <button
