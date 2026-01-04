@@ -28,6 +28,8 @@ function App() {
   const [inorganicReactions, setInorganicReactions] = useState<InorganicReaction[]>([]); // 無機化学用
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [inorganicLoading, setInorganicLoading] = useState(false);
+  const [inorganicLoadingError, setInorganicLoadingError] = useState<string | null>(null);
 
   // 初回レンダリング時のデバッグログ
   useEffect(() => {
@@ -192,36 +194,44 @@ function App() {
   useEffect(() => {
     if (selectedCategory !== 'inorganic') {
       setInorganicReactions([]);
+      setInorganicLoading(false);
+      setInorganicLoadingError(null);
       return;
     }
 
     let isMounted = true;
-    setLoading(true);
-    setLoadingError(null);
+    setInorganicLoading(true);
+    setInorganicLoadingError(null);
     
     loadInorganicReactionsData()
       .then(data => {
         if (!isMounted) return;
         console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
         setInorganicReactions(data);
-        setLoading(false);
-        setLoadingError(null);
+        setInorganicLoading(false);
+        setInorganicLoadingError(null);
       })
       .catch(error => {
         if (!isMounted) return;
         console.error('Failed to load inorganic reactions:', error);
         setInorganicReactions([]);
-        setLoading(false);
+        setInorganicLoading(false);
         const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-        setLoadingError(errorMessage);
+        setInorganicLoadingError(errorMessage);
       });
     
     return () => {
       isMounted = false;
     };
+    // loadInorganicReactionsDataは外部からインポートされた関数で変更されないため、依存配列に含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
-  if (loading) {
+  // ローディング状態のチェック（有機化学または無機化学）
+  const isLoading = selectedCategory === 'inorganic' ? inorganicLoading : loading;
+  const currentLoadingError = selectedCategory === 'inorganic' ? inorganicLoadingError : loadingError;
+
+  if (isLoading) {
     return (
       <div className="App">
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
@@ -231,7 +241,7 @@ function App() {
     );
   }
 
-  if (loadingError) {
+  if (currentLoadingError) {
     return (
       <div className="App">
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
@@ -239,13 +249,17 @@ function App() {
             データの読み込みに失敗しました
           </p>
           <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
-            {loadingError}
+            {currentLoadingError}
           </p>
           <button
             className="back-button"
             onClick={() => {
               setSelectedCategory(null);
-              setLoadingError(null);
+              if (selectedCategory === 'inorganic') {
+                setInorganicLoadingError(null);
+              } else {
+                setLoadingError(null);
+              }
             }}
             style={{ marginTop: '20px' }}
           >
