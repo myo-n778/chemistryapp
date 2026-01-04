@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Quiz } from './components/Quiz';
 import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
@@ -188,33 +188,30 @@ function App() {
     );
   }
 
-  // 無機化学データの読み込み関数をメモ化
-  const loadInorganicData = useCallback(async () => {
-    setLoading(true);
-    setLoadingError(null);
-    try {
-      const data = await loadInorganicReactionsData();
-      console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
-      setInorganicReactions(data);
-      setLoading(false);
-      setLoadingError(null);
-    } catch (error) {
-      console.error('Failed to load inorganic reactions:', error);
-      setInorganicReactions([]);
-      setLoading(false);
-      const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-      setLoadingError(errorMessage);
-    }
-  }, []);
-
   // 無機化学データの読み込み
   useEffect(() => {
     if (selectedCategory === 'inorganic') {
-      loadInorganicData();
+      setLoading(true);
+      setLoadingError(null);
+      loadInorganicReactionsData()
+        .then(data => {
+          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
+          setInorganicReactions(data);
+          setLoading(false);
+          setLoadingError(null);
+        })
+        .catch(error => {
+          console.error('Failed to load inorganic reactions:', error);
+          setInorganicReactions([]);
+          setLoading(false);
+          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+          setLoadingError(errorMessage);
+        });
     } else {
       setInorganicReactions([]);
     }
-  }, [selectedCategory, loadInorganicData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
 
   if (loading) {
     return (
