@@ -105,8 +105,7 @@ export const loadInorganicReactions = async (): Promise<InorganicReaction[]> => 
       const csvUrl = `${baseUrl}data/inorganic/reactions.csv`;
       const response = await fetch(csvUrl);
       if (response.ok) {
-        const csvText = await response.text();
-        // CSVパーサーは後で実装（必要に応じて）
+        await response.text(); // CSVパーサーは後で実装（必要に応じて）
         console.warn('[inorganicLoader] CSV fallback not yet implemented');
       }
     } catch (csvError) {

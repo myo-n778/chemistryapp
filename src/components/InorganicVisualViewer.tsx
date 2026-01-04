@@ -238,25 +238,27 @@ export const InorganicVisualViewer: React.FC<InorganicVisualViewerProps> = ({
 
         {/* 錯体の表示 */}
         {hasComplex && (
-          <circle
-            cx={width * 0.5}
-            cy={height * 0.5}
-            r={width * 0.15}
-            fill="none"
-            stroke="#9b59b6"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          />
-          <text
-            x={width * 0.5}
-            y={height * 0.5}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize="12"
-            fill="#9b59b6"
-          >
-            錯体
-          </text>
+          <g>
+            <circle
+              cx={width * 0.5}
+              cy={height * 0.5}
+              r={width * 0.15}
+              fill="none"
+              stroke="#9b59b6"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+            <text
+              x={width * 0.5}
+              y={height * 0.5}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="12"
+              fill="#9b59b6"
+            >
+              錯体
+            </text>
+          </g>
         )}
 
         {/* 矢印マーカー定義 */}

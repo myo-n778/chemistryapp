@@ -28,7 +28,7 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
       let processedEquation = equation;
       
       // \ce{...}を処理（簡易実装）
-      processedEquation = processedEquation.replace(/\\ce\{([^}]+)\}/g, (match, content) => {
+      processedEquation = processedEquation.replace(/\\ce\{([^}]+)\}/g, (_match, content) => {
         // 基本的な化学式の変換
         // 例: \ce{H2O} -> H_2O, \ce{NaCl} -> NaCl
         return content

@@ -6,7 +6,7 @@ import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
 import { InorganicVisualViewer } from '../../InorganicVisualViewer';
-import '../Quiz.css';
+import '../../Quiz.css';
 
 interface ModeBQuizProps {
   reactions: InorganicReaction[];

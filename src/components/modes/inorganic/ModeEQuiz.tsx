@@ -5,7 +5,7 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
-import '../Quiz.css';
+import '../../Quiz.css';
 
 interface ModeEQuizProps {
   reactions: InorganicReaction[];

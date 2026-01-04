@@ -7,7 +7,7 @@ import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/score
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
 import { InorganicVisualViewer } from '../../InorganicVisualViewer';
 import { TeXRenderer } from '../../TeXRenderer';
-import '../Quiz.css';
+import '../../Quiz.css';
 
 interface ModeDQuizProps {
   reactions: InorganicReaction[];

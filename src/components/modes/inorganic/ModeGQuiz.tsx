@@ -6,7 +6,7 @@ import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { InorganicVisualViewer } from '../../InorganicVisualViewer';
 import { TeXRenderer } from '../../TeXRenderer';
-import '../Quiz.css';
+import '../../Quiz.css';
 
 interface ModeGQuizProps {
   reactions: InorganicReaction[];
