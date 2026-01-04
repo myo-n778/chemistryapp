@@ -87,6 +87,7 @@ export const extractLeftSideWithArrow = (equation: string): string => {
     { pattern: /\\rightarrow/g, name: 'LaTeX形式' },
     { pattern: /\\to/g, name: 'LaTeX形式（短い）' },
     { pattern: /<=>/g, name: '平衡矢印' },
+    { pattern: /⇒/g, name: '全角二重矢印' },
     { pattern: /→/g, name: '全角矢印' },
     { pattern: /->/g, name: 'ハイフン+大なり' },
   ];

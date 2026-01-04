@@ -308,6 +308,11 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
             <button className="back-button" onClick={onBack}>
               return
             </button>
+            {showResult && (
+              <button className="next-button-inline" onClick={handleNext}>
+                Next
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -458,9 +463,6 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 </>
               )}
             </div>
-            <button className="next-button-inline" onClick={handleNext}>
-              Next
-            </button>
           </div>
         )}
       </div>
