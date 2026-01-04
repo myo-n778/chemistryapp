@@ -5,7 +5,7 @@ import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractors, shuffleChoices } from '../../../utils/inorganicDistractorGenerator';
-import { cleanProductDescription } from '../../../utils/inorganicDisplayHelper';
+import { cleanProductDescription, extractLeftSideWithArrow } from '../../../utils/inorganicDisplayHelper';
 import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
 
@@ -287,20 +287,29 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
     <div className="quiz-container">
       <div className="quiz-header">
         <h1>Inorganic Chemistry Drill - Mode A</h1>
-        <ScoreDisplay
-          score={score}
-          totalAnswered={totalAnswered}
-          pointScore={pointScore}
-          showPoints={true}
-          mode={`inorganic-mode-a-${category}`}
-          rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-            ? getRangeKey('batch-10', quizSettings.startIndex)
-            : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-            ? getRangeKey('batch-20', quizSettings.startIndex)
-            : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-            ? getRangeKey('batch-40', quizSettings.startIndex)
-            : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
-        />
+        <div className="quiz-header-right">
+          <span className="score-text">
+            <ScoreDisplay
+              score={score}
+              totalAnswered={totalAnswered}
+              pointScore={pointScore}
+              showPoints={true}
+              mode={`inorganic-mode-a-${category}`}
+              rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
+                ? getRangeKey('batch-10', quizSettings.startIndex)
+                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+                ? getRangeKey('batch-20', quizSettings.startIndex)
+                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+                ? getRangeKey('batch-40', quizSettings.startIndex)
+                : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
+            />
+          </span>
+          <div className="quiz-header-buttons">
+            <button className="back-button" onClick={onBack}>
+              return
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="quiz-progress">
@@ -316,12 +325,12 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応で生成される物質は？</h2>
           <div className="question-text">
-            {/* 新しいExcel形式の場合は、問題文（反応物）のみをTeXで表示 */}
+            {/* 問題文には左辺（反応物）のみ＋→を表示 */}
             {currentReaction.id.startsWith('quiz-') ? (
               currentReaction.equation_tex_mhchem || currentReaction.reactants_desc ? (
                 <div style={{ marginBottom: '10px' }}>
                   <TeXRenderer
-                    equation={currentReaction.equation_tex_mhchem || currentReaction.reactants_desc}
+                    equation={extractLeftSideWithArrow(currentReaction.equation_tex_mhchem || currentReaction.reactants_desc)}
                     displayMode={true}
                   />
                 </div>
@@ -331,14 +340,14 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 {currentReaction.equation_tex_mhchem ? (
                   <div style={{ marginBottom: '10px' }}>
                     <TeXRenderer
-                      equation={currentReaction.equation_tex_mhchem}
+                      equation={extractLeftSideWithArrow(currentReaction.equation_tex_mhchem)}
                       displayMode={true}
                     />
                   </div>
                 ) : currentReaction.equation_tex ? (
                   <div style={{ marginBottom: '10px' }}>
                     <TeXRenderer
-                      equation={currentReaction.equation_tex}
+                      equation={extractLeftSideWithArrow(currentReaction.equation_tex)}
                       displayMode={true}
                     />
                   </div>
@@ -369,12 +378,18 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <span style={{ flex: 1, textAlign: 'left' }}>
-                  {/* 新しいExcel形式の場合は選択肢もTeXで表示 */}
-                  {currentReaction.id.startsWith('quiz-') ? (
-                    <TeXRenderer equation={choice} displayMode={false} />
-                  ) : (
-                    choice
-                  )}
+                  {/* 選択肢もTeX形式で表示（新しいExcel形式またはTeX形式の文字列の場合） */}
+                  {(() => {
+                    // 選択肢がTeX形式かどうかを判定（\ce, \rightarrow, _{, ^{等を含む場合はTeX形式）
+                    const isTeXFormat = choice.includes('\\') || choice.includes('_{') || choice.includes('^{') || 
+                                        choice.includes('→') || choice.includes('\\ce') || 
+                                        choice.match(/[A-Z][a-z]?\d+/); // 化学式パターン（例: H2O, CO2）
+                    
+                    if (currentReaction.id.startsWith('quiz-') || isTeXFormat) {
+                      return <TeXRenderer equation={choice} displayMode={false} />;
+                    }
+                    return choice;
+                  })()}
                 </span>
                 {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
                 {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
@@ -438,8 +453,8 @@ export const ModeAQuiz: React.FC<ModeAQuizProps> = ({
                 </>
               )}
             </div>
-            <button className="next-button" onClick={handleNext}>
-              次へ
+            <button className="next-button-inline" onClick={handleNext}>
+              Next
             </button>
           </div>
         )}

@@ -73,3 +73,51 @@ export const cleanProductDescription = (desc: string): string => {
   return desc.replace(/^生成物\s*[:：]\s*/i, '').trim();
 };
 
+/**
+ * 反応式から左辺（反応物）のみを抽出し、矢印を付けて返す
+ * データは変更せず、表示用に左辺のみを生成
+ */
+export const extractLeftSideWithArrow = (equation: string): string => {
+  if (!equation) return equation;
+  
+  // 矢印記号で分割（様々な表記に対応）
+  // 順序が重要：長いパターンから先にチェック
+  const arrowPatterns = [
+    { pattern: /\\rightleftharpoons/g, name: 'LaTeX平衡矢印' },
+    { pattern: /\\rightarrow/g, name: 'LaTeX形式' },
+    { pattern: /\\to/g, name: 'LaTeX形式（短い）' },
+    { pattern: /<=>/g, name: '平衡矢印' },
+    { pattern: /→/g, name: '全角矢印' },
+    { pattern: /->/g, name: 'ハイフン+大なり' },
+  ];
+  
+  let leftSide = equation;
+  let foundArrow = false;
+  let isTeXFormat = equation.includes('\\') || equation.includes('\\ce');
+  
+  // 最初に見つかった矢印で分割
+  for (const { pattern } of arrowPatterns) {
+    const match = equation.match(pattern);
+    if (match && match.index !== undefined) {
+      leftSide = equation.substring(0, match.index).trim();
+      foundArrow = true;
+      break;
+    }
+  }
+  
+  // 矢印が見つからなかった場合は、そのまま返す（既に左辺のみの可能性）
+  if (!foundArrow) {
+    // 既に矢印が含まれていない場合は、そのまま返す
+    return equation;
+  }
+  
+  // 左辺の末尾に矢印を追加（TeX形式の場合は\\rightarrow、それ以外は→）
+  if (isTeXFormat) {
+    // TeX形式の場合
+    return leftSide + ' \\rightarrow';
+  } else {
+    // 通常のテキスト形式の場合
+    return leftSide + ' →';
+  }
+};
+
