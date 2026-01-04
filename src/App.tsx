@@ -35,6 +35,11 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // 無機化学の場合は別のuseEffectで処理するためスキップ
+    if (selectedCategory === 'inorganic') {
+      return;
+    }
+    
     if (selectedCategory) {
       setLoading(true);
       setLoadingError(null);
