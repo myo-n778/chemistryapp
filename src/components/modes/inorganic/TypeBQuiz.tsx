@@ -9,6 +9,43 @@ import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
 
+/**
+ * 問題文表示コンポーネント（TeX表示切り替え機能付き）
+ */
+const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> = ({ text, tex, label }) => {
+  const [showTeX, setShowTeX] = useState(false);
+
+  if (!tex) {
+    return <TeXRenderer equation={text} displayMode={true} />;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <button
+          onClick={() => setShowTeX(!showTeX)}
+          style={{
+            padding: '4px 8px',
+            fontSize: '0.8rem',
+            backgroundColor: showTeX ? '#4a5568' : '#2d3748',
+            color: '#e0e0e0',
+            border: '1px solid #4a5568',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          {showTeX ? '通常表示' : 'TeX表示'}
+        </button>
+      </div>
+      {showTeX ? (
+        <TeXRenderer equation={tex} displayMode={true} />
+      ) : (
+        <TeXRenderer equation={text} displayMode={true} />
+      )}
+    </div>
+  );
+};
+
 interface TypeBQuizProps {
   reactions: InorganicReactionNew[];
   category: Category;
@@ -299,12 +336,11 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応の条件は？</h2>
           <div className="question-text">
-            <div style={{ marginBottom: '10px' }}>
-              <TeXRenderer
-                equation={currentReaction.equation}
-                displayMode={true}
-              />
-            </div>
+            <QuestionDisplay
+              text={currentReaction.equation}
+              tex={currentReaction.equation_tex}
+              label="反応式"
+            />
           </div>
         </div>
 
