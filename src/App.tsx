@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Quiz } from './components/Quiz';
 import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
@@ -492,7 +492,7 @@ function App() {
     );
   }
 
-  const handleNextRange = () => {
+  const handleNextRange = useCallback(() => {
     if (!quizSettings) return;
     
     // batch-10/20/40モードの場合のみ次の範囲へ進む
@@ -518,31 +518,8 @@ function App() {
         startIndex: nextStartIndex
       });
     }
-  };
+  }, [quizSettings, maxQuestionCount]);
 
-  // 次の範囲が存在するかどうかを判定
-  const hasNextRange = (): boolean => {
-    if (!quizSettings) return false;
-    
-    // batch-10/20/40モードの場合のみチェック
-    if (quizSettings.questionCountMode === 'batch-10' || 
-        quizSettings.questionCountMode === 'batch-20' || 
-        quizSettings.questionCountMode === 'batch-40') {
-      if (quizSettings.startIndex === undefined) return false;
-      
-      let batchSize = 10;
-      if (quizSettings.questionCountMode === 'batch-20') {
-        batchSize = 20;
-      } else if (quizSettings.questionCountMode === 'batch-40') {
-        batchSize = 40;
-      }
-      
-      const nextStartIndex = quizSettings.startIndex + batchSize;
-      return nextStartIndex <= maxQuestionCount;
-    }
-    
-    return false;
-  };
   
 
   // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
@@ -630,17 +607,19 @@ function App() {
 
   const quizInorganicReactions = activeInorganicReactions?.type === 'old' ? activeInorganicReactions.data : [];
 
-  // selectedModeとselectedCategoryはこの時点でnullでないことが保証されている
-  if (!selectedMode) {
-    return null; // 型チェック用（実際には到達しない）
-  }
+  // すべてのhooksを先に実行した後、return分岐を最後にまとめる
+  // 条件分岐はhooksの「中」で行う（useMemoコールバック内で三項演算など）
+  const mainContent = useMemo(() => {
+    // selectedModeとselectedCategoryはこの時点でnullでないことが保証されている
+    if (!selectedMode) {
+      return null; // 型チェック用（実際には到達しない）
+    }
 
-  // 4) reactions.length === 0の場合はTypeAQuizをrenderしない（エラー表示のみ）
-  if (selectedCategory === 'inorganic' && 
-      (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
-      quizInorganicReactionsNew.length === 0) {
-    return (
-      <div className="App">
+    // reactions.length === 0の場合はエラー表示
+    if (selectedCategory === 'inorganic' && 
+        (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
+        quizInorganicReactionsNew.length === 0) {
+      return (
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             問題データが見つかりませんでした
@@ -656,12 +635,28 @@ function App() {
             設定に戻る
           </button>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return (
-    <div className="App">
+    // hasNextRangeをuseMemo内で直接計算
+    const hasNext = quizSettings && (
+      (quizSettings.questionCountMode === 'batch-10' || 
+       quizSettings.questionCountMode === 'batch-20' || 
+       quizSettings.questionCountMode === 'batch-40') &&
+      quizSettings.startIndex !== undefined
+    ) ? (() => {
+      let batchSize = 10;
+      if (quizSettings.questionCountMode === 'batch-20') {
+        batchSize = 20;
+      } else if (quizSettings.questionCountMode === 'batch-40') {
+        batchSize = 40;
+      }
+      const nextStartIndex = quizSettings.startIndex! + batchSize;
+      return nextStartIndex <= maxQuestionCount;
+    })() : false;
+
+    // 通常のクイズ表示
+    return (
       <Quiz
         compounds={finalCompounds}
         allCompounds={compounds}
@@ -672,8 +667,14 @@ function App() {
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
         quizSettings={quizSettings}
-        onNextRange={hasNextRange() ? handleNextRange : undefined}
+        onNextRange={hasNext ? handleNextRange : undefined}
       />
+    );
+  }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
+
+  return (
+    <div className="App">
+      {mainContent}
     </div>
   );
 }
