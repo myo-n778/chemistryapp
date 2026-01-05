@@ -11,6 +11,8 @@ import { ReactionQuiz } from './modes/ReactionQuiz';
 import { SubstitutionQuiz } from './modes/SubstitutionQuiz';
 import { ExperimentQuiz } from './modes/ExperimentQuiz';
 import { TypeAQuiz } from './modes/inorganic/TypeAQuiz';
+import { TypeBQuiz } from './modes/inorganic/TypeBQuiz';
+import { TypeCQuiz } from './modes/inorganic/TypeCQuiz';
 import { ModeAQuiz } from './modes/inorganic/ModeAQuiz'; // 旧モード（後で削除予定）
 import { ModeBQuiz } from './modes/inorganic/ModeBQuiz'; // 旧モード（後で削除予定）
 import { ModeEQuiz } from './modes/inorganic/ModeEQuiz'; // 旧モード（後で削除予定）
@@ -47,6 +49,10 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
     // 新しい無機化学モード
     case 'inorganic-type-a':
       return <TypeAQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+    case 'inorganic-type-b':
+      return <TypeBQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+    case 'inorganic-type-c':
+      return <TypeCQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
     // 旧無機化学モード（後で削除予定）
     case 'inorganic-mode-a':
       return <ModeAQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
