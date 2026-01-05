@@ -22,14 +22,35 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
   correctAnswer: _correctAnswer,
   className = '',
 }) => {
+  const [showEquationTeX, setShowEquationTeX] = React.useState(false);
+
   return (
     <div className={`inorganic-explanation-panel ${className}`}>
       {/* 1. 反応式（A列） */}
       <div className="explanation-section explanation-equation">
-        <h3 className="explanation-section-title">反応式</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h3 className="explanation-section-title" style={{ marginBottom: 0 }}>反応式</h3>
+          {reaction.equation_tex && (
+            <button
+              className="tex-toggle-button"
+              onClick={() => setShowEquationTeX(!showEquationTeX)}
+              style={{
+                padding: '5px 10px',
+                fontSize: '0.85rem',
+                backgroundColor: showEquationTeX ? '#4a5568' : '#2d3748',
+                color: '#e0e0e0',
+                border: '1px solid #4a5568',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              {showEquationTeX ? '通常表示' : 'TeX表示'}
+            </button>
+          )}
+        </div>
         <div className="explanation-content">
           <TeXRenderer
-            equation={reaction.equation}
+            equation={showEquationTeX && reaction.equation_tex ? reaction.equation_tex : reaction.equation}
             displayMode={true}
           />
         </div>
