@@ -234,10 +234,6 @@ function App() {
     return compounds.length;
   }, [selectedCategory, selectedMode, activeInorganicReactions, reactions, experiments.length, compounds.length]);
 
-  // 無機化学のtotalCount（AllQuestionCountSelector用）
-  const inorganicTotalCount = useMemo(() => {
-    return activeInorganicReactions?.data.length ?? 0;
-  }, [activeInorganicReactions]);
 
   // 最大問題数（handleNextRange/hasNextRange用）
   const maxQuestionCount = useMemo(() => {
@@ -366,30 +362,13 @@ function App() {
   if (!quizSettings) {
     return (
       <div className="App">
-        {selectedCategory === 'inorganic' ? (
-          <AllQuestionCountSelector
-            totalCount={inorganicTotalCount}
-            orderMode="shuffle"
-            onSelectCount={(count) => {
-              setQuizSettings({
-                questionCountMode: 'all',
-                orderMode: 'shuffle',
-                allQuestionCount: count === undefined ? null : count
-              });
-            }}
-            onBack={() => setSelectedMode(null)}
-            mode={selectedMode ?? undefined}
-            category={selectedCategory}
-          />
-        ) : (
-          <QuestionCountSelector
-            totalCount={totalQuestionCount}
-            onSelectSettings={setQuizSettings}
-            onBack={() => setSelectedMode(null)}
-            mode={selectedMode ?? undefined}
-            category={selectedCategory}
-          />
-        )}
+        <QuestionCountSelector
+          totalCount={totalQuestionCount}
+          onSelectSettings={setQuizSettings}
+          onBack={() => setSelectedMode(null)}
+          mode={selectedMode ?? undefined}
+          category={selectedCategory}
+        />
       </div>
     );
   }
