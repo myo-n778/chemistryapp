@@ -387,6 +387,26 @@ function App() {
   }
 
   if (!quizSettings) {
+    // 【切り分けテスト3】inorganicReactionsNewの状態を確認
+    console.log('[App] 【切り分けテスト】QuestionCountSelector表示前の状態確認', {
+      selectedCategory,
+      selectedMode,
+      inorganicReactionsNew: {
+        isArray: Array.isArray(inorganicReactionsNew),
+        length: inorganicReactionsNew.length,
+        firstFew: inorganicReactionsNew.slice(0, 3),
+        fullArray: inorganicReactionsNew
+      },
+      inorganicReactions: {
+        isArray: Array.isArray(inorganicReactions),
+        length: inorganicReactions.length
+      },
+      stateVariables: {
+        inorganicReactionsNewState: inorganicReactionsNew,
+        inorganicReactionsState: inorganicReactions
+      }
+    });
+    
     // Inorganicの場合、直接inorganicReactionsNew.lengthを計算して渡す
     // selectedModeが設定されていない場合でも、全件数を表示する
     const actualTotalCount = selectedCategory === 'inorganic' 
@@ -395,19 +415,24 @@ function App() {
           : inorganicReactions.length)
       : totalQuestionCount;
     
+    // 【切り分けテスト1】一時的にハードコードして動作確認
+    const testTotalCount = selectedCategory === 'inorganic' ? 90 : actualTotalCount;
+    
     console.log('[App] Rendering QuestionCountSelector', {
       totalQuestionCount,
       actualTotalCount,
+      testTotalCount,
       selectedMode,
       selectedCategory,
       inorganicReactionsNewLength: inorganicReactionsNew.length,
       inorganicReactionsLength: inorganicReactions.length,
+      inorganicReactionsNew: inorganicReactionsNew,
       activeInorganicReactions: activeInorganicReactions?.data.length ?? 0
     });
     return (
       <div className="App">
         <QuestionCountSelector
-          totalCount={actualTotalCount}
+          totalCount={testTotalCount}
           onSelectSettings={(settings) => {
             console.log('[App] onSelectSettings called', settings);
             setQuizSettings(settings);

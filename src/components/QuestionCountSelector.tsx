@@ -22,7 +22,14 @@ interface QuestionCountSelectorProps {
 }
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
-  console.log('[QuestionCountSelector] Render', { totalCount, mode, category });
+  // 【切り分けテスト2】実ファイルパスを特定
+  console.log('[QuestionCountSelector] Render - FILE: src/components/QuestionCountSelector.tsx', { 
+    totalCount, 
+    mode, 
+    category,
+    propsTotalCount: totalCount,
+    typeofTotalCount: typeof totalCount
+  });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
