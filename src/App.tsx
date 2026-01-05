@@ -225,14 +225,24 @@ function App() {
   // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
   const totalQuestionCount = useMemo(() => {
     if (selectedCategory === 'inorganic') {
-      const count = activeInorganicReactions?.data.length ?? 0;
-      console.log('[App] totalQuestionCount calculation (inorganic)', {
+      // Inorganicの場合、新しいモード（type-a/b/c）の場合はinorganicReactionsNewの全件数を使用
+      // 問題数選択時点では、フィルタリング前の全件数を表示する
+      if (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') {
+        const count = inorganicReactionsNew.length;
+        console.log('[App] totalQuestionCount calculation (inorganic new)', {
+          selectedCategory,
+          selectedMode,
+          inorganicReactionsNewLength: inorganicReactionsNew.length,
+          count
+        });
+        return count;
+      }
+      // 旧モードの場合はinorganicReactionsの全件数を使用
+      const count = inorganicReactions.length;
+      console.log('[App] totalQuestionCount calculation (inorganic old)', {
         selectedCategory,
         selectedMode,
-        activeInorganicReactions: activeInorganicReactions ? {
-          type: activeInorganicReactions.type,
-          dataLength: activeInorganicReactions.data.length
-        } : null,
+        inorganicReactionsLength: inorganicReactions.length,
         count
       });
       return count;
@@ -242,7 +252,7 @@ function App() {
       return experiments.length;
     }
     return compounds.length;
-  }, [selectedCategory, selectedMode, activeInorganicReactions, reactions, experiments.length, compounds.length]);
+  }, [selectedCategory, selectedMode, inorganicReactionsNew.length, inorganicReactions.length, reactions, experiments.length, compounds.length]);
 
 
   // 最大問題数（handleNextRange/hasNextRange用）
