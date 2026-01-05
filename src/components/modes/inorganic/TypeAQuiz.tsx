@@ -7,6 +7,7 @@ import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/score
 import { generateDistractorsForTypeA, shuffleChoices } from '../../../utils/inorganicDistractorGeneratorNew';
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
+import { ChoiceDisplay } from '../../ChoiceDisplay';
 import '../../Quiz.css';
 
 /**
@@ -356,7 +357,9 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
                 disabled={showResult}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
-                <span style={{ flex: 1, textAlign: 'left' }}>{choice}</span>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <ChoiceDisplay text={choice} />
+                </div>
                 {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
                 {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
               </button>
@@ -370,7 +373,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
               {isCorrect ? '正解！' : '不正解'}
             </div>
             <div className="result-explanation">
-              <p><strong>正解:</strong> {currentReaction.products}</p>
+              <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.products} /></p>
               <InorganicExplanationPanel
                 reaction={currentReaction}
                 correctAnswer={currentReaction.products}
