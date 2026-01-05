@@ -8,6 +8,7 @@ import { generateDistractorsForTypeA, shuffleChoices } from '../../../utils/inor
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
 import { ChoiceDisplay } from '../../ChoiceDisplay';
+import { RenderMaybeTeX } from '../../RenderMaybeTeX';
 import '../../Quiz.css';
 
 /**
@@ -17,7 +18,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
-    return <p>{text}</p>;
+    return <RenderMaybeTeX value={text} displayMode={true} />;
   }
 
   return (
@@ -41,7 +42,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }
       {showTeX ? (
         <TeXRenderer equation={tex} displayMode={true} />
       ) : (
-        <p>{text}</p>
+        <RenderMaybeTeX value={text} displayMode={true} />
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 import React from 'react';
-import { TeXRenderer } from './TeXRenderer';
+import { RenderMaybeTeX } from './RenderMaybeTeX';
 
 /**
  * 選択肢表示コンポーネント
- * TeX文字列（\ce{}を含む）の場合は自動的にレンダリング
+ * RenderMaybeTeXを使用して統一
  */
 interface ChoiceDisplayProps {
   text: string;
@@ -11,20 +11,6 @@ interface ChoiceDisplayProps {
 }
 
 export const ChoiceDisplay: React.FC<ChoiceDisplayProps> = ({ text, className = '' }) => {
-  // \ce{}を含む場合はTeXとしてレンダリング
-  const isTeX = text.includes('\\ce{') || text.includes('\\ce[');
-
-  if (isTeX) {
-    return (
-      <TeXRenderer
-        equation={text}
-        displayMode={false}
-        className={className}
-      />
-    );
-  }
-
-  // 通常のテキストとして表示
-  return <span className={className}>{text}</span>;
+  return <RenderMaybeTeX value={text} displayMode={false} className={className} />;
 };
 

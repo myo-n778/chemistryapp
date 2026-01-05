@@ -2,6 +2,7 @@ import React from 'react';
 import { InorganicReactionNew } from '../types/inorganic';
 import { TeXRenderer } from './TeXRenderer';
 import { InorganicObservationDisplay } from './InorganicObservationDisplay';
+import { RenderMaybeTeX } from './RenderMaybeTeX';
 import './InorganicExplanationPanel.css';
 
 interface InorganicExplanationPanelProps {
@@ -76,13 +77,17 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
             {reaction.reactants_summary && (
               <div className="summary-card summary-reactants">
                 <div className="summary-card-label">反応前</div>
-                <div className="summary-card-content">{reaction.reactants_summary}</div>
+                <div className="summary-card-content">
+                  <RenderMaybeTeX value={reaction.reactants_summary} />
+                </div>
               </div>
             )}
             {reaction.products_summary && (
               <div className="summary-card summary-products">
                 <div className="summary-card-label">生成</div>
-                <div className="summary-card-content">{reaction.products_summary}</div>
+                <div className="summary-card-content">
+                  <RenderMaybeTeX value={reaction.products_summary} />
+                </div>
               </div>
             )}
           </div>
@@ -104,7 +109,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
         <div className="explanation-section explanation-text">
           <h3 className="explanation-section-title">解説</h3>
           <div className="explanation-content">
-            <p>{reaction.explanation}</p>
+            <p><RenderMaybeTeX value={reaction.explanation} /></p>
           </div>
         </div>
       )}
