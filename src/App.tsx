@@ -225,7 +225,17 @@ function App() {
   // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
   const totalQuestionCount = useMemo(() => {
     if (selectedCategory === 'inorganic') {
-      return activeInorganicReactions?.data.length ?? 0;
+      const count = activeInorganicReactions?.data.length ?? 0;
+      console.log('[App] totalQuestionCount calculation (inorganic)', {
+        selectedCategory,
+        selectedMode,
+        activeInorganicReactions: activeInorganicReactions ? {
+          type: activeInorganicReactions.type,
+          dataLength: activeInorganicReactions.data.length
+        } : null,
+        count
+      });
+      return count;
     } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
       return reactions;
     } else if (selectedMode === 'experiment') {
@@ -360,11 +370,20 @@ function App() {
   }
 
   if (!quizSettings) {
+    console.log('[App] Rendering QuestionCountSelector', {
+      totalQuestionCount,
+      selectedMode,
+      selectedCategory,
+      activeInorganicReactions: activeInorganicReactions?.data.length ?? 0
+    });
     return (
       <div className="App">
         <QuestionCountSelector
           totalCount={totalQuestionCount}
-          onSelectSettings={setQuizSettings}
+          onSelectSettings={(settings) => {
+            console.log('[App] onSelectSettings called', settings);
+            setQuizSettings(settings);
+          }}
           onBack={() => setSelectedMode(null)}
           mode={selectedMode ?? undefined}
           category={selectedCategory}

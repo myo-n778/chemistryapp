@@ -22,12 +22,15 @@ interface QuestionCountSelectorProps {
 }
 
 export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ totalCount, onSelectSettings, onBack, mode, category }) => {
+  console.log('[QuestionCountSelector] Render', { totalCount, mode, category });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
   const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
 
   const handleModeSelect = (mode: QuestionCountMode) => {
+    console.log('[QuestionCountSelector] handleModeSelect called', mode, 'totalCount:', totalCount);
     if (mode === 'all') {
       // ALLモードは問題数選択が必要なため、特別な値を設定
+      console.log('[QuestionCountSelector] Setting all mode');
       onSelectSettings({
         questionCountMode: 'all',
         orderMode: orderMode,
@@ -35,11 +38,13 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       });
     } else {
       // その他のモードは範囲選択を展開
+      console.log('[QuestionCountSelector] Expanding mode:', mode, 'current expandedMode:', expandedMode);
       setExpandedMode(expandedMode === mode ? null : mode);
     }
   };
 
   const handleRangeSelect = (mode: QuestionCountMode, startIndex: number) => {
+    console.log('[QuestionCountSelector] handleRangeSelect called', mode, startIndex);
     onSelectSettings({
       questionCountMode: mode,
       startIndex: startIndex,
@@ -129,26 +134,46 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
       <div className="mode-selection-container">
         <button
           className={`mode-button ${expandedMode === 'all' ? 'expanded' : ''}`}
-          onClick={() => handleModeSelect('all')}
+          onClick={(e) => {
+            console.log('[QuestionCountSelector] All Questions button clicked', e);
+            e.preventDefault();
+            e.stopPropagation();
+            handleModeSelect('all');
+          }}
         >
           All Questions
         </button>
         <button
           className={`mode-button ${expandedMode === 'batch-10' ? 'expanded' : ''}`}
-          onClick={() => handleModeSelect('batch-10')}
+          onClick={(e) => {
+            console.log('[QuestionCountSelector] 10ずつ button clicked', e, 'totalCount:', totalCount);
+            e.preventDefault();
+            e.stopPropagation();
+            handleModeSelect('batch-10');
+          }}
         >
           10ずつ
         </button>
         <button
           className={`mode-button ${expandedMode === 'batch-20' ? 'expanded' : ''}`}
-          onClick={() => handleModeSelect('batch-20')}
+          onClick={(e) => {
+            console.log('[QuestionCountSelector] 20ずつ button clicked', e, 'totalCount:', totalCount);
+            e.preventDefault();
+            e.stopPropagation();
+            handleModeSelect('batch-20');
+          }}
         >
           20ずつ
         </button>
         {totalCount > 30 && (
           <button
             className={`mode-button ${expandedMode === 'batch-40' ? 'expanded' : ''}`}
-            onClick={() => handleModeSelect('batch-40')}
+            onClick={(e) => {
+              console.log('[QuestionCountSelector] 40ずつ button clicked', e);
+              e.preventDefault();
+              e.stopPropagation();
+              handleModeSelect('batch-40');
+            }}
           >
             40ずつ
           </button>
