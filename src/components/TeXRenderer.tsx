@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { loadMathJax, isMathJaxLoaded } from '../utils/mathJaxLoader';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+import { loadKatexMhchem, isKatexMhchemLoaded } from '../utils/katexMhchemLoader';
 
 interface TeXRendererProps {
   equation: string;
@@ -8,8 +10,8 @@ interface TeXRendererProps {
 }
 
 /**
- * MathJaxを使用してTeX数式をレンダリング（mhchem拡張対応）
- * MathJax 3.xはmhchem拡張を標準でサポート
+ * KaTeXを使用してTeX数式をレンダリング（mhchem拡張対応）
+ * \ce{}コマンドを正しく処理
  */
 export const TeXRenderer: React.FC<TeXRendererProps> = ({
   equation,
@@ -17,24 +19,24 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mathJaxLoaded, setMathJaxLoaded] = useState(isMathJaxLoaded());
+  const [mhchemLoaded, setMhchemLoaded] = useState(isKatexMhchemLoaded());
 
-  // MathJaxを動的にロード（一度だけ実行）
+  // mhchem拡張をロード（一度だけ実行）
   useEffect(() => {
-    if (mathJaxLoaded) return;
+    if (mhchemLoaded) return;
 
-    loadMathJax()
+    loadKatexMhchem()
       .then(() => {
-        setMathJaxLoaded(true);
+        setMhchemLoaded(true);
       })
       .catch((error) => {
-        console.error('[TeXRenderer] Failed to load MathJax:', error);
+        console.error('[TeXRenderer] Failed to load KaTeX mhchem:', error);
       });
-  }, [mathJaxLoaded]);
+  }, [mhchemLoaded]);
 
   // 数式をレンダリング
   useEffect(() => {
-    if (!containerRef.current || !equation || !mathJaxLoaded) return;
+    if (!containerRef.current || !equation) return;
 
     const container = containerRef.current;
     
@@ -42,35 +44,22 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
     container.innerHTML = '';
 
     try {
-      const mathJax = (window as any).MathJax;
-      if (!mathJax || !mathJax.typesetPromise) {
-        // MathJaxがまだロードされていない場合はテキストを表示
-        container.textContent = equation;
-        return;
-      }
-
-      // 数式をテキストとして設定
-      const mathElement = document.createElement(displayMode ? 'div' : 'span');
-      // \ce{}コマンドを含むTeXをそのまま設定
-      mathElement.textContent = equation;
-      mathElement.style.display = displayMode ? 'block' : 'inline';
-      container.appendChild(mathElement);
-
-      // MathJaxでレンダリング（mhchem拡張が自動的に\ce{}を処理）
-      mathJax.typesetPromise([mathElement]).then(() => {
-        // レンダリング完了
-        console.log('[TeXRenderer] Successfully rendered:', equation);
-      }).catch((err: Error) => {
-        console.error('[TeXRenderer] MathJax rendering error:', err, 'Equation:', equation);
-        container.textContent = equation;
+      // KaTeXでレンダリング（mhchem拡張がロードされていれば\ce{}が自動的に処理される）
+      katex.render(equation, container, {
+        displayMode,
+        throwOnError: false,
+        errorColor: '#cc0000',
+        // mhchem拡張は自動的に有効化される（mhchem.min.jsがロードされていれば）
       });
+      
+      console.log('[TeXRenderer] Successfully rendered:', equation.substring(0, 50));
     } catch (error) {
       console.error('[TeXRenderer] Error rendering TeX:', error, 'Equation:', equation);
       if (container) {
         container.textContent = equation;
       }
     }
-  }, [equation, displayMode, mathJaxLoaded]);
+  }, [equation, displayMode, mhchemLoaded]);
 
   return (
     <div
