@@ -6,7 +6,45 @@ import { QuizSummary } from '../../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../../utils/scoreCalculator';
 import { generateDistractorsForTypeA, shuffleChoices } from '../../../utils/inorganicDistractorGeneratorNew';
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
+import { TeXRenderer } from '../../TeXRenderer';
 import '../../Quiz.css';
+
+/**
+ * 問題文表示コンポーネント（TeX表示切り替え機能付き）
+ */
+const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }) => {
+  const [showTeX, setShowTeX] = useState(false);
+
+  if (!tex) {
+    return <p>{text}</p>;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <button
+          onClick={() => setShowTeX(!showTeX)}
+          style={{
+            padding: '4px 8px',
+            fontSize: '0.8rem',
+            backgroundColor: showTeX ? '#4a5568' : '#2d3748',
+            color: '#e0e0e0',
+            border: '1px solid #4a5568',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          {showTeX ? '通常表示' : 'TeX表示'}
+        </button>
+      </div>
+      {showTeX ? (
+        <TeXRenderer equation={tex} displayMode={true} />
+      ) : (
+        <p>{text}</p>
+      )}
+    </div>
+  );
+};
 
 interface TypeAQuizProps {
   reactions: InorganicReactionNew[];
@@ -298,7 +336,10 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
         <div className="question-area">
           <h2 className="question-title">この反応で生成される物質は？</h2>
           <div className="question-text">
-            <p><strong>反応内容:</strong> {currentReaction.reactants}</p>
+            <QuestionDisplay
+              text={currentReaction.reactants}
+              tex={currentReaction.reactants_tex}
+            />
           </div>
         </div>
 
