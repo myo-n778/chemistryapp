@@ -119,20 +119,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   const maxQuestions = Math.min(expectedQuestions, actualAvailableQuestions);
   const currentReaction = filteredReactions[currentIndex];
 
-  // 5) currentReactionがnullになる前提でガード
-  if (!currentReaction && !isFinished) {
-    console.error('[TypeAQuiz] Error: currentReaction is null', {
-      currentIndex,
-      filteredReactionsLength: filteredReactions.length,
-      reactionsLength: reactions.length,
-      quizSettings,
-      actualAvailableQuestions,
-      expectedQuestions,
-      maxQuestions
-    });
-    return null;
-  }
-
+  // すべてのhooksを先に実行（早期return禁止）
   // 選択肢を生成
   const choices = useMemo(() => {
     if (!currentReaction) return { choices: [], correctIndex: 0 };
@@ -212,7 +199,13 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     setSelectedAnswer(selectedOption);
     setShowResult(true);
     const isCorrect = selectedOption === choices.correctIndex;
-    const currentQuestionKey = currentReaction.id;
+    const currentQuestionKey = currentReaction?.id;
+    if (!currentQuestionKey) {
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 100);
+      return;
+    }
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     let newConsecutiveCount = 0;
     if (isCorrect && lastQuestionId === currentQuestionKey) {
@@ -238,6 +231,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     }, 100);
   };
 
+  // すべてのhooksを先に実行した後、return分岐を最後にまとめる
   // 5) currentReactionがnullになる前提でガード（App.tsxで既にエラーチェック済み）
   if (!currentReaction && !isFinished) {
     console.error('[TypeAQuiz] Error: currentReaction is null', {

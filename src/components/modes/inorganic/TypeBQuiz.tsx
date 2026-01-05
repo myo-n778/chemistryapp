@@ -254,7 +254,13 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
     setSelectedAnswer(selectedOption);
     setShowResult(true);
     const isCorrect = selectedOption === choices.correctIndex;
-    const currentQuestionKey = currentReaction.id;
+    const currentQuestionKey = currentReaction?.id;
+    if (!currentQuestionKey) {
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 100);
+      return;
+    }
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     let newConsecutiveCount = 0;
     if (isCorrect && lastQuestionId === currentQuestionKey) {
@@ -280,6 +286,7 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
     }, 100);
   };
 
+  // すべてのhooksを先に実行した後、return分岐を最後にまとめる
   if (!currentReaction && !isFinished) {
     console.error('[TypeBQuiz] Error: currentReaction is null', {
       currentIndex,
@@ -290,15 +297,7 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
       expectedQuestions,
       maxQuestions
     });
-    return (
-      <div className="quiz-container">
-        <div className="quiz-header"><h1>Inorganic Chemistry Drill - Type B</h1></div>
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p>問題データにエラーがあります。</p>
-          <button className="back-button" onClick={onBack} style={{ marginTop: '20px' }}>戻る</button>
-        </div>
-      </div>
-    );
+    return null; // App.tsxで既にエラーチェック済みなので、ここではnullを返す
   }
 
   if (isFinished) {
