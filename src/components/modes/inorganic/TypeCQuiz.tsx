@@ -12,7 +12,7 @@ import '../../Quiz.css';
 /**
  * 問題文表示コンポーネント（TeX表示切り替え機能付き）
  */
-const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> = ({ text, tex, label }) => {
+const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> = ({ text, tex }) => {
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
