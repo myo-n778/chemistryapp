@@ -545,13 +545,119 @@ function App() {
   };
   
 
-  // Quizコンポーネントに渡す無機化学データを決定
+  // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
+  const quizInorganicReactionsNew = useMemo(() => {
+    if (selectedCategory !== 'inorganic' || !quizSettings) {
+      return [];
+    }
+
+    if (selectedMode !== 'inorganic-type-a' && selectedMode !== 'inorganic-type-b' && selectedMode !== 'inorganic-type-c') {
+      return [];
+    }
+
+    const sourceReactions = inorganicReactionsNew;
+    if (sourceReactions.length === 0) {
+      console.warn('[App] quizInorganicReactionsNew: sourceReactions is empty');
+      return [];
+    }
+
+    // 1) batchSizeの決定
+    let batchSize: number | undefined;
+    if (quizSettings.questionCountMode === 'batch-10') {
+      batchSize = 10;
+    } else if (quizSettings.questionCountMode === 'batch-20') {
+      batchSize = 20;
+    } else if (quizSettings.questionCountMode === 'batch-40') {
+      batchSize = 40;
+    }
+
+    // 2) shuffleをsliceの前に適用
+    const base = (quizSettings.orderMode === 'shuffle') 
+      ? (() => {
+          const shuffled = [...sourceReactions];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        })()
+      : [...sourceReactions];
+
+    let filtered: typeof sourceReactions = [];
+
+    if (quizSettings.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined && batchSize !== undefined) {
+      // batch-10/20/40モード
+      const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
+      const end = start + batchSize;
+      
+      console.log('[App] quizInorganicReactionsNew: batch mode', {
+        questionCountMode: quizSettings.questionCountMode,
+        startIndex: quizSettings.startIndex,
+        start,
+        end,
+        batchSize,
+        baseLength: base.length,
+        totalCount: sourceReactions.length
+      });
+
+      filtered = base.slice(start, end);
+    } else if (quizSettings.questionCountMode === 'all') {
+      // ALLモード
+      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
+        filtered = base.slice(0, quizSettings.allQuestionCount);
+      } else {
+        filtered = base; // 全件
+      }
+      
+      console.log('[App] quizInorganicReactionsNew: all mode', {
+        allQuestionCount: quizSettings.allQuestionCount,
+        baseLength: base.length,
+        filteredLength: filtered.length
+      });
+    } else {
+      // 設定がない場合は全件
+      filtered = base;
+    }
+
+    console.log('[App] quizInorganicReactionsNew: result', {
+      filteredLength: filtered.length,
+      sourceReactionsLength: sourceReactions.length,
+      quizSettings
+    });
+
+    return filtered;
+  }, [selectedCategory, selectedMode, inorganicReactionsNew, quizSettings]);
+
   const quizInorganicReactions = activeInorganicReactions?.type === 'old' ? activeInorganicReactions.data : [];
-  const quizInorganicReactionsNew = activeInorganicReactions?.type === 'new' ? activeInorganicReactions.data : [];
 
   // selectedModeとselectedCategoryはこの時点でnullでないことが保証されている
   if (!selectedMode) {
     return null; // 型チェック用（実際には到達しない）
+  }
+
+  // 4) reactions.length === 0の場合はTypeAQuizをrenderしない（エラー表示のみ）
+  if (selectedCategory === 'inorganic' && 
+      (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
+      quizInorganicReactionsNew.length === 0) {
+    return (
+      <div className="App">
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+            問題データが見つかりませんでした
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+            出題セットが空です。設定を確認してください。
+          </p>
+          <button
+            className="back-button"
+            onClick={() => setQuizSettings(null)}
+            style={{ marginTop: '20px' }}
+          >
+            設定に戻る
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

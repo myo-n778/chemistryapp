@@ -82,73 +82,17 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
 
+  // App.tsxで既に確定した出題セットを受け取るので、そのまま使用
   const filteredReactions = useMemo(() => {
     console.log('[TypeAQuiz] filteredReactions useMemo start', {
       reactionsLength: reactions.length,
-      quizSettings,
-      isShuffleMode
+      quizSettings
     });
 
-    // 1) startIndexは1始まりなので、sliceで使う前に正規化
-    // 2) batchSizeの決定を先に行う
-    let batchSize: number | undefined;
-    if (quizSettings?.questionCountMode === 'batch-10') {
-      batchSize = 10;
-    } else if (quizSettings?.questionCountMode === 'batch-20') {
-      batchSize = 20;
-    } else if (quizSettings?.questionCountMode === 'batch-40') {
-      batchSize = 40;
-    }
+    // App.tsxで既に確定した配列なので、そのまま使用
+    // 追加のフィルタリングは不要
+    const filtered = [...reactions];
 
-    // 3) shuffleはsliceの前に適用
-    const base = (isShuffleMode || quizSettings?.orderMode === 'shuffle') 
-      ? (() => {
-          const shuffled = [...reactions];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          return shuffled;
-        })()
-      : [...reactions];
-
-    let filtered: typeof reactions = [];
-
-    if (quizSettings?.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined && batchSize !== undefined) {
-      // batch-10/20/40モード
-      const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
-      const end = start + batchSize;
-      
-      console.log('[TypeAQuiz] batch mode', {
-        questionCountMode: quizSettings.questionCountMode,
-        startIndex: quizSettings.startIndex,
-        start,
-        end,
-        batchSize,
-        baseLength: base.length,
-        totalCount: reactions.length
-      });
-
-      filtered = base.slice(start, end);
-    } else if (quizSettings?.questionCountMode === 'all') {
-      // ALLモード
-      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
-        filtered = base.slice(0, quizSettings.allQuestionCount);
-      } else {
-        filtered = base; // 全件
-      }
-      
-      console.log('[TypeAQuiz] all mode', {
-        allQuestionCount: quizSettings.allQuestionCount,
-        baseLength: base.length,
-        filteredLength: filtered.length
-      });
-    } else {
-      // 設定がない場合は全件
-      filtered = base;
-    }
-
-    // 4) selected.length === 0をエラーにする前に、値を確認
     console.log('[TypeAQuiz] filteredReactions result', {
       filteredLength: filtered.length,
       reactionsLength: reactions.length,
@@ -156,7 +100,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     });
 
     return filtered;
-  }, [reactions, quizSettings, isShuffleMode]);
+  }, [reactions, quizSettings]);
 
   const actualAvailableQuestions = filteredReactions.length;
   const expectedQuestions = useMemo(() => {
@@ -174,6 +118,20 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
 
   const maxQuestions = Math.min(expectedQuestions, actualAvailableQuestions);
   const currentReaction = filteredReactions[currentIndex];
+
+  // 5) currentReactionがnullになる前提でガード
+  if (!currentReaction && !isFinished) {
+    console.error('[TypeAQuiz] Error: currentReaction is null', {
+      currentIndex,
+      filteredReactionsLength: filteredReactions.length,
+      reactionsLength: reactions.length,
+      quizSettings,
+      actualAvailableQuestions,
+      expectedQuestions,
+      maxQuestions
+    });
+    return null;
+  }
 
   // 選択肢を生成
   const choices = useMemo(() => {
@@ -280,6 +238,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     }, 100);
   };
 
+  // 5) currentReactionがnullになる前提でガード（App.tsxで既にエラーチェック済み）
   if (!currentReaction && !isFinished) {
     console.error('[TypeAQuiz] Error: currentReaction is null', {
       currentIndex,
@@ -290,15 +249,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
       expectedQuestions,
       maxQuestions
     });
-    return (
-      <div className="quiz-container">
-        <div className="quiz-header"><h1>Inorganic Chemistry Drill - Type A</h1></div>
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p>問題データにエラーがあります。</p>
-          <button className="back-button" onClick={onBack} style={{ marginTop: '20px' }}>戻る</button>
-        </div>
-      </div>
-    );
+    return null; // App.tsxで既にエラーチェック済みなので、ここではnullを返す
   }
 
   if (isFinished) {
