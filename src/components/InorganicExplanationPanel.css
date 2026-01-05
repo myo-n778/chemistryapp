@@ -1,59 +1,100 @@
 .inorganic-explanation-panel {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  padding: 20px;
-  margin-top: 20px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+/* 反応式と要点を横並び */
+.explanation-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+/* レスポンシブ対応：画面が狭い場合は縦並び */
+@media (max-width: 768px) {
+  .explanation-row {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 .explanation-section {
-  margin-bottom: 24px;
+  flex: 1;
+  min-width: 0; /* flexアイテムの縮小を許可 */
 }
 
-.explanation-section:last-child {
+.explanation-section:not(:last-child) {
   margin-bottom: 0;
 }
 
+.explanation-section-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
 .explanation-section-title {
-  font-size: 1.1em;
+  font-size: 0.95em;
   font-weight: bold;
   color: #ffffff;
-  margin-bottom: 12px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  white-space: nowrap;
 }
 
 .explanation-content {
   color: #ffffff;
-  line-height: 1.6;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+}
+
+/* 反応式セクション */
+.explanation-equation {
+  flex: 1.2;
+}
+
+/* 要点セクション */
+.explanation-summary {
+  flex: 1;
 }
 
 .explanation-summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
 }
 
 .summary-card {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 16px;
-  border-left: 4px solid #4a90e2;
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid #4a90e2;
 }
 
 .summary-card-label {
-  font-size: 0.9em;
+  font-size: 0.75em;
   font-weight: bold;
   color: #aaaaaa;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .summary-card-content {
   color: #ffffff;
-  font-size: 1em;
-  line-height: 1.5;
+  font-size: 0.9em;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .summary-reactants {
@@ -64,9 +105,36 @@
   border-left-color: #50c878;
 }
 
+/* 観察事項セクション */
 .explanation-observations {
   background: rgba(255, 255, 255, 0.03);
-  padding: 16px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
 }
 
+/* 解説本文セクション */
+.explanation-text {
+  margin-bottom: 0;
+}
+
+.explanation-text .explanation-content {
+  font-size: 0.9em;
+}
+
+/* TeX表示切り替えボタン */
+.tex-toggle-button {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background-color: #2d3748;
+  color: #e0e0e0;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tex-toggle-button:hover {
+  background-color: #4a5568;
+}
