@@ -58,10 +58,21 @@ function doGet(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       csvData = convertSheetToCSV(sheet);
+    } else if (type === 'inorganic-new') {
+      sheet = spreadsheet.getSheetByName('inorganic');
+      if (!sheet) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            error: 'inorganic sheet not found. Available sheets: ' + 
+                   spreadsheet.getSheets().map(s => s.getName()).join(', ') 
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      csvData = convertSheetToCSV(sheet);
     } else {
       return ContentService
         .createTextOutput(JSON.stringify({ 
-          error: 'Invalid type. Use "compounds", "reactions", or "experiment"' 
+          error: 'Invalid type. Use "compounds", "reactions", "experiment", or "inorganic-new"' 
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
