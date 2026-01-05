@@ -387,8 +387,17 @@ function App() {
   }
 
   if (!quizSettings) {
+    // Inorganicの場合、直接inorganicReactionsNew.lengthを計算して渡す
+    // selectedModeが設定されていない場合でも、全件数を表示する
+    const actualTotalCount = selectedCategory === 'inorganic' 
+      ? (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c'
+          ? inorganicReactionsNew.length
+          : inorganicReactions.length)
+      : totalQuestionCount;
+    
     console.log('[App] Rendering QuestionCountSelector', {
       totalQuestionCount,
+      actualTotalCount,
       selectedMode,
       selectedCategory,
       inorganicReactionsNewLength: inorganicReactionsNew.length,
@@ -398,7 +407,7 @@ function App() {
     return (
       <div className="App">
         <QuestionCountSelector
-          totalCount={totalQuestionCount}
+          totalCount={actualTotalCount}
           onSelectSettings={(settings) => {
             console.log('[App] onSelectSettings called', settings);
             setQuizSettings(settings);
