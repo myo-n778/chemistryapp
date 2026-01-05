@@ -13,7 +13,7 @@ import { TeXTest } from './components/TeXTest';
 import './App.css';
 
 // 一時的にTeXTestを表示するためのフラグ（開発用）
-const SHOW_TEX_TEST = true;
+const SHOW_TEX_TEST = false;
 
 export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';

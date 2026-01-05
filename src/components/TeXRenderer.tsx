@@ -12,6 +12,7 @@ interface TeXRendererProps {
 /**
  * KaTeXを使用してTeX数式をレンダリング（mhchem拡張対応）
  * \ce{}コマンドを正しく処理
+ * TeXTest.tsxの成功パターンをベースに実装
  */
 export const TeXRenderer: React.FC<TeXRendererProps> = ({
   equation,
@@ -34,9 +35,9 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
       });
   }, [mhchemLoaded]);
 
-  // 数式をレンダリング
+  // 数式をレンダリング（mhchem拡張がロードされた後に実行）
   useEffect(() => {
-    if (!containerRef.current || !equation) return;
+    if (!containerRef.current || !equation || !mhchemLoaded) return;
 
     const container = containerRef.current;
     
@@ -49,7 +50,6 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
         displayMode,
         throwOnError: false,
         errorColor: '#cc0000',
-        // mhchem拡張は自動的に有効化される（mhchem.min.jsがロードされていれば）
       });
       
       console.log('[TeXRenderer] Successfully rendered:', equation.substring(0, 50));

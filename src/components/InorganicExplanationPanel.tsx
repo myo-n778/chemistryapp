@@ -49,10 +49,14 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
           )}
         </div>
         <div className="explanation-content">
-          <TeXRenderer
-            equation={showEquationTeX && reaction.equation_tex ? reaction.equation_tex : reaction.equation}
-            displayMode={true}
-          />
+          {showEquationTeX && reaction.equation_tex ? (
+            <TeXRenderer
+              equation={reaction.equation_tex}
+              displayMode={true}
+            />
+          ) : (
+            <p>{reaction.equation}</p>
+          )}
         </div>
       </div>
 
