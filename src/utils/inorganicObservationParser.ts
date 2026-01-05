@@ -18,12 +18,10 @@ export function parseObservation(observation: string): ObservationVisual[] {
   }
 
   const visuals: ObservationVisual[] = [];
-  let remaining = observation;
 
   // 沈殿パターン（↓を含む）
   const precipitatePattern = /([^↓]*?)([^↓]*?)↓/g;
   let match;
-  let lastIndex = 0;
 
   // 気体パターン（↑を含む）
   const gasPattern = /([^↑]*?)([^↑]*?)↑/g;

@@ -9,11 +9,14 @@ export type QuizMode =
   | 'reaction'
   | 'substitution'
   | 'experiment'
-  | 'inorganic-mode-a'
-  | 'inorganic-mode-b'
-  | 'inorganic-mode-e'
-  | 'inorganic-mode-f'
-  | 'inorganic-mode-g';
+  | 'inorganic-type-a'
+  | 'inorganic-type-b'
+  | 'inorganic-type-c'
+  | 'inorganic-mode-a' // 旧モード（後で削除予定）
+  | 'inorganic-mode-b' // 旧モード（後で削除予定）
+  | 'inorganic-mode-e' // 旧モード（後で削除予定）
+  | 'inorganic-mode-f' // 旧モード（後で削除予定）
+  | 'inorganic-mode-g'; // 旧モード（後で削除予定）
 
 interface ModeSelectorProps {
   category: Category;
@@ -88,42 +91,26 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
           <>
             <button
               className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-a')}
+              onClick={() => onSelectMode('inorganic-type-a')}
             >
-              <div className="mode-title">モードA：反応 → 生成物</div>
-              <div className="mode-subtitle">反応物から生成物を選ぶ</div>
+              <div className="mode-title">タイプA：反応 → 生成物</div>
+              <div className="mode-subtitle">反応内容から生成物を選ぶ</div>
             </button>
 
             <button
               className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-b')}
+              onClick={() => onSelectMode('inorganic-type-b')}
             >
-              <div className="mode-title">モードB：反応 → 観察</div>
-              <div className="mode-subtitle">反応から観察を選ぶ</div>
+              <div className="mode-title">タイプB：反応式 → 条件</div>
+              <div className="mode-subtitle">反応式から条件を選ぶ</div>
             </button>
 
             <button
               className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-e')}
+              onClick={() => onSelectMode('inorganic-type-c')}
             >
-              <div className="mode-title">モードE：空欄補充</div>
-              <div className="mode-subtitle">空欄を埋める</div>
-            </button>
-
-            <button
-              className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-f')}
-            >
-              <div className="mode-title">モードF：式 → 意味</div>
-              <div className="mode-subtitle">反応式から意味を選ぶ</div>
-            </button>
-
-            <button
-              className="mode-button"
-              onClick={() => onSelectMode('inorganic-mode-g')}
-            >
-              <div className="mode-title">モードG：識別・比較</div>
-              <div className="mode-subtitle">観察から反応を識別</div>
+              <div className="mode-title">タイプC：反応式 → 観察</div>
+              <div className="mode-subtitle">反応式から観察を選ぶ</div>
             </button>
           </>
         )}

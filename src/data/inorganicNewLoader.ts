@@ -83,6 +83,7 @@ export const loadInorganicReactionsNew = async (): Promise<InorganicReactionNew[
 
 /**
  * CSV行を解析（引用符で囲まれた値に対応）
+ * 既存のcsvParser.tsのparseCSVLineと同じロジックを使用
  */
 function parseCSVRow(row: string): string[] {
   const columns: string[] = [];
@@ -103,7 +104,7 @@ function parseCSVRow(row: string): string[] {
       }
     } else if (char === ',' && !inQuotes) {
       // カンマで区切る（引用符の外のみ）
-      columns.push(current);
+      columns.push(current.trim());
       current = '';
     } else {
       current += char;
@@ -111,7 +112,7 @@ function parseCSVRow(row: string): string[] {
   }
   
   // 最後の列を追加
-  columns.push(current);
+  columns.push(current.trim());
   
   return columns;
 }

@@ -1,0 +1,72 @@
+.inorganic-explanation-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.explanation-section {
+  margin-bottom: 24px;
+}
+
+.explanation-section:last-child {
+  margin-bottom: 0;
+}
+
+.explanation-section-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 12px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.explanation-content {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.explanation-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #4a90e2;
+}
+
+.summary-card-label {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: #aaaaaa;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-card-content {
+  color: #ffffff;
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+.summary-reactants {
+  border-left-color: #4a90e2;
+}
+
+.summary-products {
+  border-left-color: #50c878;
+}
+
+.explanation-observations {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 16px;
+  border-radius: 8px;
+}
+

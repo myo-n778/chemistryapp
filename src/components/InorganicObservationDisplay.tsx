@@ -1,5 +1,5 @@
 import React from 'react';
-import { parseObservation, ObservationVisual } from '../utils/inorganicObservationParser';
+import { parseObservation } from '../utils/inorganicObservationParser';
 import './InorganicObservationDisplay.css';
 
 interface InorganicObservationDisplayProps {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Compound, InorganicReaction } from '../types';
+import { InorganicReactionNew } from '../types/inorganic';
 import { QuizMode } from './ModeSelector';
 import { Category } from './CategorySelector';
 import { ExperimentCSVRow } from '../utils/experimentParser';
@@ -9,17 +10,19 @@ import { CompoundTypeQuiz } from './modes/CompoundTypeQuiz';
 import { ReactionQuiz } from './modes/ReactionQuiz';
 import { SubstitutionQuiz } from './modes/SubstitutionQuiz';
 import { ExperimentQuiz } from './modes/ExperimentQuiz';
-import { ModeAQuiz } from './modes/inorganic/ModeAQuiz';
-import { ModeBQuiz } from './modes/inorganic/ModeBQuiz';
-import { ModeEQuiz } from './modes/inorganic/ModeEQuiz';
-import { ModeFQuiz } from './modes/inorganic/ModeFQuiz';
-import { ModeGQuiz } from './modes/inorganic/ModeGQuiz';
+import { TypeAQuiz } from './modes/inorganic/TypeAQuiz';
+import { ModeAQuiz } from './modes/inorganic/ModeAQuiz'; // 旧モード（後で削除予定）
+import { ModeBQuiz } from './modes/inorganic/ModeBQuiz'; // 旧モード（後で削除予定）
+import { ModeEQuiz } from './modes/inorganic/ModeEQuiz'; // 旧モード（後で削除予定）
+import { ModeFQuiz } from './modes/inorganic/ModeFQuiz'; // 旧モード（後で削除予定）
+import { ModeGQuiz } from './modes/inorganic/ModeGQuiz'; // 旧モード（後で削除予定）
 
 interface QuizProps {
   compounds: Compound[];
   allCompounds: Compound[];
   experiments: ExperimentCSVRow[];
   inorganicReactions?: InorganicReaction[];
+  inorganicReactionsNew?: InorganicReactionNew[];
   mode: QuizMode;
   category: Category;
   onBack: () => void;
@@ -27,7 +30,7 @@ interface QuizProps {
   onNextRange?: () => void;
 }
 
-export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], mode, category, onBack, quizSettings, onNextRange }) => {
+export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], mode, category, onBack, quizSettings, onNextRange }) => {
   switch (mode) {
     case 'structure-to-name':
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
@@ -41,6 +44,10 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
       return <SubstitutionQuiz compounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'experiment':
       return <ExperimentQuiz experiments={experiments} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={experiments.length} onNextRange={onNextRange} />;
+    // 新しい無機化学モード
+    case 'inorganic-type-a':
+      return <TypeAQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+    // 旧無機化学モード（後で削除予定）
     case 'inorganic-mode-a':
       return <ModeAQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     case 'inorganic-mode-b':

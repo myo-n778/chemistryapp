@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Quiz } from './components/Quiz';
 import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
 import { loadCompounds, loadReactions, loadExperiments, loadInorganicReactionsData } from './data/dataLoader';
+import { loadInorganicReactionsNew } from './data/inorganicNewLoader';
 import { Compound, InorganicReaction } from './types';
+import { InorganicReactionNew } from './types/inorganic';
 import { ExperimentCSVRow } from './utils/experimentParser';
 import './App.css';
 
@@ -25,7 +27,8 @@ function App() {
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [reactions, setReactions] = useState<number>(0); // モード④⑤用のreactions数
   const [experiments, setExperiments] = useState<ExperimentCSVRow[]>([]); // モード⑥用のexperiments
-  const [inorganicReactions, setInorganicReactions] = useState<InorganicReaction[]>([]); // 無機化学用
+  const [inorganicReactions, setInorganicReactions] = useState<InorganicReaction[]>([]); // 無機化学用（旧）
+  const [inorganicReactionsNew, setInorganicReactionsNew] = useState<InorganicReactionNew[]>([]); // 無機化学用（新）
   const [loading, setLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [inorganicLoading, setInorganicLoading] = useState(false);
@@ -283,24 +286,51 @@ function App() {
   }
 
   // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
-  const totalQuestionCount = (selectedMode === 'reaction' || selectedMode === 'substitution') 
-    ? reactions 
-    : selectedMode === 'experiment' 
-    ? experiments.length 
-    : selectedMode?.startsWith('inorganic-mode-')
-    ? inorganicReactions.length
-    : compounds.length;
+  const totalQuestionCount = useMemo(() => {
+    if (selectedCategory === 'inorganic') {
+      // 新しい無機化学モードの場合は新しいデータを使用
+      if (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') {
+        return inorganicReactionsNew.length;
+      }
+      // 旧無機化学モードの場合は旧データを使用
+      return inorganicReactions.length;
+    } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
+      return reactions;
+    } else if (selectedMode === 'experiment') {
+      return experiments.length;
+    }
+    return compounds.length;
+  }, [selectedCategory, selectedMode, inorganicReactionsNew.length, inorganicReactions.length, reactions, experiments.length, compounds.length]);
 
   if (!quizSettings) {
     return (
       <div className="App">
-        <QuestionCountSelector
-          totalCount={totalQuestionCount}
-          onSelectSettings={setQuizSettings}
-          onBack={() => setSelectedMode(null)}
-          mode={selectedMode}
-          category={selectedCategory}
-        />
+        {selectedCategory === 'inorganic' ? (
+          <AllQuestionCountSelector
+            totalCount={selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c' 
+              ? inorganicReactionsNew.length 
+              : inorganicReactions.length}
+            orderMode="shuffle"
+            onSelectCount={(count) => {
+              setQuizSettings({
+                questionCountMode: 'all',
+                orderMode: 'shuffle',
+                allQuestionCount: count === undefined ? null : count
+              });
+            }}
+            onBack={() => setSelectedMode(null)}
+            mode={selectedMode}
+            category={selectedCategory}
+          />
+        ) : (
+          <QuestionCountSelector
+            totalCount={totalQuestionCount}
+            onSelectSettings={setQuizSettings}
+            onBack={() => setSelectedMode(null)}
+            mode={selectedMode}
+            category={selectedCategory}
+          />
+        )}
       </div>
     );
   }
@@ -376,6 +406,8 @@ function App() {
         ? reactions 
         : selectedMode === 'experiment' 
         ? experiments.length 
+        : (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c')
+        ? inorganicReactionsNew.length
         : selectedMode?.startsWith('inorganic-mode-')
         ? inorganicReactions.length
         : compounds.length;
@@ -413,6 +445,8 @@ function App() {
         ? reactions 
         : selectedMode === 'experiment' 
         ? experiments.length 
+        : (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c')
+        ? inorganicReactionsNew.length
         : selectedMode?.startsWith('inorganic-mode-')
         ? inorganicReactions.length
         : compounds.length;
@@ -430,6 +464,7 @@ function App() {
         allCompounds={compounds}
         experiments={experiments}
         inorganicReactions={inorganicReactions}
+        inorganicReactionsNew={inorganicReactionsNew}
         mode={selectedMode}
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
