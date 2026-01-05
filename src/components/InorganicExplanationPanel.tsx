@@ -56,15 +56,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
               displayMode={true}
             />
           ) : (
-            // equationがTeX文字列（\ce{}を含む）の場合は自動的にレンダリング
-            reaction.equation.includes('\\ce{') || reaction.equation.includes('\\ce[') ? (
-              <TeXRenderer
-                equation={reaction.equation}
-                displayMode={true}
-              />
-            ) : (
-              <p>{reaction.equation}</p>
-            )
+            <RenderMaybeTeX value={reaction.equation} displayMode={true} />
           )}
         </div>
       </div>

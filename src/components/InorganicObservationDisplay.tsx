@@ -1,5 +1,6 @@
 import React from 'react';
 import { parseObservation } from '../utils/inorganicObservationParser';
+import { RenderMaybeTeX } from './RenderMaybeTeX';
 import './InorganicObservationDisplay.css';
 
 interface InorganicObservationDisplayProps {
@@ -44,7 +45,7 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
         } else {
           return (
             <span key={index} className="observation-text">
-              {visual.text}
+              <RenderMaybeTeX value={visual.text} />
             </span>
           );
         }
