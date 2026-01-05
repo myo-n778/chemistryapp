@@ -299,9 +299,21 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
 
         // TeX形式データ（オプション、列が追加された場合に対応）
         // I列: equation_tex, J列: reactants_tex, K列: products_tex
-        const equation_tex = columns.length > 8 ? columns[8]?.trim() || undefined : undefined;
-        const reactants_tex = columns.length > 9 ? columns[9]?.trim() || undefined : undefined;
-        const products_tex = columns.length > 10 ? columns[10]?.trim() || undefined : undefined;
+        let equation_tex = columns.length > 8 ? columns[8]?.trim() || undefined : undefined;
+        let reactants_tex = columns.length > 9 ? columns[9]?.trim() || undefined : undefined;
+        let products_tex = columns.length > 10 ? columns[10]?.trim() || undefined : undefined;
+
+        // バックスラッシュの処理
+        // CSVパース時、引用符内の\\は\として解釈される
+        // しかし、GAS側でCSV生成時に\\が\\として保存されている場合、\\のままになる
+        // 実際のデータを確認してから調整
+        if (equation_tex) {
+          // デバッグ用ログ（最初の1件のみ）
+          if (i === 0) {
+            console.log('[gasLoader] Raw equation_tex (first 100 chars):', equation_tex.substring(0, 100));
+            console.log('[gasLoader] equation_tex contains \\ce:', equation_tex.includes('\\ce'));
+          }
+        }
 
         // 必須フィールドのチェック
         if (!equation || !reactants || !products) {

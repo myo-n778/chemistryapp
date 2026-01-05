@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
+import React, { useEffect, useRef, useState } from 'react';
+import { loadMathJax, isMathJaxLoaded } from '../utils/mathJaxLoader';
 
 interface TeXRendererProps {
   equation: string;
@@ -9,8 +8,8 @@ interface TeXRendererProps {
 }
 
 /**
- * KaTeXを使用してTeX数式をレンダリング
- * mhchem拡張はKaTeXに標準で含まれていないため、\ce{}コマンドを処理する必要がある
+ * MathJaxを使用してTeX数式をレンダリング（mhchem拡張対応）
+ * MathJax 3.xはmhchem拡張を標準でサポート
  */
 export const TeXRenderer: React.FC<TeXRendererProps> = ({
   equation,
@@ -18,42 +17,60 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mathJaxLoaded, setMathJaxLoaded] = useState(isMathJaxLoaded());
 
+  // MathJaxを動的にロード（一度だけ実行）
   useEffect(() => {
-    if (!containerRef.current || !equation) return;
+    if (mathJaxLoaded) return;
+
+    loadMathJax()
+      .then(() => {
+        setMathJaxLoaded(true);
+      })
+      .catch((error) => {
+        console.error('[TeXRenderer] Failed to load MathJax:', error);
+      });
+  }, [mathJaxLoaded]);
+
+  // 数式をレンダリング
+  useEffect(() => {
+    if (!containerRef.current || !equation || !mathJaxLoaded) return;
+
+    const container = containerRef.current;
+    
+    // 既存の内容をクリア
+    container.innerHTML = '';
 
     try {
-      // \ce{}コマンドを処理（簡易版）
-      // 実際のmhchem拡張を使う場合は、別途ライブラリが必要
-      let processedEquation = equation;
-      
-      // \ce{...}を処理（簡易実装）
-      processedEquation = processedEquation.replace(/\\ce\{([^}]+)\}/g, (_match, content) => {
-        // 基本的な化学式の変換
-        // 例: \ce{H2O} -> H_2O, \ce{NaCl} -> NaCl
-        return content
-          .replace(/([A-Z][a-z]?)(\d+)/g, '$1_{$2}') // 下付き数字
-          .replace(/([A-Z][a-z]?)\+/g, '$1^+') // 陽イオン
-          .replace(/([A-Z][a-z]?)\-/g, '$1^-') // 陰イオン
-          .replace(/->/g, '\\rightarrow') // 矢印
-          .replace(/<=>/g, '\\rightleftharpoons') // 平衡矢印
-          .replace(/↑/g, '\\uparrow') // 気体
-          .replace(/↓/g, '\\downarrow'); // 沈殿
-      });
+      const mathJax = (window as any).MathJax;
+      if (!mathJax || !mathJax.typesetPromise) {
+        // MathJaxがまだロードされていない場合はテキストを表示
+        container.textContent = equation;
+        return;
+      }
 
-      // KaTeXでレンダリング
-      katex.render(processedEquation, containerRef.current, {
-        displayMode,
-        throwOnError: false,
-        errorColor: '#cc0000',
+      // 数式をテキストとして設定
+      const mathElement = document.createElement(displayMode ? 'div' : 'span');
+      // \ce{}コマンドを含むTeXをそのまま設定
+      mathElement.textContent = equation;
+      mathElement.style.display = displayMode ? 'block' : 'inline';
+      container.appendChild(mathElement);
+
+      // MathJaxでレンダリング（mhchem拡張が自動的に\ce{}を処理）
+      mathJax.typesetPromise([mathElement]).then(() => {
+        // レンダリング完了
+        console.log('[TeXRenderer] Successfully rendered:', equation);
+      }).catch((err: Error) => {
+        console.error('[TeXRenderer] MathJax rendering error:', err, 'Equation:', equation);
+        container.textContent = equation;
       });
     } catch (error) {
-      console.error('Error rendering TeX:', error);
-      if (containerRef.current) {
-        containerRef.current.textContent = equation;
+      console.error('[TeXRenderer] Error rendering TeX:', error, 'Equation:', equation);
+      if (container) {
+        container.textContent = equation;
       }
     }
-  }, [equation, displayMode]);
+  }, [equation, displayMode, mathJaxLoaded]);
 
   return (
     <div
@@ -113,4 +130,3 @@ export const TeXToggle: React.FC<TeXToggleProps> = ({
     </div>
   );
 };
-

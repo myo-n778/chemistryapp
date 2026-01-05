@@ -16,7 +16,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> 
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
-    return <TeXRenderer equation={text} displayMode={true} />;
+    return <p>{text}</p>;
   }
 
   return (
@@ -40,7 +40,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> 
       {showTeX ? (
         <TeXRenderer equation={tex} displayMode={true} />
       ) : (
-        <TeXRenderer equation={text} displayMode={true} />
+        <p>{text}</p>
       )}
     </div>
   );
