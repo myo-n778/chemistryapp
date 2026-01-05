@@ -22,7 +22,7 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
             <span key={index} className="observation-visual observation-precipitate">
               <span className="visual-icon precipitate-icon">⬇</span>
               {visual.color && <span className="visual-color">（{visual.color}）</span>}
-              {visual.text && <span className="visual-text">{visual.text}</span>}
+              {visual.text && <span className="visual-text"><RenderMaybeTeX value={visual.text} /></span>}
               <span className="observation-arrow">↓</span>
             </span>
           );
@@ -31,7 +31,7 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
             <span key={index} className="observation-visual observation-gas">
               <span className="visual-icon gas-icon">⬆</span>
               {visual.color && <span className="visual-color">（{visual.color}）</span>}
-              {visual.text && <span className="visual-text">{visual.text}</span>}
+              {visual.text && <span className="visual-text"><RenderMaybeTeX value={visual.text} /></span>}
               <span className="observation-arrow">↑</span>
             </span>
           );
