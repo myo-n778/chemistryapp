@@ -52,6 +52,12 @@ export const loadInorganicReactionsNew = async (): Promise<InorganicReactionNew[
       const reactants_summary = columns[6]?.trim() || '';
       const products_summary = columns[7]?.trim() || '';
 
+      // TeX形式データ（オプション、列が追加された場合に対応）
+      // I列: equation_tex, J列: reactants_tex, K列: products_tex
+      const equation_tex = columns.length > 8 ? columns[8]?.trim() || undefined : undefined;
+      const reactants_tex = columns.length > 9 ? columns[9]?.trim() || undefined : undefined;
+      const products_tex = columns.length > 10 ? columns[10]?.trim() || undefined : undefined;
+
       // 必須フィールドのチェック
       if (!equation || !reactants || !products) {
         console.warn(`[inorganicNewLoader] Skipping row ${i + 2}: missing required fields`);
@@ -61,8 +67,11 @@ export const loadInorganicReactionsNew = async (): Promise<InorganicReactionNew[
       const reaction: InorganicReactionNew = {
         id: `inorganic-${i + 1}`,
         equation,
+        equation_tex: equation_tex || undefined,
         reactants,
+        reactants_tex: reactants_tex || undefined,
         products,
+        products_tex: products_tex || undefined,
         conditions,
         observations,
         explanation,
