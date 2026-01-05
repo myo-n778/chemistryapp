@@ -9,7 +9,11 @@ import { loadInorganicReactionsNew } from './data/inorganicNewLoader';
 import { Compound, InorganicReaction } from './types';
 import { InorganicReactionNew } from './types/inorganic';
 import { ExperimentCSVRow } from './utils/experimentParser';
+import { TeXTest } from './components/TeXTest';
 import './App.css';
+
+// 一時的にTeXTestを表示するためのフラグ（開発用）
+const SHOW_TEX_TEST = true;
 
 export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';
@@ -720,6 +724,16 @@ function App() {
 
   // すべてのhooksを先に実行した後、return分岐を最後にまとめる
   // mainContentは既にuseMemoで計算済み
+  
+  // 一時的にTeXTestを表示（開発用）
+  if (SHOW_TEX_TEST) {
+    return (
+      <div className="App">
+        <TeXTest />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       {mainContent}
