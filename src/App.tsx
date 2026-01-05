@@ -156,7 +156,12 @@ function App() {
       .then(data => {
         if (!isMounted) return;
         if (data && Array.isArray(data) && data.length > 0) {
-          console.log(`App.tsx: Loaded ${data.length} new inorganic reactions`);
+          console.log(`[App] Loaded ${data.length} new inorganic reactions`, {
+            dataLength: data.length,
+            firstFew: data.slice(0, 3),
+            selectedCategory,
+            selectedMode
+          });
           newLoaderSucceeded = true; // 成功フラグを立てる
           setInorganicReactionsNew(data);
           setInorganicReactions([]); // 旧データは空にする
@@ -164,6 +169,11 @@ function App() {
           setInorganicLoadingError(null);
         } else {
           // データが空の場合はフォールバックへ
+          console.error('[App] New inorganic reactions data is empty', {
+            data,
+            dataIsArray: Array.isArray(data),
+            dataLength: data?.length
+          });
           throw new Error('New inorganic reactions data is empty');
         }
       })
@@ -357,17 +367,55 @@ function App() {
 
   // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
   const quizInorganicReactionsNew = useMemo(() => {
+    console.log('[App] quizInorganicReactionsNew: useMemo start', {
+      selectedCategory,
+      selectedMode,
+      hasQuizSettings: !!quizSettings,
+      inorganicReactionsNewLength: inorganicReactionsNew.length,
+      inorganicReactionsNew: inorganicReactionsNew
+    });
+
     if (selectedCategory !== 'inorganic' || !quizSettings) {
+      console.log('[App] quizInorganicReactionsNew: early return - category or settings check', {
+        selectedCategory,
+        hasQuizSettings: !!quizSettings
+      });
       return [];
     }
 
-    if (selectedMode !== 'inorganic-type-a' && selectedMode !== 'inorganic-type-b' && selectedMode !== 'inorganic-type-c') {
+    // selectedModeがnullまたは新しい無機化学モードでない場合は早期return
+    const newInorganicModes: QuizMode[] = ['inorganic-type-a', 'inorganic-type-b', 'inorganic-type-c'];
+    const isNewInorganicMode = selectedMode !== null && newInorganicModes.includes(selectedMode);
+    if (!selectedMode || !isNewInorganicMode) {
+      console.log('[App] quizInorganicReactionsNew: early return - mode check', {
+        selectedMode,
+        isNewInorganicMode,
+        expectedModes: newInorganicModes,
+        modeMatch: {
+          'inorganic-type-a': selectedMode === 'inorganic-type-a',
+          'inorganic-type-b': selectedMode === 'inorganic-type-b',
+          'inorganic-type-c': selectedMode === 'inorganic-type-c'
+        }
+      });
       return [];
     }
 
     const sourceReactions = inorganicReactionsNew;
+    console.log('[App] quizInorganicReactionsNew: sourceReactions assignment', {
+      sourceReactionsLength: sourceReactions.length,
+      inorganicReactionsNewLength: inorganicReactionsNew.length,
+      sourceReactionsIsSame: sourceReactions === inorganicReactionsNew,
+      sourceReactionsFirstFew: sourceReactions.slice(0, 3)
+    });
+
     if (sourceReactions.length === 0) {
-      console.warn('[App] quizInorganicReactionsNew: sourceReactions is empty');
+      console.error('[App] quizInorganicReactionsNew: sourceReactions is empty', {
+        selectedCategory,
+        selectedMode,
+        inorganicReactionsNewLength: inorganicReactionsNew.length,
+        sourceReactionsLength: sourceReactions.length,
+        quizSettings
+      });
       return [];
     }
 
