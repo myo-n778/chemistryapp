@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Category } from '../../CategorySelector';
 import { InorganicReactionNew } from '../../../types/inorganic';
 import { ScoreDisplay } from '../../shared/ScoreDisplay';
@@ -155,51 +155,7 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
     }
   }, [quizSettings?.startIndex]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (showResult && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        handleNext();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showResult, currentIndex, filteredReactions.length]);
-
-  const handleAnswer = (selectedOption: number) => {
-    if (isProcessingRef.current) return;
-    if (showResult) return;
-    isProcessingRef.current = true;
-    setSelectedAnswer(selectedOption);
-    setShowResult(true);
-    const isCorrect = selectedOption === choices.correctIndex;
-    const currentQuestionKey = currentReaction.id;
-    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
-    let newConsecutiveCount = 0;
-    if (isCorrect && lastQuestionId === currentQuestionKey) {
-      newConsecutiveCount = consecutiveCount + 1;
-      setConsecutiveCount(newConsecutiveCount);
-      setLastQuestionId(currentQuestionKey);
-    } else if (isCorrect) {
-      newConsecutiveCount = 1;
-      setConsecutiveCount(1);
-      setLastQuestionId(currentQuestionKey);
-    } else {
-      setConsecutiveCount(0);
-      setLastQuestionId(null);
-    }
-    if (isCorrect) {
-      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
-      setPointScore(prev => prev + points);
-      setScore(prev => prev + 1);
-    }
-    setTotalAnswered(prev => prev + 1);
-    setTimeout(() => {
-      isProcessingRef.current = false;
-    }, 100);
-  };
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     const getModeAndRangeKey = () => {
@@ -234,6 +190,50 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
     setTimeout(() => {
       isProcessingRef.current = false;
     }, 300);
+  }, [totalAnswered, maxQuestions, currentIndex, filteredReactions.length, lastQuestionId, pointScore, score, quizSettings, category]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showResult && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showResult, handleNext]);
+
+  const handleAnswer = (selectedOption: number) => {
+    if (isProcessingRef.current) return;
+    if (showResult) return;
+    isProcessingRef.current = true;
+    setSelectedAnswer(selectedOption);
+    setShowResult(true);
+    const isCorrect = selectedOption === choices.correctIndex;
+    const currentQuestionKey = currentReaction.id;
+    const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
+    let newConsecutiveCount = 0;
+    if (isCorrect && lastQuestionId === currentQuestionKey) {
+      newConsecutiveCount = consecutiveCount + 1;
+      setConsecutiveCount(newConsecutiveCount);
+      setLastQuestionId(currentQuestionKey);
+    } else if (isCorrect) {
+      newConsecutiveCount = 1;
+      setConsecutiveCount(1);
+      setLastQuestionId(currentQuestionKey);
+    } else {
+      setConsecutiveCount(0);
+      setLastQuestionId(null);
+    }
+    if (isCorrect) {
+      const points = calculateScore(true, elapsedSeconds, newConsecutiveCount, isShuffleMode);
+      setPointScore(prev => prev + points);
+      setScore(prev => prev + 1);
+    }
+    setTotalAnswered(prev => prev + 1);
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 100);
   };
 
   if (!currentReaction && !isFinished) {
