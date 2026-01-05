@@ -326,6 +326,184 @@ function App() {
     return filtered;
   }, [compounds, quizSettings]);
 
+  // すべてのhooksを先に実行（早期returnの前にすべてのhooksを宣言）
+  const handleNextRange = useCallback(() => {
+    if (!quizSettings) return;
+    
+    // batch-10/20/40モードの場合のみ次の範囲へ進む
+    if (quizSettings.questionCountMode === 'batch-10' || 
+        quizSettings.questionCountMode === 'batch-20' || 
+        quizSettings.questionCountMode === 'batch-40') {
+      if (quizSettings.startIndex === undefined) return;
+      
+      let batchSize = 10;
+      if (quizSettings.questionCountMode === 'batch-20') {
+        batchSize = 20;
+      } else if (quizSettings.questionCountMode === 'batch-40') {
+        batchSize = 40;
+      }
+      
+      const nextStartIndex = quizSettings.startIndex + batchSize;
+      if (nextStartIndex > maxQuestionCount) {
+        return; // 次の範囲が存在しない
+      }
+      
+      setQuizSettings({
+        ...quizSettings,
+        startIndex: nextStartIndex
+      });
+    }
+  }, [quizSettings, maxQuestionCount]);
+
+  // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
+  const quizInorganicReactionsNew = useMemo(() => {
+    if (selectedCategory !== 'inorganic' || !quizSettings) {
+      return [];
+    }
+
+    if (selectedMode !== 'inorganic-type-a' && selectedMode !== 'inorganic-type-b' && selectedMode !== 'inorganic-type-c') {
+      return [];
+    }
+
+    const sourceReactions = inorganicReactionsNew;
+    if (sourceReactions.length === 0) {
+      console.warn('[App] quizInorganicReactionsNew: sourceReactions is empty');
+      return [];
+    }
+
+    // 1) batchSizeの決定
+    let batchSize: number | undefined;
+    if (quizSettings.questionCountMode === 'batch-10') {
+      batchSize = 10;
+    } else if (quizSettings.questionCountMode === 'batch-20') {
+      batchSize = 20;
+    } else if (quizSettings.questionCountMode === 'batch-40') {
+      batchSize = 40;
+    }
+
+    // 2) shuffleをsliceの前に適用
+    const base = (quizSettings.orderMode === 'shuffle') 
+      ? (() => {
+          const shuffled = [...sourceReactions];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        })()
+      : [...sourceReactions];
+
+    let filtered: typeof sourceReactions = [];
+
+    if (quizSettings.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined && batchSize !== undefined) {
+      // batch-10/20/40モード
+      const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
+      const end = start + batchSize;
+      
+      console.log('[App] quizInorganicReactionsNew: batch mode', {
+        questionCountMode: quizSettings.questionCountMode,
+        startIndex: quizSettings.startIndex,
+        start,
+        end,
+        batchSize,
+        baseLength: base.length,
+        totalCount: sourceReactions.length
+      });
+
+      filtered = base.slice(start, end);
+    } else if (quizSettings.questionCountMode === 'all') {
+      // ALLモード
+      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
+        filtered = base.slice(0, quizSettings.allQuestionCount);
+      } else {
+        filtered = base; // 全件
+      }
+      
+      console.log('[App] quizInorganicReactionsNew: all mode', {
+        allQuestionCount: quizSettings.allQuestionCount,
+        baseLength: base.length,
+        filteredLength: filtered.length
+      });
+    } else {
+      // 設定がない場合は全件
+      filtered = base;
+    }
+
+    console.log('[App] quizInorganicReactionsNew: result', {
+      filteredLength: filtered.length,
+      sourceReactionsLength: sourceReactions.length,
+      quizSettings
+    });
+
+    return filtered;
+  }, [selectedCategory, selectedMode, inorganicReactionsNew, quizSettings]);
+
+  const quizInorganicReactions = activeInorganicReactions?.type === 'old' ? activeInorganicReactions.data : [];
+
+  // mainContentをuseMemoで計算（すべてのhooksの後）
+  const mainContent = useMemo(() => {
+    // selectedModeとselectedCategoryはこの時点でnullでないことが保証されている
+    if (!selectedMode || !selectedCategory) {
+      return null; // 型チェック用（実際には到達しない）
+    }
+
+    // reactions.length === 0の場合はエラー表示
+    if (selectedCategory === 'inorganic' && 
+        (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
+        quizInorganicReactionsNew.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+            問題データが見つかりませんでした
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+            出題セットが空です。設定を確認してください。
+          </p>
+          <button
+            className="back-button"
+            onClick={() => setQuizSettings(null)}
+            style={{ marginTop: '20px' }}
+          >
+            設定に戻る
+          </button>
+        </div>
+      );
+    }
+
+    // hasNextRangeをuseMemo内で直接計算
+    const hasNext = quizSettings && (
+      (quizSettings.questionCountMode === 'batch-10' || 
+       quizSettings.questionCountMode === 'batch-20' || 
+       quizSettings.questionCountMode === 'batch-40') &&
+      quizSettings.startIndex !== undefined
+    ) ? (() => {
+      let batchSize = 10;
+      if (quizSettings.questionCountMode === 'batch-20') {
+        batchSize = 20;
+      } else if (quizSettings.questionCountMode === 'batch-40') {
+        batchSize = 40;
+      }
+      const nextStartIndex = quizSettings.startIndex! + batchSize;
+      return nextStartIndex <= maxQuestionCount;
+    })() : false;
+
+    // 通常のクイズ表示
+    return (
+      <Quiz
+        compounds={finalCompounds}
+        allCompounds={compounds}
+        experiments={experiments}
+        inorganicReactions={quizInorganicReactions}
+        inorganicReactionsNew={quizInorganicReactionsNew}
+        mode={selectedMode}
+        category={selectedCategory}
+        onBack={() => setQuizSettings(null)}
+        quizSettings={quizSettings ?? undefined}
+        onNextRange={hasNext ? handleNextRange : undefined}
+      />
+    );
+  }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
+
   // Early returns（すべてのhooks宣言の後）
   if (!selectedCategory) {
     return (
@@ -492,186 +670,8 @@ function App() {
     );
   }
 
-  const handleNextRange = useCallback(() => {
-    if (!quizSettings) return;
-    
-    // batch-10/20/40モードの場合のみ次の範囲へ進む
-    if (quizSettings.questionCountMode === 'batch-10' || 
-        quizSettings.questionCountMode === 'batch-20' || 
-        quizSettings.questionCountMode === 'batch-40') {
-      if (quizSettings.startIndex === undefined) return;
-      
-      let batchSize = 10;
-      if (quizSettings.questionCountMode === 'batch-20') {
-        batchSize = 20;
-      } else if (quizSettings.questionCountMode === 'batch-40') {
-        batchSize = 40;
-      }
-      
-      const nextStartIndex = quizSettings.startIndex + batchSize;
-      if (nextStartIndex > maxQuestionCount) {
-        return; // 次の範囲が存在しない
-      }
-      
-      setQuizSettings({
-        ...quizSettings,
-        startIndex: nextStartIndex
-      });
-    }
-  }, [quizSettings, maxQuestionCount]);
-
-  
-
-  // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
-  const quizInorganicReactionsNew = useMemo(() => {
-    if (selectedCategory !== 'inorganic' || !quizSettings) {
-      return [];
-    }
-
-    if (selectedMode !== 'inorganic-type-a' && selectedMode !== 'inorganic-type-b' && selectedMode !== 'inorganic-type-c') {
-      return [];
-    }
-
-    const sourceReactions = inorganicReactionsNew;
-    if (sourceReactions.length === 0) {
-      console.warn('[App] quizInorganicReactionsNew: sourceReactions is empty');
-      return [];
-    }
-
-    // 1) batchSizeの決定
-    let batchSize: number | undefined;
-    if (quizSettings.questionCountMode === 'batch-10') {
-      batchSize = 10;
-    } else if (quizSettings.questionCountMode === 'batch-20') {
-      batchSize = 20;
-    } else if (quizSettings.questionCountMode === 'batch-40') {
-      batchSize = 40;
-    }
-
-    // 2) shuffleをsliceの前に適用
-    const base = (quizSettings.orderMode === 'shuffle') 
-      ? (() => {
-          const shuffled = [...sourceReactions];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          return shuffled;
-        })()
-      : [...sourceReactions];
-
-    let filtered: typeof sourceReactions = [];
-
-    if (quizSettings.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined && batchSize !== undefined) {
-      // batch-10/20/40モード
-      const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
-      const end = start + batchSize;
-      
-      console.log('[App] quizInorganicReactionsNew: batch mode', {
-        questionCountMode: quizSettings.questionCountMode,
-        startIndex: quizSettings.startIndex,
-        start,
-        end,
-        batchSize,
-        baseLength: base.length,
-        totalCount: sourceReactions.length
-      });
-
-      filtered = base.slice(start, end);
-    } else if (quizSettings.questionCountMode === 'all') {
-      // ALLモード
-      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
-        filtered = base.slice(0, quizSettings.allQuestionCount);
-      } else {
-        filtered = base; // 全件
-      }
-      
-      console.log('[App] quizInorganicReactionsNew: all mode', {
-        allQuestionCount: quizSettings.allQuestionCount,
-        baseLength: base.length,
-        filteredLength: filtered.length
-      });
-    } else {
-      // 設定がない場合は全件
-      filtered = base;
-    }
-
-    console.log('[App] quizInorganicReactionsNew: result', {
-      filteredLength: filtered.length,
-      sourceReactionsLength: sourceReactions.length,
-      quizSettings
-    });
-
-    return filtered;
-  }, [selectedCategory, selectedMode, inorganicReactionsNew, quizSettings]);
-
-  const quizInorganicReactions = activeInorganicReactions?.type === 'old' ? activeInorganicReactions.data : [];
-
   // すべてのhooksを先に実行した後、return分岐を最後にまとめる
-  // 条件分岐はhooksの「中」で行う（useMemoコールバック内で三項演算など）
-  const mainContent = useMemo(() => {
-    // selectedModeとselectedCategoryはこの時点でnullでないことが保証されている
-    if (!selectedMode) {
-      return null; // 型チェック用（実際には到達しない）
-    }
-
-    // reactions.length === 0の場合はエラー表示
-    if (selectedCategory === 'inorganic' && 
-        (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
-        quizInorganicReactionsNew.length === 0) {
-      return (
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
-            問題データが見つかりませんでした
-          </p>
-          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
-            出題セットが空です。設定を確認してください。
-          </p>
-          <button
-            className="back-button"
-            onClick={() => setQuizSettings(null)}
-            style={{ marginTop: '20px' }}
-          >
-            設定に戻る
-          </button>
-        </div>
-      );
-    }
-
-    // hasNextRangeをuseMemo内で直接計算
-    const hasNext = quizSettings && (
-      (quizSettings.questionCountMode === 'batch-10' || 
-       quizSettings.questionCountMode === 'batch-20' || 
-       quizSettings.questionCountMode === 'batch-40') &&
-      quizSettings.startIndex !== undefined
-    ) ? (() => {
-      let batchSize = 10;
-      if (quizSettings.questionCountMode === 'batch-20') {
-        batchSize = 20;
-      } else if (quizSettings.questionCountMode === 'batch-40') {
-        batchSize = 40;
-      }
-      const nextStartIndex = quizSettings.startIndex! + batchSize;
-      return nextStartIndex <= maxQuestionCount;
-    })() : false;
-
-    // 通常のクイズ表示
-    return (
-      <Quiz
-        compounds={finalCompounds}
-        allCompounds={compounds}
-        experiments={experiments}
-        inorganicReactions={quizInorganicReactions}
-        inorganicReactionsNew={quizInorganicReactionsNew}
-        mode={selectedMode}
-        category={selectedCategory}
-        onBack={() => setQuizSettings(null)}
-        quizSettings={quizSettings}
-        onNextRange={hasNext ? handleNextRange : undefined}
-      />
-    );
-  }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
-
+  // mainContentは既にuseMemoで計算済み
   return (
     <div className="App">
       {mainContent}
