@@ -23,9 +23,19 @@ export const loadInorganicReactionsNew = async (): Promise<InorganicReactionNew[
     }
 
     const csvText = await response.text();
+    console.log(`[inorganicNewLoader] Response received, length: ${csvText.length}, first 200 chars:`, csvText.substring(0, 200));
+    
+    // HTMLが返ってきた場合（認証エラーなど）を検出
+    if (csvText.trim().startsWith('<!DOCTYPE') || csvText.trim().startsWith('<html')) {
+      console.error('[inorganicNewLoader] Received HTML instead of CSV. Spreadsheet may not be publicly accessible.');
+      throw new Error('Spreadsheet is not publicly accessible. Please make sure the spreadsheet is shared with "Anyone with the link"');
+    }
+    
     const lines = csvText.split('\n').filter(line => line.trim().length > 0);
+    console.log(`[inorganicNewLoader] Parsed ${lines.length} lines from CSV`);
 
     if (lines.length < 2) {
+      console.error('[inorganicNewLoader] Spreadsheet has no data rows. Lines:', lines);
       throw new Error('Spreadsheet has no data rows');
     }
 
@@ -82,10 +92,19 @@ export const loadInorganicReactionsNew = async (): Promise<InorganicReactionNew[
       reactions.push(reaction);
     }
 
-    console.log(`[inorganicNewLoader] Successfully loaded ${reactions.length} reactions`);
+    console.log(`[inorganicNewLoader] Successfully loaded ${reactions.length} reactions`, {
+      firstReaction: reactions[0],
+      lastReaction: reactions[reactions.length - 1]
+    });
     return reactions;
   } catch (error) {
     console.error('[inorganicNewLoader] Failed to load reactions:', error);
+    if (error instanceof Error) {
+      console.error('[inorganicNewLoader] Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
     throw error;
   }
 };
