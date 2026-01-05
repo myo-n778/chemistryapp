@@ -311,6 +311,21 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
             />
           </span>
           <div className="quiz-header-buttons">
+            {showResult && (
+              <div className={`result-status ${isCorrect ? 'result-correct' : 'result-incorrect'}`}>
+                {isCorrect ? (
+                  <span className="correct-status">
+                    <span className="message-icon">✓</span>
+                    <span className="english-text">Correct!</span>
+                  </span>
+                ) : (
+                  <span className="incorrect-status">
+                    <span className="message-icon">✗</span>
+                    <span className="english-text">Wrong</span>
+                  </span>
+                )}
+              </div>
+            )}
             <button className="back-button" onClick={onBack}>
               return
             </button>
@@ -370,21 +385,6 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
 
         {showResult && (
           <div className="result-panel">
-            <div className="result-message">
-              <div className="result-line">
-                {isCorrect ? (
-                  <span className="correct-message-inline">
-                    <span className="message-icon">✓</span>
-                    <span className="english-text">Correct!</span>
-                  </span>
-                ) : (
-                  <span className="incorrect-message-inline">
-                    <span className="message-icon">✗</span>
-                    <span className="english-text">Wrong. Answer: <ChoiceDisplay text={currentReaction.products} /></span>
-                  </span>
-                )}
-              </div>
-            </div>
             <div className="result-explanation">
               <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.products} /></p>
               <InorganicExplanationPanel

@@ -57,26 +57,24 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
         {/* 2. 要点カード（G列：反応前要約、H列：生成要約） */}
         {(reaction.reactants_summary || reaction.products_summary) && (
           <div className="explanation-section explanation-summary">
-            <div className="explanation-section-header-inline">
-              <h3 className="explanation-section-title">要点</h3>
-              <div className="explanation-summary-cards">
-                {reaction.reactants_summary && (
-                  <div className="summary-card summary-reactants">
-                    <div className="summary-card-label">反応前</div>
-                    <div className="summary-card-content">
-                      <RenderMaybeTeX value={reaction.reactants_summary} />
-                    </div>
+            <h3 className="explanation-section-title">要点</h3>
+            <div className="explanation-summary-cards">
+              {reaction.reactants_summary && (
+                <div className="summary-card summary-reactants">
+                  <div className="summary-card-label">反応前</div>
+                  <div className="summary-card-content">
+                    <RenderMaybeTeX value={reaction.reactants_summary} />
                   </div>
-                )}
-                {reaction.products_summary && (
-                  <div className="summary-card summary-products">
-                    <div className="summary-card-label">生成</div>
-                    <div className="summary-card-content">
-                      <RenderMaybeTeX value={reaction.products_summary} />
-                    </div>
+                </div>
+              )}
+              {reaction.products_summary && (
+                <div className="summary-card summary-products">
+                  <div className="summary-card-label">生成</div>
+                  <div className="summary-card-content">
+                    <RenderMaybeTeX value={reaction.products_summary} />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}

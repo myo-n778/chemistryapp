@@ -44,9 +44,9 @@
 .explanation-section-header-inline {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .explanation-section-title {
@@ -95,6 +95,7 @@
   margin: 0;
   flex: 1;
   min-width: 0;
+  align-items: flex-start;
 }
 
 /* レスポンシブ対応：要点カードを縦並び */
@@ -170,4 +171,41 @@
 
 .tex-toggle-button:hover {
   background-color: #4a5568;
+}
+
+/* 右上の正解/誤り表示 */
+.result-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.result-correct {
+  color: #50c878;
+  text-shadow: 0 0 10px rgba(80, 200, 120, 0.8), 0 0 20px rgba(80, 200, 120, 0.5);
+}
+
+.result-incorrect {
+  color: #ff6666;
+  text-shadow: 0 0 10px rgba(255, 102, 102, 0.8), 0 0 20px rgba(255, 102, 102, 0.5);
+}
+
+.correct-status,
+.incorrect-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.correct-status .english-text,
+.incorrect-status .english-text {
+  font-family: 'Noto Serif', serif;
+}
+
+.message-icon {
+  font-size: 1.1em;
 }
