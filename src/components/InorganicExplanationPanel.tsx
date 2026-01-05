@@ -31,7 +31,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
       <div className="explanation-row">
         {/* 反応式（A列） */}
         <div className="explanation-section explanation-equation">
-          <div className="explanation-section-header">
+          <div className="explanation-section-header-inline">
             <h3 className="explanation-section-title">反応式</h3>
             {reaction.equation_tex && (
               <button
@@ -41,40 +41,42 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
                 {showEquationTeX ? '通常表示' : 'TeX表示'}
               </button>
             )}
-          </div>
-          <div className="explanation-content">
-            {showEquationTeX && reaction.equation_tex ? (
-              <TeXRenderer
-                equation={reaction.equation_tex}
-                displayMode={true}
-              />
-            ) : (
-              <RenderMaybeTeX value={reaction.equation} displayMode={true} />
-            )}
+            <div className="explanation-content-inline">
+              {showEquationTeX && reaction.equation_tex ? (
+                <TeXRenderer
+                  equation={reaction.equation_tex}
+                  displayMode={true}
+                />
+              ) : (
+                <RenderMaybeTeX value={reaction.equation} displayMode={true} />
+              )}
+            </div>
           </div>
         </div>
 
         {/* 2. 要点カード（G列：反応前要約、H列：生成要約） */}
         {(reaction.reactants_summary || reaction.products_summary) && (
           <div className="explanation-section explanation-summary">
-            <h3 className="explanation-section-title">要点</h3>
-            <div className="explanation-summary-cards">
-              {reaction.reactants_summary && (
-                <div className="summary-card summary-reactants">
-                  <div className="summary-card-label">反応前</div>
-                  <div className="summary-card-content">
-                    <RenderMaybeTeX value={reaction.reactants_summary} />
+            <div className="explanation-section-header-inline">
+              <h3 className="explanation-section-title">要点</h3>
+              <div className="explanation-summary-cards">
+                {reaction.reactants_summary && (
+                  <div className="summary-card summary-reactants">
+                    <div className="summary-card-label">反応前</div>
+                    <div className="summary-card-content">
+                      <RenderMaybeTeX value={reaction.reactants_summary} />
+                    </div>
                   </div>
-                </div>
-              )}
-              {reaction.products_summary && (
-                <div className="summary-card summary-products">
-                  <div className="summary-card-label">生成</div>
-                  <div className="summary-card-content">
-                    <RenderMaybeTeX value={reaction.products_summary} />
+                )}
+                {reaction.products_summary && (
+                  <div className="summary-card summary-products">
+                    <div className="summary-card-label">生成</div>
+                    <div className="summary-card-content">
+                      <RenderMaybeTeX value={reaction.products_summary} />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}

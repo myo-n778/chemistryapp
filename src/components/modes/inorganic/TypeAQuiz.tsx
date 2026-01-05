@@ -370,8 +370,20 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
 
         {showResult && (
           <div className="result-panel">
-            <div className={`result-message ${isCorrect ? 'correct' : 'incorrect'}`}>
-              {isCorrect ? '正解！' : '不正解'}
+            <div className="result-message">
+              <div className="result-line">
+                {isCorrect ? (
+                  <span className="correct-message-inline">
+                    <span className="message-icon">✓</span>
+                    <span className="english-text">Correct!</span>
+                  </span>
+                ) : (
+                  <span className="incorrect-message-inline">
+                    <span className="message-icon">✗</span>
+                    <span className="english-text">Wrong. Answer: <ChoiceDisplay text={currentReaction.products} /></span>
+                  </span>
+                )}
+              </div>
             </div>
             <div className="result-explanation">
               <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.products} /></p>

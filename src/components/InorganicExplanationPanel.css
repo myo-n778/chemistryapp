@@ -40,6 +40,15 @@
   gap: 8px;
 }
 
+/* ラベルとコンテンツを横並び（反応式・要点用） */
+.explanation-section-header-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .explanation-section-title {
   font-size: 0.95em;
   font-weight: bold;
@@ -48,6 +57,7 @@
   padding: 0;
   border: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .explanation-content {
@@ -55,6 +65,16 @@
   line-height: 1.4;
   margin: 0;
   padding: 0;
+}
+
+/* 反応式のTeX表示をインラインで */
+.explanation-content-inline {
+  color: #ffffff;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 /* 反応式セクション */
@@ -67,11 +87,22 @@
   flex: 1;
 }
 
+/* 要点カードを横並び */
 .explanation-summary-cards {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  gap: 12px;
   margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* レスポンシブ対応：要点カードを縦並び */
+@media (max-width: 768px) {
+  .explanation-summary-cards {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 .summary-card {
@@ -79,6 +110,8 @@
   border-radius: 6px;
   padding: 8px 10px;
   border-left: 3px solid #4a90e2;
+  flex: 1;
+  min-width: 0;
 }
 
 .summary-card-label {
