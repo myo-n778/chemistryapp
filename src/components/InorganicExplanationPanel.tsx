@@ -1,7 +1,7 @@
 import React from 'react';
-import { InorganicReactionNew } from '../../types/inorganic';
-import { TeXRenderer } from '../TeXRenderer';
-import { InorganicObservationDisplay } from '../InorganicObservationDisplay';
+import { InorganicReactionNew } from '../types/inorganic';
+import { TeXRenderer } from './TeXRenderer';
+import { InorganicObservationDisplay } from './InorganicObservationDisplay';
 import './InorganicExplanationPanel.css';
 
 interface InorganicExplanationPanelProps {
@@ -19,7 +19,7 @@ interface InorganicExplanationPanelProps {
  */
 export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps> = ({
   reaction,
-  correctAnswer,
+  correctAnswer: _correctAnswer,
   className = '',
 }) => {
   return (

@@ -134,38 +134,55 @@ function App() {
 
   // 無機化学データの読み込み
   useEffect(() => {
-    if (selectedCategory === 'inorganic') {
-      let isMounted = true;
-      setInorganicLoading(true);
-      setInorganicLoadingError(null);
-      
-      loadInorganicReactionsData()
-        .then(data => {
-          if (!isMounted) return;
-          console.log(`App.tsx: Loaded ${data.length} inorganic reactions`);
-          setInorganicReactions(data);
-          setInorganicLoading(false);
-          setInorganicLoadingError(null);
-        })
-        .catch(error => {
-          if (!isMounted) return;
-          console.error('Failed to load inorganic reactions:', error);
-          setInorganicReactions([]);
-          setInorganicLoading(false);
-          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-          setInorganicLoadingError(errorMessage);
-        });
-      
-      return () => {
-        isMounted = false;
-      };
-    } else {
-      // 無機化学以外の場合は状態をリセット
+    let isMounted = true;
+
+    if (selectedCategory !== 'inorganic') {
       setInorganicReactions([]);
+      setInorganicReactionsNew([]);
       setInorganicLoading(false);
       setInorganicLoadingError(null);
+      return;
     }
-    // loadInorganicReactionsDataは外部からインポートされた関数で変更されないため、依存配列に含めない
+
+    setInorganicLoading(true);
+    setInorganicLoadingError(null);
+
+    // 新しい無機化学データを読み込み
+    loadInorganicReactionsNew()
+      .then(data => {
+        if (!isMounted) return;
+        console.log(`App.tsx: Loaded ${data.length} new inorganic reactions`);
+        setInorganicReactionsNew(data);
+        setInorganicLoading(false);
+        setInorganicLoadingError(null);
+      })
+      .catch(error => {
+        if (!isMounted) return;
+        console.error('Failed to load new inorganic reactions:', error);
+        // フォールバック: 旧データを読み込む
+        loadInorganicReactionsData()
+          .then(data => {
+            if (!isMounted) return;
+            console.log(`App.tsx: Loaded ${data.length} old inorganic reactions (fallback)`);
+            setInorganicReactions(data);
+            setInorganicReactionsNew([]);
+            setInorganicLoading(false);
+            setInorganicLoadingError(null);
+          })
+          .catch(oldError => {
+            if (!isMounted) return;
+            console.error('Failed to load old inorganic reactions:', oldError);
+            setInorganicReactions([]);
+            setInorganicReactionsNew([]);
+            setInorganicLoading(false);
+            const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+            setInorganicLoadingError(errorMessage);
+          });
+      });
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
