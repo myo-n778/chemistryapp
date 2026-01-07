@@ -17,7 +17,7 @@ interface StructureToNameQuizProps {
   onNextRange?: () => void;
 }
 
-export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange: _onNextRange }) => {
+export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
