@@ -279,7 +279,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
     return (
       <QuizSummary
-        score={Math.round((pointScore / 100) * totalAnswered)}
+        score={score}
         total={totalAnswered}
         pointScore={pointScore}
         onRestart={() => {

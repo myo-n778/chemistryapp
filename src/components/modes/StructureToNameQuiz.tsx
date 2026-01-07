@@ -362,6 +362,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
             pointScore={pointScore}
             onRestart={handleReset}
             onBack={onBack}
+            onNext={onNextRange}
             mode={mode}
             rangeKey={rangeKey}
           />

@@ -6,6 +6,39 @@ export interface ReactionCSVRow {
   description: string;
 }
 
+// CSV行を正しくパース（引用符で囲まれたフィールドを処理）
+function parseCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // エスケープされた引用符
+        current += '"';
+        i++; // 次の引用符をスキップ
+      } else {
+        // 引用符の開始/終了
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // フィールドの区切り
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  // 最後のフィールドを追加
+  values.push(current.trim());
+
+  return values;
+}
+
 export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
   const lines = csvText.trim().split('\n');
   if (lines.length < 2) return [];
@@ -13,7 +46,7 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
   const rows: ReactionCSVRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',');
+    const values = parseCSVLine(lines[i]);
     if (values.length < 4) {
       console.log(`[reactionParser] Skipped row ${i + 1}: insufficient columns (${values.length} < 4)`);
       continue; // 必須項目（A-D）がない行はスキップ

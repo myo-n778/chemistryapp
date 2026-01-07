@@ -145,16 +145,18 @@ export const getScoreHistory = (mode?: string, rangeKey?: string): ScoreHistoryE
         localStorage.removeItem(key);
         return [];
       }
-      // 各エントリの検証
+      // 各エントリの検証（正解数 <= 総数の制約を追加）
       const valid = parsed.filter(entry => {
         if (!entry || typeof entry !== 'object') return false;
-        return typeof entry.score === 'number' && 
+        const isValidType = typeof entry.score === 'number' && 
                typeof entry.correctCount === 'number' &&
                typeof entry.totalCount === 'number' &&
-               typeof entry.date === 'string' &&
-               entry.score >= 0 &&
+               typeof entry.date === 'string';
+        const isValidValue = entry.score >= 0 &&
                entry.correctCount >= 0 &&
-               entry.totalCount >= 0;
+               entry.totalCount > 0 &&
+               entry.correctCount <= entry.totalCount; // 正解数は総数以下でなければならない
+        return isValidType && isValidValue;
       });
       return valid;
     }

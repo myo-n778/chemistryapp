@@ -654,37 +654,39 @@
     max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
-  /* モード③（CompoundTypeQuiz）用：スマホ横向き時も横並びレイアウト */
+  /* モード③（CompoundTypeQuiz）用：PC幅では横並び、モバイル幅では縦積み */
   .compound-type-mobile-layout {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    gap: 8px;
+    gap: 12px;
     margin-top: 4px;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper {
     flex-shrink: 0;
     width: 45%;
+    min-width: 200px;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer {
-    max-height: 80px;
+    max-height: 120px;
     width: 100%;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer svg {
-    max-height: 80px;
+    max-height: 120px;
   }
 
   .compound-type-mobile-layout .options-grid-compact {
     flex: 1;
+    min-width: 0;
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px;
+    gap: 8px;
     margin-top: 0;
   }
 
@@ -838,26 +840,19 @@
     max-height: 30px; /* 選択肢4つが枠内に収まるようにさらに縮小 */
   }
 
-  /* モード③（CompoundTypeQuiz）用：スマホ縦向き時も横並びレイアウト */
+  /* モード③（CompoundTypeQuiz）用：モバイル幅では縦積み */
   .compound-type-mobile-layout {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
+    flex-direction: column;
     gap: 8px;
-    margin-top: 4px;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper {
-    flex-shrink: 0;
-    width: 45%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 100%;
+    min-width: 0;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer {
     max-height: 100px;
-    width: 100%;
   }
 
   .compound-type-mobile-layout .structure-viewer-wrapper .structure-viewer svg {
@@ -865,11 +860,8 @@
   }
 
   .compound-type-mobile-layout .options-grid-compact {
-    flex: 1;
-    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 4px;
-    margin-top: 0;
   }
 }
 
