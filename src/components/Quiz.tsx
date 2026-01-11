@@ -17,7 +17,6 @@ import { ModeAQuiz } from './modes/inorganic/ModeAQuiz'; // 旧モード（後�
 import { ModeBQuiz } from './modes/inorganic/ModeBQuiz'; // 旧モード（後で削除予定）
 import { ModeEQuiz } from './modes/inorganic/ModeEQuiz'; // 旧モード（後で削除予定）
 import { ModeFQuiz } from './modes/inorganic/ModeFQuiz'; // 旧モード（後で削除予定）
-import { ModeGQuiz } from './modes/inorganic/ModeGQuiz'; // 旧モード（後で削除予定）
 
 interface QuizProps {
   compounds: Compound[];
