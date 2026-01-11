@@ -72,7 +72,14 @@ export const playWrong = (): void => {
 const playSound = (path: string): void => {
   try {
     const audio = new Audio(path);
+    
+    // エラーハンドリング
+    audio.addEventListener('error', (e) => {
+      console.warn('[SoundManager] Audio error:', audio.error, { path });
+    });
+    
     audio.currentTime = 0; // 連打対応：先頭から再生
+    audio.volume = 1.0; // 音量を最大に設定
     const playPromise = audio.play();
     
     // Promise が reject される場合（自動再生制限など）に対応
@@ -80,12 +87,12 @@ const playSound = (path: string): void => {
       playPromise.catch(error => {
         // 自動再生制限エラーは無視（ユーザー操作後に再生可能になる）
         if (error.name !== 'NotAllowedError') {
-          console.warn('Failed to play sound:', error);
+          console.warn('[SoundManager] Failed to play sound:', error, { path });
         }
       });
     }
   } catch (error) {
-    console.warn('Failed to create audio:', error);
+    console.warn('[SoundManager] Failed to create audio:', error, { path });
   }
 };
 
