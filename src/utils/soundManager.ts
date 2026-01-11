@@ -107,3 +107,14 @@ export const playTestSound = (set: SoundSet, type: 'correct' | 'wrong'): void =>
   const path = getSoundPath(set, type);
   playSound(path);
 };
+
+/**
+ * finish音声を再生（モード2の結果画面用）
+ */
+export const playFinishSound = (type: 1 | 2 | 3 | 4 | 5): void => {
+  const set = getSoundSet();
+  if (set === 0) return; // none（音無し）の場合は再生しない
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const path = `${baseUrl}sound/finish${type}.wav`;
+  playSound(path);
+};

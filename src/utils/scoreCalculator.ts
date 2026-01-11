@@ -180,6 +180,7 @@ export const getScoreHistory = (mode?: string, rangeKey?: string): ScoreHistoryE
  * @param totalCount 総問題数
  * @param mode クイズモード（指定された場合、そのモード×範囲に保存）
  * @param rangeKey 範囲キー（指定された場合、その範囲に保存）
+ * @returns 最高記録更新したかどうか、ランクインしたかどうか
  */
 export const saveHighScore = (
   score: number, 
@@ -187,10 +188,14 @@ export const saveHighScore = (
   totalCount: number = 0,
   mode?: string,
   rangeKey?: string
-): void => {
+): { isNewRecord: boolean; isRankIn: boolean } => {
   try {
     const key = mode && rangeKey ? getScoreHistoryKey(mode, rangeKey) : SCORE_HISTORY_KEY;
     const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
+    
+    // 保存前の最高記録を取得
+    const oldTopScore = history.length > 0 ? history[0].score : 0;
+    
     const newEntry: ScoreHistoryEntry = {
       score,
       correctCount,
@@ -207,6 +212,19 @@ export const saveHighScore = (
     // 上位5件のみ保持
     const top5 = history.slice(0, 5);
     
+    // 最高記録更新かどうかを判定
+    const isNewRecord = top5.length > 0 && top5[0].score === score && top5[0].score > oldTopScore;
+    
+    // ランクイン（上位5位に入った）かどうかを判定
+    const today = new Date().toISOString().split('T')[0];
+    const isRankIn = top5.some(entry => {
+      const entryDate = new Date(entry.date).toISOString().split('T')[0];
+      return entry.score === score && 
+             entry.correctCount === correctCount && 
+             entry.totalCount === totalCount &&
+             entryDate === today;
+    });
+    
     localStorage.setItem(key, JSON.stringify(top5));
     
     // 互換性のため最高スコアも保存（mode/rangeKeyが指定されている場合はスキップ）
@@ -215,7 +233,10 @@ export const saveHighScore = (
         localStorage.setItem(HIGH_SCORE_KEY, top5[0].score.toString());
       }
     }
+    
+    return { isNewRecord, isRankIn };
   } catch (error) {
     console.warn('Failed to save high score to localStorage:', error);
+    return { isNewRecord: false, isRankIn: false };
   }
 };

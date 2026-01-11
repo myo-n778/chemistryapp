@@ -5,7 +5,7 @@ import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
-import { playCorrect, playWrong } from '../../utils/soundManager';
+import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
 import '../Quiz.css';
 
 interface NameToStructureQuizProps {
