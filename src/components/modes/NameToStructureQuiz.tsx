@@ -249,7 +249,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       const isNewRecord = pointScore > topScore;
       const today = new Date().toISOString().split('T')[0];
       const top5 = history.slice(0, 5);
-      const isRankIn = top5.some(entry => {
+      const isRankIn = top5.some((entry: ScoreHistoryEntry) => {
         const entryDate = new Date(entry.date).toISOString().split('T')[0];
         return entry.score === pointScore && 
                entry.correctCount === score && 
