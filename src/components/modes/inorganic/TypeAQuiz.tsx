@@ -185,6 +185,59 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     }, 300);
   }, [totalAnswered, maxQuestions, currentIndex, filteredReactions.length, lastQuestionId, pointScore, score, quizSettings, category]);
 
+  // 結果画面が表示された時にfinish音声を再生
+  useEffect(() => {
+    if (isFinished && totalAnswered > 0) {
+      console.log('[TypeAQuiz] isFinished changed to true, playing finish sound');
+      const getModeAndRangeKey = () => {
+        const mode = `inorganic-type-a-${category}`;
+        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+          ? getRangeKey('batch-10', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+          ? getRangeKey('batch-20', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+          ? getRangeKey('batch-40', quizSettings.startIndex)
+          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+        return { mode, rangeKey };
+      };
+      
+      // 最高記録情報を取得（既に保存済み）
+      const { mode, rangeKey } = getModeAndRangeKey();
+      const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
+      const topScore = history.length > 0 ? history[0].score : 0;
+      const isNewRecord = pointScore > topScore;
+      const today = new Date().toISOString().split('T')[0];
+      const top5 = history.slice(0, 5);
+      const isRankIn = top5.some((entry: ScoreHistoryEntry) => {
+        const entryDate = new Date(entry.date).toISOString().split('T')[0];
+        return entry.score === pointScore && 
+               entry.correctCount === score && 
+               entry.totalCount === totalAnswered &&
+               entryDate === today;
+      });
+      
+      // finish音声を再生
+      const percentage = Math.round((score / totalAnswered) * 100);
+      console.log(`[TypeAQuiz] Result: score=${score}/${totalAnswered} (${percentage}%), isNewRecord=${isNewRecord}, isRankIn=${isRankIn}`);
+      if (isNewRecord) {
+        console.log('[TypeAQuiz] Playing finish sound: type 3 (最高記録更新)');
+        playFinishSound(3); // 最高記録更新
+      } else if (isRankIn) {
+        console.log('[TypeAQuiz] Playing finish sound: type 2 (ランクイン)');
+        playFinishSound(2); // ランクイン
+      } else if (percentage === 100) {
+        console.log('[TypeAQuiz] Playing finish sound: type 5 (満点)');
+        playFinishSound(5); // 満点で記録更新でない
+      } else if (percentage >= 60) {
+        console.log('[TypeAQuiz] Playing finish sound: type 1 (60%以上)');
+        playFinishSound(1); // 60%以上
+      } else {
+        console.log('[TypeAQuiz] Playing finish sound: type 4 (60%未満)');
+        playFinishSound(4); // 60%未満
+      }
+    }
+  }, [isFinished, totalAnswered, score, pointScore, category, quizSettings]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showResult && (e.key === 'Enter' || e.key === ' ')) {
