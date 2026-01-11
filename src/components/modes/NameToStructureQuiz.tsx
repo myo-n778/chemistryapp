@@ -5,6 +5,7 @@ import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
+import { playCorrect, playWrong } from '../../utils/soundManager';
 import '../Quiz.css';
 
 interface NameToStructureQuizProps {
@@ -70,6 +71,14 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (showResult) return;
 
     const isCorrect = answerId === currentCompound.id;
+    
+    // 効果音を再生
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playWrong();
+    }
+    
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     
     // 連続正解カウント（同じ問題IDが連続で正解した場合のみ）

@@ -7,6 +7,7 @@ import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
+import { playCorrect, playWrong } from '../../utils/soundManager';
 import '../Quiz.css';
 
 interface ReactionQuizProps {
@@ -142,6 +143,14 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     if (showResult) return;
 
     const isCorrect = answer === correctValue;
+    
+    // 効果音を再生
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playWrong();
+    }
+    
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
     
     // 連続正解カウント（同じ問題が連続で正解した場合のみ）

@@ -4,6 +4,7 @@ import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
 import { ExperimentCSVRow } from '../../utils/experimentParser';
+import { playCorrect, playWrong } from '../../utils/soundManager';
 import '../Quiz.css';
 
 interface ExperimentQuizProps {
@@ -110,6 +111,14 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     setShowResult(true);
 
     const isCorrect = selectedOption === currentExperiment.correctAnswer;
+    
+    // 効果音を再生
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playWrong();
+    }
+    
     const currentQuestionKey = `${currentExperiment.question}-${currentIndex}`;
     const elapsedSeconds = (Date.now() - questionStartTime) / 1000;
 

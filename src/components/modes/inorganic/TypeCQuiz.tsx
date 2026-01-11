@@ -9,6 +9,7 @@ import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
 import { ChoiceDisplay } from '../../ChoiceDisplay';
 import { RenderMaybeTeX } from '../../RenderMaybeTeX';
+import { playCorrect, playWrong } from '../../../utils/soundManager';
 import '../../Quiz.css';
 
 /**
@@ -256,6 +257,14 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
     setSelectedAnswer(selectedOption);
     setShowResult(true);
     const isCorrect = selectedOption === choices.correctIndex;
+    
+    // 効果音を再生
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playWrong();
+    }
+    
     const currentQuestionKey = currentReaction?.id;
     if (!currentQuestionKey) {
       setTimeout(() => {
