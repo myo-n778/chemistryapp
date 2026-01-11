@@ -10,12 +10,13 @@ export type SoundSet = 1 | 2 | 3;
  * 効果音ファイルのパスを取得
  */
 const getSoundPath = (set: SoundSet, type: 'correct' | 'wrong'): string => {
+  const baseUrl = import.meta.env.BASE_URL || '/';
   if (set === 1) {
-    return type === 'correct' ? '/sound/1correct.mp3' : '/sound/1wrong.mp3';
+    return `${baseUrl}sound/1correct.mp3`;
   } else if (set === 2) {
-    return type === 'correct' ? '/sound/2correct.wav' : '/sound/2wrong.wav';
+    return type === 'correct' ? `${baseUrl}sound/2correct.wav` : `${baseUrl}sound/2wrong.wav`;
   } else {
-    return type === 'correct' ? '/sound/3correct.wav' : '/sound/3wrong.wav';
+    return type === 'correct' ? `${baseUrl}sound/3correct.wav` : `${baseUrl}sound/3wrong.wav`;
   }
 };
 
@@ -74,7 +75,7 @@ const playSound = (path: string): void => {
     const audio = new Audio(path);
     
     // エラーハンドリング
-    audio.addEventListener('error', (e) => {
+    audio.addEventListener('error', () => {
       console.warn('[SoundManager] Audio error:', audio.error, { path });
     });
     
