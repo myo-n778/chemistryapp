@@ -139,7 +139,22 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (totalAnswered >= maxQuestions) {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
-      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      const { isNewRecord, isRankIn } = saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // finish音声を再生
+      const percentage = Math.round((score / totalAnswered) * 100);
+      if (isNewRecord) {
+        playFinishSound(3); // 最高記録更新
+      } else if (isRankIn) {
+        playFinishSound(2); // ランクイン
+      } else if (percentage === 100) {
+        playFinishSound(5); // 満点で記録更新でない
+      } else if (percentage >= 60) {
+        playFinishSound(1); // 60%以上
+      } else {
+        playFinishSound(4); // 60%未満
+      }
+      
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
