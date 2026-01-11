@@ -176,28 +176,8 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     } else {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
-      const { isNewRecord, isRankIn } = saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
-      
-      // finish音声を再生（setIsFinishedの前に呼ぶ）
-      const percentage = Math.round((score / totalAnswered) * 100);
-      console.log(`[NameToStructureQuiz] Finishing quiz (else): score=${score}/${totalAnswered} (${percentage}%), isNewRecord=${isNewRecord}, isRankIn=${isRankIn}`);
-      if (isNewRecord) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 3 (最高記録更新)');
-        playFinishSound(3); // 最高記録更新
-      } else if (isRankIn) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 2 (ランクイン)');
-        playFinishSound(2); // ランクイン
-      } else if (percentage === 100) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 5 (満点)');
-        playFinishSound(5); // 満点で記録更新でない
-      } else if (percentage >= 60) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 1 (60%以上)');
-        playFinishSound(1); // 60%以上
-      } else {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 4 (60%未満)');
-        playFinishSound(4); // 60%未満
-      }
-      
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      // finish音声はuseEffectで再生（結果画面表示時）
       setIsFinished(true);
     }
     
@@ -245,6 +225,59 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       setQuestionStartTime(Date.now());
     }
   }, [currentIndex, isFinished]);
+
+  // 結果画面が表示された時にfinish音声を再生
+  useEffect(() => {
+    if (isFinished && totalAnswered > 0) {
+      console.log('[NameToStructureQuiz] isFinished changed to true, playing finish sound');
+      const getModeAndRangeKey = () => {
+        const mode = `name-to-structure-${category}`;
+        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+          ? getRangeKey('batch-10', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+          ? getRangeKey('batch-20', quizSettings.startIndex)
+          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+          ? getRangeKey('batch-40', quizSettings.startIndex)
+          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+        return { mode, rangeKey };
+      };
+      
+      // 最高記録情報を取得（既に保存済み）
+      const { mode, rangeKey } = getModeAndRangeKey();
+      const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
+      const topScore = history.length > 0 ? history[0].score : 0;
+      const isNewRecord = pointScore > topScore;
+      const today = new Date().toISOString().split('T')[0];
+      const top5 = history.slice(0, 5);
+      const isRankIn = top5.some(entry => {
+        const entryDate = new Date(entry.date).toISOString().split('T')[0];
+        return entry.score === pointScore && 
+               entry.correctCount === score && 
+               entry.totalCount === totalAnswered &&
+               entryDate === today;
+      });
+      
+      // finish音声を再生
+      const percentage = Math.round((score / totalAnswered) * 100);
+      console.log(`[NameToStructureQuiz] Result: score=${score}/${totalAnswered} (${percentage}%), isNewRecord=${isNewRecord}, isRankIn=${isRankIn}`);
+      if (isNewRecord) {
+        console.log('[NameToStructureQuiz] Playing finish sound: type 3 (最高記録更新)');
+        playFinishSound(3); // 最高記録更新
+      } else if (isRankIn) {
+        console.log('[NameToStructureQuiz] Playing finish sound: type 2 (ランクイン)');
+        playFinishSound(2); // ランクイン
+      } else if (percentage === 100) {
+        console.log('[NameToStructureQuiz] Playing finish sound: type 5 (満点)');
+        playFinishSound(5); // 満点で記録更新でない
+      } else if (percentage >= 60) {
+        console.log('[NameToStructureQuiz] Playing finish sound: type 1 (60%以上)');
+        playFinishSound(1); // 60%以上
+      } else {
+        console.log('[NameToStructureQuiz] Playing finish sound: type 4 (60%未満)');
+        playFinishSound(4); // 60%未満
+      }
+    }
+  }, [isFinished, totalAnswered, score, pointScore, category, quizSettings]);
 
   // Enterキー、スペースキーで次に進む
   useEffect(() => {
