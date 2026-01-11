@@ -116,5 +116,6 @@ export const playFinishSound = (type: 1 | 2 | 3 | 4 | 5): void => {
   if (set === 0) return; // none（音無し）の場合は再生しない
   const baseUrl = import.meta.env.BASE_URL || '/';
   const path = `${baseUrl}sound/finish${type}.wav`;
+  console.log(`[soundManager] Playing finish sound: ${path} (type: ${type}, set: ${set})`);
   playSound(path);
 };
