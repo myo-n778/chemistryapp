@@ -61,8 +61,6 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
       return <ModeEQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     case 'inorganic-mode-f':
       return <ModeFQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
-    case 'inorganic-mode-g':
-      return <ModeGQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;
     default:
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
   }
