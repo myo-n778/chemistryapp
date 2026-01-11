@@ -1,17 +1,18 @@
 /* 全画面共通の効果音選択UI（右上固定） */
 .sound-selector-global {
   position: fixed;
-  top: 10px;
-  right: 10px;
+  top: 15px;
+  right: 15px;
   display: flex;
   align-items: center;
   gap: 6px;
-  z-index: 1000;
-  background: rgba(42, 31, 26, 0.8);
+  z-index: 10000;
+  background: rgba(42, 31, 26, 0.85);
   backdrop-filter: blur(4px);
   border-radius: 6px;
   padding: 4px 8px;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .sound-selector-label {
