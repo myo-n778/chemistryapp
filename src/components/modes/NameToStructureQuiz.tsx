@@ -4,7 +4,7 @@ import { Category } from '../CategorySelector';
 import { StructureViewer } from '../StructureViewer';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
-import { calculateScore, saveHighScore, getRangeKey } from '../../utils/scoreCalculator';
+import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../utils/scoreCalculator';
 import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
 import '../Quiz.css';
 
