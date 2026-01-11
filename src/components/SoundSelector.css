@@ -1,12 +1,11 @@
-/* 全画面共通の効果音選択UI（quiz-headerの上に配置） */
+/* 全画面共通の効果音選択UI（右上固定） */
 .sound-selector-global {
   position: fixed;
   top: 15px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 15px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 6px;
   z-index: 10000;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
@@ -81,8 +80,7 @@
 @media (max-width: 768px) {
   .sound-selector-global {
     top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 8px;
   }
 
   .sound-selector-toggle {
