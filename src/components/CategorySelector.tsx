@@ -19,7 +19,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelectCate
   const handleSoundSetChange = (set: SoundSet) => {
     setSoundSetState(set);
     setSoundSet(set);
-    // iOS/Safariの自動再生制限対応：ユーザー操作時にテスト再生
+    // iOS/Safariの自動再生制限対応：ユーザー操作時にテスト再生（noneの場合は再生しない）
     playTestSound(set, 'correct');
   };
 
@@ -30,27 +30,38 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelectCate
       
       {/* 効果音セット選択 */}
       <div className="sound-set-selector">
-        <label className="sound-set-label">効果音：</label>
+        <label className="sound-set-label">sound</label>
         <div className="sound-set-buttons">
+          <button
+            className={`sound-set-button ${soundSet === 0 ? 'active' : ''}`}
+            onClick={() => handleSoundSetChange(0)}
+          >
+            none
+          </button>
           <button
             className={`sound-set-button ${soundSet === 1 ? 'active' : ''}`}
             onClick={() => handleSoundSetChange(1)}
           >
-            セット1
+            1
           </button>
           <button
             className={`sound-set-button ${soundSet === 2 ? 'active' : ''}`}
             onClick={() => handleSoundSetChange(2)}
           >
-            セット2
+            2
           </button>
           <button
             className={`sound-set-button ${soundSet === 3 ? 'active' : ''}`}
             onClick={() => handleSoundSetChange(3)}
           >
-            セット3
+            3
           </button>
         </div>
+      </div>
+      
+      {/* クレジット表示 */}
+      <div className="sound-credit">
+        VOICEVOX:ずんだもん
       </div>
 
       <div className="category-grid">

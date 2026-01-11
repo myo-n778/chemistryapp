@@ -75,6 +75,7 @@
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .sound-set-label {
@@ -111,6 +112,17 @@
   border-color: #ffa500;
   color: #2a1f1a;
   font-weight: bold;
+}
+
+/* クレジット表示 */
+.sound-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 0.7rem;
+  color: #666666;
+  font-family: 'Noto Serif JP', 'Noto Serif', serif;
+  opacity: 0.6;
 }
 
 /* スマホ縦向き：2列×3行レイアウト */
