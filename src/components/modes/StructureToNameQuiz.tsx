@@ -6,7 +6,6 @@ import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../utils/scoreCalculator';
 import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
-import { playCorrect, playWrong } from '../../utils/soundManager';
 import '../Quiz.css';
 
 interface StructureToNameQuizProps {

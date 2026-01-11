@@ -139,28 +139,8 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (totalAnswered >= maxQuestions) {
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
-      const { isNewRecord, isRankIn } = saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
-      
-      // finish音声を再生（setIsFinishedの前に呼ぶ）
-      const percentage = Math.round((score / totalAnswered) * 100);
-      console.log(`[NameToStructureQuiz] Finishing quiz: score=${score}/${totalAnswered} (${percentage}%), isNewRecord=${isNewRecord}, isRankIn=${isRankIn}`);
-      if (isNewRecord) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 3 (最高記録更新)');
-        playFinishSound(3); // 最高記録更新
-      } else if (isRankIn) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 2 (ランクイン)');
-        playFinishSound(2); // ランクイン
-      } else if (percentage === 100) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 5 (満点)');
-        playFinishSound(5); // 満点で記録更新でない
-      } else if (percentage >= 60) {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 1 (60%以上)');
-        playFinishSound(1); // 60%以上
-      } else {
-        console.log('[NameToStructureQuiz] Playing finish sound: type 4 (60%未満)');
-        playFinishSound(4); // 60%未満
-      }
-      
+      saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      // finish音声はuseEffectで再生（結果画面表示時）
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
