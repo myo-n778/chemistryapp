@@ -67,64 +67,6 @@
   font-family: 'Noto Serif', serif;
 }
 
-/* 効果音セット選択 */
-.sound-set-selector {
-  margin: 15px 0 20px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  position: relative;
-}
-
-.sound-set-label {
-  font-size: 0.9rem;
-  color: #aaaaaa;
-  font-family: 'Noto Serif JP', 'Noto Serif', serif;
-}
-
-.sound-set-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.sound-set-button {
-  background: #2a1f1a;
-  border: 1px solid #4a4a4a;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  color: #aaaaaa;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Noto Serif JP', 'Noto Serif', serif;
-}
-
-.sound-set-button:hover {
-  background: #3a2f2a;
-  border-color: #ffa500;
-  color: #ffa500;
-}
-
-.sound-set-button.active {
-  background: #ffa500;
-  border-color: #ffa500;
-  color: #2a1f1a;
-  font-weight: bold;
-}
-
-/* クレジット表示 */
-.sound-credit {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  font-size: 0.7rem;
-  color: #666666;
-  font-family: 'Noto Serif JP', 'Noto Serif', serif;
-  opacity: 0.6;
-}
-
 /* スマホ縦向き：2列×3行レイアウト */
 @media screen and (max-width: 767px) and (orientation: portrait) {
   .category-grid {

@@ -4,6 +4,7 @@ import { ModeSelector, QuizMode } from './components/ModeSelector';
 import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
+import { SoundSelector } from './components/SoundSelector';
 import { loadCompounds, loadReactions, loadExperiments, loadInorganicReactionsData } from './data/dataLoader';
 import { loadInorganicReactionsNew } from './data/inorganicNewLoader';
 import { Compound, InorganicReaction } from './types';
@@ -504,21 +505,24 @@ function App() {
         (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
         quizInorganicReactionsNew.length === 0) {
       return (
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
-            問題データが見つかりませんでした
-          </p>
-          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
-            出題セットが空です。設定を確認してください。
-          </p>
-          <button
-            className="back-button"
-            onClick={() => setQuizSettings(null)}
-            style={{ marginTop: '20px' }}
-          >
-            設定に戻る
-          </button>
-        </div>
+        <>
+          <SoundSelector />
+          <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+            <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+              問題データが見つかりませんでした
+            </p>
+            <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+              出題セットが空です。設定を確認してください。
+            </p>
+            <button
+              className="back-button"
+              onClick={() => setQuizSettings(null)}
+              style={{ marginTop: '20px' }}
+            >
+              設定に戻る
+            </button>
+          </div>
+        </>
       );
     }
 
@@ -541,18 +545,21 @@ function App() {
 
     // 通常のクイズ表示
     return (
-      <Quiz
-        compounds={finalCompounds}
-        allCompounds={compounds}
-        experiments={experiments}
-        inorganicReactions={quizInorganicReactions}
-        inorganicReactionsNew={quizInorganicReactionsNew}
-        mode={selectedMode}
-        category={selectedCategory}
-        onBack={() => setQuizSettings(null)}
-        quizSettings={quizSettings ?? undefined}
-        onNextRange={hasNext ? handleNextRange : undefined}
-      />
+      <>
+        <SoundSelector />
+        <Quiz
+          compounds={finalCompounds}
+          allCompounds={compounds}
+          experiments={experiments}
+          inorganicReactions={quizInorganicReactions}
+          inorganicReactionsNew={quizInorganicReactionsNew}
+          mode={selectedMode}
+          category={selectedCategory}
+          onBack={() => setQuizSettings(null)}
+          quizSettings={quizSettings ?? undefined}
+          onNextRange={hasNext ? handleNextRange : undefined}
+        />
+      </>
     );
   }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
 
@@ -560,6 +567,7 @@ function App() {
   if (!selectedCategory) {
     return (
       <div className="App">
+        <SoundSelector />
         <CategorySelector onSelectCategory={setSelectedCategory} />
       </div>
     );
@@ -568,6 +576,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="App">
+        <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p className="loading-text">loading…</p>
         </div>
@@ -578,6 +587,7 @@ function App() {
   if (currentLoadingError) {
     return (
       <div className="App">
+        <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             データの読み込みに失敗しました
@@ -607,6 +617,7 @@ function App() {
   if (!selectedMode) {
     return (
       <div className="App">
+        <SoundSelector />
         <ModeSelector
           category={selectedCategory}
           onSelectMode={setSelectedMode}
@@ -661,6 +672,7 @@ function App() {
     });
     return (
       <div className="App">
+        <SoundSelector />
         <QuestionCountSelector
           totalCount={testTotalCount}
           onSelectSettings={(settings) => {
@@ -679,6 +691,7 @@ function App() {
   if (quizSettings.questionCountMode === 'all' && quizSettings.allQuestionCount === undefined) {
     return (
       <div className="App">
+        <SoundSelector />
         <AllQuestionCountSelector
           totalCount={totalQuestionCount}
           orderMode={quizSettings.orderMode || 'sequential'}
@@ -736,6 +749,7 @@ function App() {
 
   return (
     <div className="App">
+      <SoundSelector />
       {mainContent}
     </div>
   );
