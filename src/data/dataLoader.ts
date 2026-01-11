@@ -39,6 +39,47 @@ const isCacheValid = <T>(cacheEntry: CacheEntry<T> | null): boolean => {
   return (now - cacheEntry.timestamp) < CACHE_TTL;
 };
 
+// localStorage用のキー
+const getLocalStorageKey = (category: Category, type: 'compounds' | 'reactions' | 'experiments'): string => {
+  return `chemistry_app_cache_${category}_${type}`;
+};
+
+// localStorageからキャッシュを読み込む
+const loadFromLocalStorage = <T>(category: Category, type: 'compounds' | 'reactions' | 'experiments'): CacheEntry<T> | null => {
+  try {
+    const key = getLocalStorageKey(category, type);
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    
+    const entry: CacheEntry<T> = JSON.parse(stored);
+    const now = Date.now();
+    if ((now - entry.timestamp) < CACHE_TTL) {
+      return entry;
+    }
+    // 期限切れの場合は削除
+    localStorage.removeItem(key);
+    return null;
+  } catch (error) {
+    console.warn(`Failed to load cache from localStorage for ${category}/${type}:`, error);
+    return null;
+  }
+};
+
+// localStorageにキャッシュを保存
+const saveToLocalStorage = <T>(category: Category, type: 'compounds' | 'reactions' | 'experiments', data: T): void => {
+  try {
+    const key = getLocalStorageKey(category, type);
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(key, JSON.stringify(entry));
+  } catch (error) {
+    console.warn(`Failed to save cache to localStorage for ${category}/${type}:`, error);
+    // localStorageが満杯の場合などは無視
+  }
+};
+
 /**
  * リトライ付きデータ取得
  */
@@ -63,7 +104,7 @@ const fetchWithRetry = async <T>(
 };
 
 export const loadCompounds = async (category: Category): Promise<Compound[]> => {
-  // キャッシュが有効な場合はそれを返す（ただし、空配列はキャッシュしない）
+  // メモリキャッシュが有効な場合はそれを返す（ただし、空配列はキャッシュしない）
   if (isCacheValid(compoundCache[category])) {
     const cachedData = compoundCache[category]!.data;
     if (cachedData && cachedData.length > 0) {
@@ -71,6 +112,15 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
     }
     // キャッシュが空配列の場合は再取得を試みる
     compoundCache[category] = null;
+  }
+  
+  // localStorageキャッシュをチェック
+  const localStorageCache = loadFromLocalStorage<Compound[]>(category, 'compounds');
+  if (localStorageCache) {
+    console.log(`[${category}] Using compounds cache from localStorage`);
+    // メモリキャッシュにも反映
+    compoundCache[category] = localStorageCache;
+    return localStorageCache.data;
   }
 
   // データソースに応じて読み込み方法を切り替え
@@ -80,7 +130,9 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
       const compounds = await fetchWithRetry(() => loadCompoundsFromGAS(category), 2, 1000);
       if (compounds && Array.isArray(compounds) && compounds.length > 0) {
         console.log(`[${category}] Successfully loaded ${compounds.length} compounds from GAS`);
-        compoundCache[category] = { data: compounds, timestamp: Date.now() };
+        const cacheEntry = { data: compounds, timestamp: Date.now() };
+        compoundCache[category] = cacheEntry;
+        saveToLocalStorage(category, 'compounds', compounds);
         return compounds;
       }
       console.warn(`[${category}] GAS returned empty array, falling back to CSV`);
@@ -119,7 +171,9 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 
     if (compounds && Array.isArray(compounds) && compounds.length > 0) {
       console.log(`[${category}] Successfully loaded ${compounds.length} compounds from CSV`);
-      compoundCache[category] = { data: compounds, timestamp: Date.now() };
+      const cacheEntry = { data: compounds, timestamp: Date.now() };
+      compoundCache[category] = cacheEntry;
+      saveToLocalStorage(category, 'compounds', compounds);
       return compounds;
     }
     throw new Error('Failed to parse compounds from CSV or empty result');
@@ -132,9 +186,17 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 };
 
 export const loadReactions = async (category: Category): Promise<ReactionCSVRow[]> => {
-  // キャッシュが有効な場合はそれを返す
+  // メモリキャッシュが有効な場合はそれを返す
   if (isCacheValid(reactionCache[category])) {
     return reactionCache[category]!.data;
+  }
+  
+  // localStorageキャッシュをチェック
+  const localStorageCache = loadFromLocalStorage<ReactionCSVRow[]>(category, 'reactions');
+  if (localStorageCache) {
+    console.log(`[${category}] Using reactions cache from localStorage`);
+    reactionCache[category] = localStorageCache;
+    return localStorageCache.data;
   }
   
   // キャッシュをクリア
@@ -145,7 +207,9 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
     try {
       const reactions = await fetchWithRetry(() => loadReactionsFromGAS(category), 2, 1000);
       if (reactions && Array.isArray(reactions) && reactions.length > 0) {
-        reactionCache[category] = { data: reactions, timestamp: Date.now() };
+        const cacheEntry = { data: reactions, timestamp: Date.now() };
+        reactionCache[category] = cacheEntry;
+        saveToLocalStorage(category, 'reactions', reactions);
         return reactions;
       }
       console.warn(`GAS returned empty array for reactions ${category}, falling back to CSV`);
@@ -176,7 +240,9 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
 
     if (reactions && Array.isArray(reactions)) {
       console.log(`[dataLoader] Loaded ${reactions.length} reactions for ${category}`);
-      reactionCache[category] = { data: reactions, timestamp: Date.now() };
+      const cacheEntry = { data: reactions, timestamp: Date.now() };
+      reactionCache[category] = cacheEntry;
+      saveToLocalStorage(category, 'reactions', reactions);
       return reactions;
     }
     throw new Error('Failed to parse reactions from CSV');
@@ -187,9 +253,17 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
 };
 
 export const loadExperiments = async (category: Category): Promise<ExperimentCSVRow[]> => {
-  // キャッシュが有効な場合はそれを返す
+  // メモリキャッシュが有効な場合はそれを返す
   if (isCacheValid(experimentCache[category])) {
     return experimentCache[category]!.data;
+  }
+  
+  // localStorageキャッシュをチェック
+  const localStorageCache = loadFromLocalStorage<ExperimentCSVRow[]>(category, 'experiments');
+  if (localStorageCache) {
+    console.log(`[${category}] Using experiments cache from localStorage`);
+    experimentCache[category] = localStorageCache;
+    return localStorageCache.data;
   }
   
   // キャッシュをクリア
@@ -200,7 +274,9 @@ export const loadExperiments = async (category: Category): Promise<ExperimentCSV
     try {
       const experiments = await fetchWithRetry(() => loadExperimentsFromGAS(category), 2, 1000);
       if (experiments && Array.isArray(experiments) && experiments.length > 0) {
-        experimentCache[category] = { data: experiments, timestamp: Date.now() };
+        const cacheEntry = { data: experiments, timestamp: Date.now() };
+        experimentCache[category] = cacheEntry;
+        saveToLocalStorage(category, 'experiments', experiments);
         return experiments;
       }
       console.warn(`GAS returned empty array for experiments ${category}, falling back to CSV`);
@@ -231,7 +307,9 @@ export const loadExperiments = async (category: Category): Promise<ExperimentCSV
 
     if (experiments && Array.isArray(experiments)) {
       console.log(`[dataLoader] Loaded ${experiments.length} experiments for ${category}`);
-      experimentCache[category] = { data: experiments, timestamp: Date.now() };
+      const cacheEntry = { data: experiments, timestamp: Date.now() };
+      experimentCache[category] = cacheEntry;
+      saveToLocalStorage(category, 'experiments', experiments);
       return experiments;
     }
     throw new Error('Failed to parse experiments from CSV');

@@ -78,45 +78,29 @@ function App() {
           // setCompoundsには全データを渡す（構造式がなくても名前検索に使うため）
           setCompounds(data);
           
-          // モード④⑤用にreactionsデータも読み込む
-          loadReactions(selectedCategory)
-            .then(reactionsData => {
-              console.log(`App.tsx: Loaded ${reactionsData.length} reactions`);
-              setReactions(reactionsData.length);
-              
-              // モード⑥用にexperimentsデータも読み込む
-              loadExperiments(selectedCategory)
-                .then(experimentsData => {
-                  console.log(`App.tsx: Loaded ${experimentsData.length} experiments`);
-                  setExperiments(experimentsData);
-                  setLoading(false);
-                  setLoadingError(null);
-                })
-                .catch(error => {
-                  console.error('Failed to load experiments:', error);
-                  setExperiments([]);
-                  setLoading(false);
-                  setLoadingError(null); // experimentsの読み込み失敗は致命的ではない
-                });
-            })
-            .catch(error => {
+          // モード④⑤⑥用にreactionsとexperimentsデータを並列で読み込む（高速化）
+          Promise.all([
+            loadReactions(selectedCategory).catch(error => {
               console.error('Failed to load reactions:', error);
-              setReactions(0);
-              // reactionsの読み込み失敗時もexperimentsを試みる
-              loadExperiments(selectedCategory)
-                .then(experimentsData => {
-                  console.log(`App.tsx: Loaded ${experimentsData.length} experiments`);
-                  setExperiments(experimentsData);
-                  setLoading(false);
-                  setLoadingError(null);
-                })
-                .catch(expError => {
-                  console.error('Failed to load experiments:', expError);
-                  setExperiments([]);
-                  setLoading(false);
-                  setLoadingError(null);
-                });
-            });
+              return [];
+            }),
+            loadExperiments(selectedCategory).catch(error => {
+              console.error('Failed to load experiments:', error);
+              return [];
+            })
+          ]).then(([reactionsData, experimentsData]) => {
+            console.log(`App.tsx: Loaded ${reactionsData.length} reactions and ${experimentsData.length} experiments`);
+            setReactions(reactionsData.length);
+            setExperiments(experimentsData);
+            setLoading(false);
+            setLoadingError(null);
+          }).catch(error => {
+            console.error('Failed to load reactions or experiments:', error);
+            setReactions(0);
+            setExperiments([]);
+            setLoading(false);
+            setLoadingError(null);
+          });
         })
         .catch(error => {
           console.error('Failed to load compounds:', error);
