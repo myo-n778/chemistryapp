@@ -1,8 +1,8 @@
-/* 全画面共通の効果音選択UI（右上固定） */
+/* 全画面共通の効果音選択UI（左上固定） */
 .sound-selector-global {
   position: fixed;
   top: 15px;
-  right: 15px;
+  left: 15px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -57,7 +57,7 @@
 @media (max-width: 768px) {
   .sound-selector-global {
     top: 8px;
-    right: 8px;
+    left: 8px;
     padding: 3px 6px;
     gap: 4px;
   }
