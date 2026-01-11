@@ -75,10 +75,15 @@ export const playWrong = (): void => {
 const playSound = (path: string): void => {
   try {
     const audio = new Audio(path);
+    console.log('[SoundManager] Attempting to play sound:', path);
     
     // エラーハンドリング
     audio.addEventListener('error', () => {
       console.warn('[SoundManager] Audio error:', audio.error, { path });
+    });
+    
+    audio.addEventListener('loadeddata', () => {
+      console.log('[SoundManager] Audio loaded:', path);
     });
     
     audio.currentTime = 0; // 連打対応：先頭から再生
@@ -87,12 +92,20 @@ const playSound = (path: string): void => {
     
     // Promise が reject される場合（自動再生制限など）に対応
     if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        // 自動再生制限エラーは無視（ユーザー操作後に再生可能になる）
-        if (error.name !== 'NotAllowedError') {
-          console.warn('[SoundManager] Failed to play sound:', error, { path });
-        }
-      });
+      playPromise
+        .then(() => {
+          console.log('[SoundManager] Audio playback started:', path);
+        })
+        .catch(error => {
+          // 自動再生制限エラーは無視（ユーザー操作後に再生可能になる）
+          if (error.name !== 'NotAllowedError') {
+            console.warn('[SoundManager] Failed to play sound:', error, { path, errorName: error.name, errorMessage: error.message });
+          } else {
+            console.log('[SoundManager] Autoplay blocked (NotAllowedError):', path);
+          }
+        });
+    } else {
+      console.warn('[SoundManager] play() did not return a Promise:', path);
     }
   } catch (error) {
     console.warn('[SoundManager] Failed to create audio:', error, { path });
