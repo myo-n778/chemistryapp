@@ -505,24 +505,21 @@ function App() {
         (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
         quizInorganicReactionsNew.length === 0) {
       return (
-        <>
-          <SoundSelector />
-          <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-            <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
-              問題データが見つかりませんでした
-            </p>
-            <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
-              出題セットが空です。設定を確認してください。
-            </p>
-            <button
-              className="back-button"
-              onClick={() => setQuizSettings(null)}
-              style={{ marginTop: '20px' }}
-            >
-              設定に戻る
-            </button>
-          </div>
-        </>
+        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+            問題データが見つかりませんでした
+          </p>
+          <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
+            出題セットが空です。設定を確認してください。
+          </p>
+          <button
+            className="back-button"
+            onClick={() => setQuizSettings(null)}
+            style={{ marginTop: '20px' }}
+          >
+            設定に戻る
+          </button>
+        </div>
       );
     }
 
@@ -545,21 +542,18 @@ function App() {
 
     // 通常のクイズ表示
     return (
-      <>
-        <SoundSelector />
-        <Quiz
-          compounds={finalCompounds}
-          allCompounds={compounds}
-          experiments={experiments}
-          inorganicReactions={quizInorganicReactions}
-          inorganicReactionsNew={quizInorganicReactionsNew}
-          mode={selectedMode}
-          category={selectedCategory}
-          onBack={() => setQuizSettings(null)}
-          quizSettings={quizSettings ?? undefined}
-          onNextRange={hasNext ? handleNextRange : undefined}
-        />
-      </>
+      <Quiz
+        compounds={finalCompounds}
+        allCompounds={compounds}
+        experiments={experiments}
+        inorganicReactions={quizInorganicReactions}
+        inorganicReactionsNew={quizInorganicReactionsNew}
+        mode={selectedMode}
+        category={selectedCategory}
+        onBack={() => setQuizSettings(null)}
+        quizSettings={quizSettings ?? undefined}
+        onNextRange={hasNext ? handleNextRange : undefined}
+      />
     );
   }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
 
