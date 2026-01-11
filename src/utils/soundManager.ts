@@ -12,7 +12,7 @@ export type SoundSet = 0 | 1 | 2 | 3; // 0 = none (音無し), 1-3 = セット1-
 const getSoundPath = (set: SoundSet, type: 'correct' | 'wrong'): string => {
   const baseUrl = import.meta.env.BASE_URL || '/';
   if (set === 1) {
-    return `${baseUrl}sound/1correct.mp3`;
+    return type === 'correct' ? `${baseUrl}sound/1correct.mp3` : `${baseUrl}sound/1wrong.mp3`;
   } else if (set === 2) {
     return type === 'correct' ? `${baseUrl}sound/2correct.wav` : `${baseUrl}sound/2wrong.wav`;
   } else {
