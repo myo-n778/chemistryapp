@@ -111,6 +111,13 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     return recDataCache;
   }
   
+  // REC_BASE_URLが設定されていない場合のエラー
+  if (!REC_BASE_URL || REC_BASE_URL.trim() === '') {
+    const errorMsg = 'REC_BASE_URL is not configured. Please set the rec-only GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_REC environment variable.';
+    console.error('[recLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   try {
     // rec取得専用URLを使用（問題データ用APIとは完全に分離）
     // GAS_REC_URL = REC_BASE_URL?action=rec（typeパラメータは一切含めない）
@@ -177,9 +184,27 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       }
     }
     
+    // userStats専用GASが設定されている場合のエラー検知
     if (data.error) {
-      console.error('[recLoader] GAS error:', data.error);
-      throw new Error(data.error);
+      const errorStr = String(data.error);
+      if (errorStr.includes('userStats') || errorStr.includes('Use action=userStats')) {
+        const errorMsg = `[${requestId}] ERROR: REC_BASE_URL is pointing to a userStats-only GAS. This URL should be a rec-only GAS.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] Current REC_BASE_URL:`, REC_BASE_URL);
+        console.error(`[${requestId}] GAS error:`, data.error);
+        throw new Error('REC_BASE_URL is incorrectly configured. It points to a userStats-only GAS, but it should point to a rec-only GAS. Please check your GAS deployment and update REC_BASE_URL in src/config/gasUrls.ts');
+      }
+      console.error(`[${requestId}] GAS error:`, data.error);
+      throw new Error(String(data.error));
+    }
+    
+    // JSON配列以外が返された場合のエラー検知
+    if (!Array.isArray(data) && !(data.data && Array.isArray(data.data)) && !(data.rows && Array.isArray(data.rows))) {
+      const errorMsg = `[${requestId}] ERROR: Expected JSON array for rec data, but received: ${typeof data}`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Response structure:`, Object.keys(data));
+      console.error(`[${requestId}] Response preview:`, JSON.stringify(data).substring(0, 200));
+      throw new Error('Invalid response format for rec data. Expected JSON array, but received a different format. Check that REC_BASE_URL points to a rec-only GAS.');
     }
     
     // レスポンス形式の柔軟な解釈
@@ -306,6 +331,13 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
     return userStatsCache;
   }
   
+  // STATS_BASE_URLが設定されていない場合のエラー
+  if (!STATS_BASE_URL || STATS_BASE_URL.trim() === '') {
+    const errorMsg = 'STATS_BASE_URL is not configured. Please set the userStats-only GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_USERSTATS environment variable.';
+    console.error('[userStatsLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   try {
     const requestId = `userStatsLoader#${Date.now()}`;
     console.log(`[${requestId}] Fetching userStats data from:`, GAS_USERSTATS_URL);
@@ -356,11 +388,21 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
       throw new Error('Received CSV data instead of userStats data. Check that userStats URL (STATS_BASE_URL) is correctly configured and action=userStats parameter is used.');
     }
     
+    // userStats専用GAS以外が設定されている場合のエラー検知
     if (data.error) {
+      const errorStr = String(data.error);
+      if (errorStr.includes('rec') || errorStr.includes('Use action=rec')) {
+        const errorMsg = `[${requestId}] ERROR: STATS_BASE_URL is pointing to a rec-only GAS. This URL should be a userStats-only GAS.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] Current STATS_BASE_URL:`, STATS_BASE_URL);
+        console.error(`[${requestId}] GAS error:`, data.error);
+        throw new Error('STATS_BASE_URL is incorrectly configured. It points to a rec-only GAS, but it should point to a userStats-only GAS. Please check your GAS deployment and update STATS_BASE_URL in src/config/gasUrls.ts');
+      }
       console.error(`[${requestId}] GAS error:`, data.error);
-      throw new Error(data.error);
+      throw new Error(String(data.error));
     }
     
+    // JSON配列以外が返された場合のエラー検知
     let userStatsRows: any[] = [];
     if (Array.isArray(data)) {
       userStatsRows = data;
@@ -368,6 +410,12 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
       userStatsRows = data.data;
     } else if (data.rows && Array.isArray(data.rows)) {
       userStatsRows = data.rows;
+    } else {
+      const errorMsg = `[${requestId}] ERROR: Expected JSON array for userStats data, but received: ${typeof data}`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Response structure:`, Object.keys(data));
+      console.error(`[${requestId}] Response preview:`, JSON.stringify(data).substring(0, 200));
+      throw new Error('Invalid response format for userStats data. Expected JSON array, but received a different format. Check that STATS_BASE_URL points to a userStats-only GAS.');
     }
     
     if (userStatsRows.length === 0) {

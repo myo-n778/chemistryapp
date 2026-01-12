@@ -11,6 +11,13 @@ import { InorganicReactionNew } from '../types/inorganic';
  * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadCompoundsFromGAS = async (category: Category): Promise<Compound[]> => {
+  // PROBLEM_BASE_URLが設定されていない場合のエラー
+  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
+    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
+    console.error('[problemLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   const requestId = `problemLoader#compounds#${Date.now()}`;
   const url = `${PROBLEM_BASE_URL}?type=compounds&category=${category}`;
   
@@ -73,6 +80,25 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
 
     console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
 
+    // userStats専用GASが設定されている場合のエラー検知
+    if (data.error) {
+      const errorStr = String(data.error);
+      if (errorStr.includes('userStats') || errorStr.includes('Use action=userStats')) {
+        const errorMsg = `[${requestId}] ERROR: PROBLEM_BASE_URL is pointing to a userStats-only GAS. This URL should be a problem data GAS.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] Current PROBLEM_BASE_URL:`, PROBLEM_BASE_URL);
+        console.error(`[${requestId}] GAS error:`, data.error);
+        throw new Error('PROBLEM_BASE_URL is incorrectly configured. It points to a userStats-only GAS, but it should point to a problem data GAS. Please check your GAS deployment and update PROBLEM_BASE_URL in src/config/gasUrls.ts');
+      }
+      if (errorStr.includes('rec') || errorStr.includes('Use action=rec')) {
+        const errorMsg = `[${requestId}] ERROR: PROBLEM_BASE_URL is pointing to a rec-only GAS. This URL should be a problem data GAS.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] Current PROBLEM_BASE_URL:`, PROBLEM_BASE_URL);
+        console.error(`[${requestId}] GAS error:`, data.error);
+        throw new Error('PROBLEM_BASE_URL is incorrectly configured. It points to a rec-only GAS, but it should point to a problem data GAS. Please check your GAS deployment and update PROBLEM_BASE_URL in src/config/gasUrls.ts');
+      }
+    }
+    
     // 問題データ取得なのにJSON配列が直接返されている場合を検知（rec/userStats APIの可能性）
     if (Array.isArray(data) && data.length > 0) {
       const firstItem = data[0];
@@ -143,6 +169,13 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
  * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadReactionsFromGAS = async (category: Category): Promise<ReactionCSVRow[]> => {
+  // PROBLEM_BASE_URLが設定されていない場合のエラー
+  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
+    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
+    console.error('[problemLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   const requestId = `problemLoader#reactions#${Date.now()}`;
   const url = `${PROBLEM_BASE_URL}?type=reactions&category=${category}`;
   
@@ -228,6 +261,13 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
  * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadExperimentsFromGAS = async (category: Category): Promise<ExperimentCSVRow[]> => {
+  // PROBLEM_BASE_URLが設定されていない場合のエラー
+  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
+    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
+    console.error('[problemLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   const requestId = `problemLoader#experiments#${Date.now()}`;
   const url = `${PROBLEM_BASE_URL}?type=experiment&category=${category}`;
   
@@ -313,6 +353,13 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
  * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReactionNew[]> => {
+  // PROBLEM_BASE_URLが設定されていない場合のエラー
+  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
+    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
+    console.error('[problemLoader]', errorMsg);
+    throw new Error(errorMsg);
+  }
+  
   const requestId = `problemLoader#inorganic-new#${Date.now()}`;
   const url = `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`;
   

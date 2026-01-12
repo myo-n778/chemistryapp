@@ -6,28 +6,37 @@
 /**
  * 問題データ用GAS URL（CSVを返す）
  * 想定: ?type=compounds|reactions|experiment|inorganic-new → CSVまたは {csv:"..."}
+ * 
+ * 【重要】ヘルスチェック結果により、現在のURLはuserStats専用GASです。
+ * 正しい問題データ用GASのURLを設定してください。
+ * 
+ * 設定方法：
+ * 1. GAS_CODE.js をデプロイしたGASプロジェクトのWebアプリURLを取得
+ * 2. 環境変数 VITE_GAS_URL_PROBLEM に設定するか、以下のデフォルト値を置き換えてください
  */
 export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM || 
-  'https://script.google.com/macros/s/AKfycbxU4eANa9Q0t77ZftT2EFHvGfGSHloB1e0G3IZ86bk5uBZVII-IY_9FDpV8t1AkZtxh_w/exec';
+  ''; // 正しい問題データ用GASのURLを設定してください
 
 /**
  * recデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=rec → JSON配列
  * 
- * 【修正】ログ分析により、URLの役割が逆であることが判明:
- * - AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec は userStats専用（"Use action=userStats"エラーを返す）
- * - AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec は rec専用
+ * 【重要】ヘルスチェック結果により、現在のURLはuserStats専用GASです。
+ * 正しいrec専用GASのURLを設定してください。
+ * 
+ * 設定方法：
+ * 1. GAS_CODE_REC_ONLY.js をデプロイしたGASプロジェクトのWebアプリURLを取得
+ * 2. 環境変数 VITE_GAS_URL_REC に設定するか、以下のデフォルト値を置き換えてください
  */
 export const REC_BASE_URL = import.meta.env.VITE_GAS_URL_REC || 
-  'https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec';
+  ''; // 正しいrec専用GASのURLを設定してください
 
 /**
  * userStatsデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=userStats → JSON配列
  * 
- * 【修正】ログ分析により、URLの役割が逆であることが判明:
- * - AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec は userStats専用（"Use action=userStats"エラーを返す）
- * - AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec は rec専用
+ * 【確定】ヘルスチェックにより、このURLは正しく動作しています。
+ * GAS_CODE_USERSTATS.js をデプロイしたGASプロジェクトのURLです。
  */
 export const STATS_BASE_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 
   'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
