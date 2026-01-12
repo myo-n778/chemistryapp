@@ -70,8 +70,9 @@ function doGet(e) {
       }
       csvData = convertSheetToCSV(sheet);
     } else if (type === 'rec') {
-      // recシートから最新行を取得（userKeyパラメータが必要）
+      // recシートから最新行を取得（userKeyパラメータが必要、modeパラメータはオプション）
       const userKey = e.parameter.userKey;
+      const mode = e.parameter.mode; // 'organic' または 'inorganic'（オプション）
       if (!userKey) {
         return ContentService
           .createTextOutput(JSON.stringify({ 
@@ -79,7 +80,7 @@ function doGet(e) {
           }))
           .setMimeType(ContentService.MimeType.JSON);
       }
-      const latestRow = getLatestRecRow(userKey);
+      const latestRow = getLatestRecRow(userKey, mode);
       if (!latestRow) {
         return ContentService
           .createTextOutput(JSON.stringify({ 
@@ -92,10 +93,19 @@ function doGet(e) {
           data: latestRow 
         }))
         .setMimeType(ContentService.MimeType.JSON);
+    } else if (type === 'rec-ranking') {
+      // 公開ランキングを取得
+      const modeFilter = e.parameter.mode; // Optional mode filter
+      const ranking = getPublicRankingLatest(modeFilter);
+      return ContentService
+        .createTextOutput(JSON.stringify({ 
+          data: ranking 
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     } else {
       return ContentService
         .createTextOutput(JSON.stringify({ 
-          error: 'Invalid type. Use "compounds", "reactions", "experiment", "inorganic-new", or "rec"' 
+          error: 'Invalid type. Use "compounds", "reactions", "experiment", "inorganic-new", "rec", or "rec-ranking"' 
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -136,10 +146,12 @@ function doPost(e) {
     if (!sheet) {
       // recシートが存在しない場合は作成
       sheet = spreadsheet.insertSheet('rec');
-      // ヘッダー行を追加
+      // ヘッダー行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount）
       sheet.appendRow([
-        'userKey', 'displayName', 'mode', 'category', 'rangeKey',
-        'correctCount', 'totalCount', 'pointScore', 'accuracy', 'date', 'timestamp'
+        'name', 'userKey', 'mode',
+        'EXP', 'LV', 'tenAve', 'allAve',
+        'sess', 'cst', 'mst', 'last', 'isPublic', 'recordedAt',
+        'correctCount', 'totalCount' // 集計用の列（内部使用）
       ]);
     }
     
@@ -153,19 +165,27 @@ function doPost(e) {
     
     const data = JSON.parse(postData);
     
-    // 新しい行を追加
+    // 同一ユーザーの過去データを集計
+    const userKey = data.userKey || '';
+    const aggregated = aggregateUserData(sheet, userKey, data);
+    
+    // 新しい行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount）
     sheet.appendRow([
-      data.userKey || '',
-      data.displayName || '',
-      data.mode || '',
-      data.category || '',
-      data.rangeKey || '',
-      data.correctCount || 0,
-      data.totalCount || 0,
-      data.pointScore || 0,
-      data.accuracy || 0,
-      data.date || new Date().toISOString().split('T')[0],
-      data.timestamp || Date.now()
+      data.displayName || '', // name
+      userKey, // userKey
+      data.mode || '', // mode
+      aggregated.EXP, // EXP
+      aggregated.LV, // LV
+      aggregated.tenAve, // tenAve
+      aggregated.allAve, // allAve
+      aggregated.sess, // sess
+      aggregated.cst, // cst
+      aggregated.mst, // mst
+      aggregated.last, // last
+      data.isPublic !== undefined ? data.isPublic : false, // isPublic
+      data.timestamp || Date.now(), // recordedAt
+      data.correctCount || 0, // correctCount（集計用）
+      data.totalCount || 0 // totalCount（集計用）
     ]);
     
     return ContentService
@@ -183,9 +203,168 @@ function doPost(e) {
 }
 
 /**
- * recシートから最新行を取得（GETリクエストでも対応）
+ * ユーザーデータを集計（過去データから EXP, LV, tenAve, allAve, sess, cst, mst, last を計算）
  */
-function getLatestRecRow(userKey) {
+function aggregateUserData(sheet, userKey, currentData) {
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      // データが無い場合は現在のデータのみで初期化
+      return {
+        EXP: currentData.correctCount || 0,
+        LV: Math.floor((currentData.correctCount || 0) / 100) + 1,
+        tenAve: currentData.accuracy || 0,
+        allAve: currentData.accuracy || 0,
+        sess: 1,
+        cst: currentData.accuracy === 1.0 ? 1 : 0,
+        mst: currentData.accuracy === 1.0 ? 1 : 0,
+        last: currentData.date || new Date().toISOString().split('T')[0]
+      };
+    }
+    
+    // ヘッダーをスキップして、同一ユーザーの行を取得
+    const rows = data.slice(1);
+    const userRows = rows.filter(function(row) {
+      return row[1] === userKey; // userKeyは1列目（0-indexed）
+    });
+    
+    if (userRows.length === 0) {
+      // 過去データが無い場合は現在のデータのみで初期化
+      return {
+        EXP: currentData.correctCount || 0,
+        LV: Math.floor((currentData.correctCount || 0) / 100) + 1,
+        tenAve: currentData.accuracy || 0,
+        allAve: currentData.accuracy || 0,
+        sess: 1,
+        cst: currentData.accuracy === 1.0 ? 1 : 0,
+        mst: currentData.accuracy === 1.0 ? 1 : 0,
+        last: currentData.date || new Date().toISOString().split('T')[0]
+      };
+    }
+    
+    // 過去データを集計（correctCount/totalCountから正確に計算）
+    // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12), correctCount(13), totalCount(14)
+    
+    // 過去の行を recordedAt でソート（古い順）
+    const sortedRows = userRows.sort(function(a, b) {
+      const timestampA = a[12] || 0; // recordedAt
+      const timestampB = b[12] || 0;
+      return timestampA - timestampB; // 古い順にソート
+    });
+    
+    // 全セッションのcorrectCountとtotalCountを集計
+    let totalCorrectCount = 0;
+    let totalQuestionCount = 0;
+    for (var i = 0; i < sortedRows.length; i++) {
+      var row = sortedRows[i];
+      totalCorrectCount += row[13] || 0; // correctCount
+      totalQuestionCount += row[14] || 0; // totalCount
+    }
+    
+    // 現在のセッションデータを追加
+    const currentCorrectCount = currentData.correctCount || 0;
+    const currentTotalCount = currentData.totalCount || 0;
+    totalCorrectCount += currentCorrectCount;
+    totalQuestionCount += currentTotalCount;
+    
+    // セッション数を計算
+    const sess = userRows.length + 1; // 現在のセッションを含む
+    
+    // allAveを計算（全セッション合算の正解数 / 全セッション合算の問題数）
+    const allAve = totalQuestionCount > 0 ? totalCorrectCount / totalQuestionCount : 0;
+    
+    // 過去10セッションのtenAveを計算（最新10件のcorrectCount/totalCountから計算）
+    const recent10 = sortedRows.slice(-10); // 最新10件（古い順にソート済みなので、最後の10件）
+    let recent10Correct = 0;
+    let recent10Total = 0;
+    for (var i = 0; i < recent10.length; i++) {
+      var row = recent10[i];
+      recent10Correct += row[13] || 0; // correctCount
+      recent10Total += row[14] || 0; // totalCount
+    }
+    // 現在のセッションを含めて計算（10件以下なら全て、10件以上なら最新10件）
+    recent10Correct += currentCorrectCount;
+    recent10Total += currentTotalCount;
+    const tenAve = recent10Total > 0 ? recent10Correct / recent10Total : 0;
+    
+    // EXPを計算（全セッションの合計正解数）
+    const EXP = totalCorrectCount;
+    
+    // LVを計算
+    const LV = Math.floor(EXP / 100) + 1;
+    
+    // 連続正解数の計算（セッション単位で計算）
+    // 過去の行を新しい順に並べ替えて、連続正解セッションを計算
+    const sortedRowsNewest = sortedRows.slice().sort(function(a, b) {
+      const timestampA = a[12] || 0;
+      const timestampB = b[12] || 0;
+      return timestampB - timestampA; // 新しい順
+    });
+    
+    let cst = 0;
+    let mst = 0;
+    let currentStreak = 0;
+    
+    // 過去のセッションから連続正解数を計算
+    for (var i = 0; i < sortedRowsNewest.length; i++) {
+      var row = sortedRowsNewest[i];
+      var rowCorrectCount = row[13] || 0;
+      var rowTotalCount = row[14] || 0;
+      if (rowTotalCount > 0 && rowCorrectCount === rowTotalCount) {
+        // 100%正解のセッション
+        currentStreak++;
+        mst = Math.max(mst, currentStreak);
+      } else {
+        // 間違いがあったセッション
+        currentStreak = 0;
+      }
+    }
+    
+    // 現在のセッションを含めて計算
+    if (currentTotalCount > 0 && currentCorrectCount === currentTotalCount) {
+      // 100%正解
+      currentStreak++;
+      cst = currentStreak;
+      mst = Math.max(mst, currentStreak);
+    } else {
+      // 間違いがあった
+      cst = 0;
+    }
+    
+    // lastを更新（現在のdate）
+    const last = currentData.date || new Date().toISOString().split('T')[0];
+    
+    return {
+      EXP: EXP,
+      LV: LV,
+      tenAve: tenAve,
+      allAve: allAve,
+      sess: sess,
+      cst: cst,
+      mst: mst,
+      last: last
+    };
+  } catch (error) {
+    // エラー時は現在のデータのみで初期化
+    return {
+      EXP: currentData.correctCount || 0,
+      LV: Math.floor((currentData.correctCount || 0) / 100) + 1,
+      tenAve: currentData.accuracy || 0,
+      allAve: currentData.accuracy || 0,
+      sess: 1,
+      cst: currentData.accuracy === 1.0 ? 1 : 0,
+      mst: currentData.accuracy === 1.0 ? 1 : 0,
+      last: currentData.date || new Date().toISOString().split('T')[0]
+    };
+  }
+}
+
+/**
+ * recシートから最新行を取得（GETリクエストでも対応）
+ * @param {string} userKey - ユーザーキー
+ * @param {string} mode - オプション: 'organic' または 'inorganic' でフィルタ
+ */
+function getLatestRecRow(userKey, mode) {
   try {
     const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
     
@@ -208,36 +387,157 @@ function getLatestRecRow(userKey) {
     
     // ユーザーキーでフィルタし、最新の行を取得
     const rows = data.slice(1); // ヘッダーをスキップ
-    const userRows = rows.filter(row => row[0] === userKey); // userKeyは0列目
+    var userRows = rows.filter(function(row) {
+      return row[1] === userKey; // userKeyは1列目（0-indexed）
+    });
+    
+    // mode でフィルタ（オプション）
+    if (mode) {
+      // modeは 'organic-xxx' または 'inorganic-xxx' 形式なので、先頭部分で判定
+      userRows = userRows.filter(function(row) {
+        var rowMode = row[2] || ''; // modeは2列目
+        return rowMode.indexOf(mode) === 0;
+      });
+    }
+    
     if (userRows.length === 0) {
       return null;
     }
     
-    // タイムスタンプ（10列目）でソートし、最新を取得
-    const sortedRows = userRows.sort((a, b) => {
-      const timestampA = a[10] || 0;
-      const timestampB = b[10] || 0;
+    // タイムスタンプ（12列目: recordedAt）でソートし、最新を取得
+    var sortedRows = userRows.sort(function(a, b) {
+      var timestampA = a[12] || 0;
+      var timestampB = b[12] || 0;
       return timestampB - timestampA;
     });
     
-    const latestRow = sortedRows[0];
+    var latestRow = sortedRows[0];
     
-    // オブジェクトに変換
+    // オブジェクトに変換（新しい列構造に対応）
+    // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12)
     return {
-      userKey: latestRow[0] || '',
-      displayName: latestRow[1] || '',
+      name: latestRow[0] || '',
+      userKey: latestRow[1] || '',
       mode: latestRow[2] || '',
-      category: latestRow[3] || '',
-      rangeKey: latestRow[4] || '',
-      correctCount: latestRow[5] || 0,
-      totalCount: latestRow[6] || 0,
-      pointScore: latestRow[7] || 0,
-      accuracy: latestRow[8] || 0,
-      date: latestRow[9] || '',
-      timestamp: latestRow[10] || 0
+      EXP: latestRow[3] || 0,
+      LV: latestRow[4] || 0,
+      tenAve: latestRow[5] || 0,
+      allAve: latestRow[6] || 0,
+      sess: latestRow[7] || 0,
+      cst: latestRow[8] || 0,
+      mst: latestRow[9] || 0,
+      last: latestRow[10] || '',
+      isPublic: latestRow[11] !== undefined ? latestRow[11] : false,
+      recordedAt: latestRow[12] || 0
     };
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * 公開ランキングを取得（isPublic=trueのユーザーの最新行のみ、allAve降順）
+ * @param {string} modeFilter - オプション: 'organic' または 'inorganic' でフィルタ
+ */
+function getPublicRankingLatest(modeFilter) {
+  try {
+    const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
+    
+    var spreadsheet;
+    try {
+      spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (error) {
+      return [];
+    }
+    
+    var sheet = spreadsheet.getSheetByName('rec');
+    if (!sheet) {
+      return [];
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return []; // ヘッダーのみ
+    }
+    
+    // ヘッダーをスキップ
+    var rows = data.slice(1);
+    
+    // isPublic=true の行のみフィルタ
+    var publicRows = rows.filter(function(row) {
+      return row[11] === true; // isPublicは11列目（0-indexed）
+    });
+    
+    if (publicRows.length === 0) {
+      return [];
+    }
+    
+    // mode でフィルタ（オプション）
+    if (modeFilter) {
+      // modeは 'organic-xxx' または 'inorganic-xxx' 形式なので、先頭部分で判定
+      publicRows = publicRows.filter(function(row) {
+        var rowMode = row[2] || ''; // modeは2列目
+        return rowMode.indexOf(modeFilter) === 0;
+      });
+    }
+    
+    if (publicRows.length === 0) {
+      return [];
+    }
+    
+    // userKeyごとに最新行のみを抽出
+    var userLatestMap = {};
+    for (var i = 0; i < publicRows.length; i++) {
+      var row = publicRows[i];
+      var userKey = row[1]; // userKeyは1列目
+      var recordedAt = row[12] || 0; // recordedAtは12列目
+      
+      // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12), correctCount(13), totalCount(14)
+      if (!userLatestMap[userKey] || recordedAt > userLatestMap[userKey].recordedAt) {
+        userLatestMap[userKey] = {
+          name: row[0] || '',
+          userKey: userKey,
+          mode: row[2] || '',
+          EXP: row[3] || 0,
+          LV: row[4] || 0,
+          tenAve: row[5] || 0,
+          allAve: row[6] || 0,
+          sess: row[7] || 0,
+          cst: row[8] || 0,
+          mst: row[9] || 0,
+          last: row[10] || '',
+          isPublic: row[11] !== undefined ? row[11] : false,
+          recordedAt: recordedAt
+        };
+      }
+    }
+    
+    // allAve降順でソート（同率の場合はsess → lastで安定ソート）
+    var ranking = [];
+    for (var userKey in userLatestMap) {
+      ranking.push(userLatestMap[userKey]);
+    }
+    ranking.sort(function(a, b) {
+      var allAveA = a.allAve || 0;
+      var allAveB = b.allAve || 0;
+      if (allAveB !== allAveA) {
+        return allAveB - allAveA; // allAve降順
+      }
+      // 同率の場合
+      var sessA = a.sess || 0;
+      var sessB = b.sess || 0;
+      if (sessB !== sessA) {
+        return sessB - sessA; // sess降順
+      }
+      // さらに同率の場合
+      var lastA = a.last || '';
+      var lastB = b.last || '';
+      return lastB.localeCompare(lastA); // last降順（日付文字列）
+    });
+    
+    return ranking;
+  } catch (error) {
+    return [];
   }
 }
 

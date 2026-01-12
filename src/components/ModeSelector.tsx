@@ -1,5 +1,8 @@
 import React from 'react';
 import { Category } from './CategorySelector';
+import { UserStatsPanel } from './UserStatsPanel';
+import { PublicRankingPanel } from './PublicRankingPanel';
+import { clearActiveUser } from '../utils/sessionLogger';
 import './ModeSelector.css';
 
 export type QuizMode =
@@ -27,6 +30,11 @@ interface ModeSelectorProps {
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMode, onBack }) => {
   const categoryName = category === 'organic' ? 'Organic Chemistry' : 'Inorganic Chemistry';
 
+  const handleLogout = () => {
+    clearActiveUser();
+    window.location.reload();
+  };
+
   return (
     <div className="mode-selector">
       <div className="mode-selector-header">
@@ -34,8 +42,17 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
           ← カテゴリ選択に戻る
         </button>
         <h1>{categoryName} Drill</h1>
+        <button className="logout-button" onClick={handleLogout} title="ユーザー切替">
+          ユーザー切替
+        </button>
       </div>
       <p className="mode-description">モードを選択してください</p>
+      
+      {/* 成績表示パネル（mode指定 = categoryでフィルタ） */}
+      <UserStatsPanel mode={category} />
+      
+      {/* 公開ランキング（mode指定 = categoryでフィルタ） */}
+      <PublicRankingPanel mode={category} />
       <div className="mode-grid">
         {category === 'organic' ? (
           <>

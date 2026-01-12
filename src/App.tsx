@@ -5,12 +5,14 @@ import { CategorySelector, Category } from './components/CategorySelector';
 import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
 import { SoundSelector } from './components/SoundSelector';
+import { UserManager } from './components/UserManager';
 import { loadCompounds, loadReactions, loadExperiments, loadInorganicReactionsData } from './data/dataLoader';
 import { loadInorganicReactionsNew } from './data/inorganicNewLoader';
 import { Compound, InorganicReaction } from './types';
 import { InorganicReactionNew } from './types/inorganic';
 import { ExperimentCSVRow } from './utils/experimentParser';
 import { TeXTest } from './components/TeXTest';
+import { getActiveUser } from './utils/sessionLogger';
 import './App.css';
 
 // 一時的にTeXTestを表示するためのフラグ（開発用）
@@ -26,6 +28,13 @@ export interface QuizSettings {
 }
 
 function App() {
+  const [activeUser, setActiveUser] = useState(() => {
+    const user = getActiveUser();
+    console.log('[App] Initial activeUser:', user);
+    console.log('[App] localStorage chem.activeUser:', localStorage.getItem('chem.activeUser'));
+    console.log('[App] localStorage chem.users:', localStorage.getItem('chem.users'));
+    return user;
+  });
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedMode, setSelectedMode] = useState<QuizMode | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
@@ -41,8 +50,26 @@ function App() {
 
   // 初回レンダリング時のデバッグログ
   useEffect(() => {
-    console.log('App component mounted');
+    console.log('[App] App component mounted, activeUser:', activeUser);
   }, []);
+
+  // activeUserが存在しない場合はユーザー選択画面を表示
+  if (!activeUser) {
+    console.log('[App] No activeUser, showing UserManager');
+    return (
+      <div className="App">
+        <UserManager
+          onUserSelected={() => {
+            const user = getActiveUser();
+            console.log('[App] User selected, new user:', user);
+            setActiveUser(user);
+          }}
+        />
+      </div>
+    );
+  }
+
+  console.log('[App] activeUser exists, showing main app:', activeUser);
 
   // 有機化学データの読み込み
   useEffect(() => {

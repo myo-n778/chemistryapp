@@ -166,9 +166,13 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       
       // セッションログを保存
-      const activeUser = getActiveUser() || { userKey: generateUUID(), displayName: 'Anonymous', public: false };
-      if (!getActiveUser()) {
-        setActiveUser(activeUser);
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+        
       }
       const sessionId = generateUUID();
       const now = Date.now();
@@ -200,6 +204,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
         accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
         date: dateStr,
         timestamp: now,
+        isPublic: activeUser.isPublic,
       };
       pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
       
@@ -222,9 +227,13 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
       
       // セッションログを保存
-      const activeUser = getActiveUser() || { userKey: generateUUID(), displayName: 'Anonymous', public: false };
-      if (!getActiveUser()) {
-        setActiveUser(activeUser);
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+        
       }
       const sessionId = generateUUID();
       const now = Date.now();
@@ -256,6 +265,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
         accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
         date: dateStr,
         timestamp: now,
+        isPublic: activeUser.isPublic,
       };
       pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
       

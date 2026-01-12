@@ -6,17 +6,29 @@
 import { GAS_URLS } from '../config/dataSource';
 
 // Storage keys
-const STORAGE_KEY_ACTIVE_USER = 'chem.activeUser';
+const STORAGE_KEY_ACTIVE_USER = 'chem.activeUser'; // userKey | null
+const STORAGE_KEY_USERS = 'chem.users'; // User[]
 const STORAGE_KEY_QUESTION_LOGS = 'chem.questionLogs';
 const STORAGE_KEY_SESSION_LOGS = 'chem.sessionLogs';
 
 /**
- * アクティブユーザー
+ * ユーザー
+ */
+export interface User {
+  userKey: string; // 一意キー（出席番号/PIN等、ユーザー入力）
+  displayName: string; // 表示名
+  isPublic: boolean; // PUBLIC/PRIVATE
+  createdAt: number; // 作成日時（Date.now()）
+}
+
+/**
+ * アクティブユーザー（後方互換性のため残す）
+ * @deprecated getActiveUser()はUser | nullを返すようになりました
  */
 export interface ActiveUser {
-  userKey: string; // 内部ID（UUID推奨）
-  displayName: string; // 表示名
-  public: boolean; // PUBLIC/PRIVATE
+  userKey: string;
+  displayName: string;
+  public: boolean; // isPublicの旧名
 }
 
 /**
@@ -51,16 +63,28 @@ export interface SessionLog {
  */
 export interface RecRow {
   userKey: string;
-  displayName: string;
+  displayName?: string; // クライアント側から送信時
+  name?: string; // GAS側から返される時
   mode: string;
-  category: string;
-  rangeKey: string;
-  correctCount: number;
-  totalCount: number;
-  pointScore: number;
-  accuracy: number; // correctCount / totalCount
-  date: string; // ISO date string
-  timestamp: number; // Date.now()
+  category?: string; // クライアント側から送信時のみ
+  rangeKey?: string; // クライアント側から送信時のみ
+  correctCount?: number; // クライアント側から送信時のみ
+  totalCount?: number; // クライアント側から送信時のみ
+  pointScore?: number; // クライアント側から送信時のみ
+  accuracy?: number; // correctCount / totalCount（クライアント側から送信時のみ）
+  date?: string; // ISO date string（クライアント側から送信時のみ）
+  timestamp?: number; // Date.now()（クライアント側から送信時のみ）
+  isPublic: boolean; // PUBLIC/PRIVATE
+  // GAS側から返される集計済みデータ
+  EXP?: number;
+  LV?: number;
+  tenAve?: number;
+  allAve?: number;
+  sess?: number;
+  cst?: number;
+  mst?: number;
+  last?: string;
+  recordedAt?: number; // GAS側から返される時
 }
 
 /**
@@ -78,13 +102,110 @@ export interface RecSummary {
 }
 
 /**
- * アクティブユーザーを取得
+ * 全ユーザーを取得
  */
-export const getActiveUser = (): ActiveUser | null => {
+export const getUsers = (): User[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_USERS);
+    if (!stored) return [];
+    return JSON.parse(stored) as User[];
+  } catch (error) {
+    console.warn('Failed to get users:', error);
+    return [];
+  }
+};
+
+/**
+ * 全ユーザーを保存
+ */
+export const setUsers = (users: User[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+  } catch (error) {
+    console.warn('Failed to set users:', error);
+  }
+};
+
+/**
+ * ユーザーを追加
+ */
+export const addUser = (user: User): boolean => {
+  try {
+    const users = getUsers();
+    // userKeyの重複チェック
+    if (users.some(u => u.userKey === user.userKey)) {
+      return false; // 重複
+    }
+    users.push(user);
+    setUsers(users);
+    return true;
+  } catch (error) {
+    console.warn('Failed to add user:', error);
+    return false;
+  }
+};
+
+/**
+ * userKeyからユーザーを取得
+ */
+export const getUserByKey = (userKey: string): User | null => {
+  try {
+    const users = getUsers();
+    return users.find(u => u.userKey === userKey) || null;
+  } catch (error) {
+    console.warn('Failed to get user by key:', error);
+    return null;
+  }
+};
+
+/**
+ * アクティブユーザーのuserKeyを取得
+ */
+export const getActiveUserKey = (): string | null => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_ACTIVE_USER);
     if (!stored) return null;
-    return JSON.parse(stored) as ActiveUser;
+    return stored; // userKey文字列として保存
+  } catch (error) {
+    console.warn('Failed to get active user key:', error);
+    return null;
+  }
+};
+
+/**
+ * アクティブユーザーのuserKeyを設定
+ */
+export const setActiveUserKey = (userKey: string | null): void => {
+  try {
+    if (userKey === null) {
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_USER);
+    } else {
+      localStorage.setItem(STORAGE_KEY_ACTIVE_USER, userKey);
+    }
+  } catch (error) {
+    console.warn('Failed to set active user key:', error);
+  }
+};
+
+/**
+ * アクティブユーザーを取得（Userオブジェクトを返す）
+ */
+export const getActiveUser = (): User | null => {
+  try {
+    const userKey = getActiveUserKey();
+    console.log('[sessionLogger] getActiveUser - userKey:', userKey);
+    if (!userKey) {
+      console.log('[sessionLogger] getActiveUser - no userKey, returning null');
+      return null;
+    }
+    const user = getUserByKey(userKey);
+    console.log('[sessionLogger] getActiveUser - found user:', user);
+    if (!user) {
+      console.warn('[sessionLogger] getActiveUser - userKey exists but user not found, clearing activeUserKey');
+      clearActiveUser();
+      return null;
+    }
+    return user;
   } catch (error) {
     console.warn('Failed to get active user:', error);
     return null;
@@ -92,11 +213,11 @@ export const getActiveUser = (): ActiveUser | null => {
 };
 
 /**
- * アクティブユーザーを保存
+ * アクティブユーザーを保存（UserオブジェクトからuserKeyを取得して保存）
  */
-export const setActiveUser = (user: ActiveUser): void => {
+export const setActiveUser = (user: User): void => {
   try {
-    localStorage.setItem(STORAGE_KEY_ACTIVE_USER, JSON.stringify(user));
+    setActiveUserKey(user.userKey);
   } catch (error) {
     console.warn('Failed to set active user:', error);
   }
@@ -338,5 +459,157 @@ export const fetchLatestRecRow = async (userKey: string, category: 'organic' | '
   } catch (error) {
     console.warn('Failed to fetch latest rec row:', error);
     return null;
+  }
+};
+
+/**
+ * recシートから最新行を取得（userKey + mode でフィルタ）
+ * @param userKey - ユーザーキー
+ * @param mode - オプション: 'organic' または 'inorganic' でフィルタ
+ * @returns RecRow | null
+ */
+export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'inorganic'): Promise<RecRow | null> => {
+  try {
+    // modeが指定されている場合は、そのcategoryのGAS URLを使用
+    if (mode) {
+      const gasUrl = GAS_URLS[mode];
+      
+      if (!gasUrl) {
+        throw new Error(`GAS URL not configured for mode: ${mode}`);
+      }
+      
+      const response = await fetch(`${gasUrl}?type=rec&userKey=${encodeURIComponent(userKey)}&mode=${encodeURIComponent(mode)}`, {
+        method: 'GET',
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rec row: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.data) {
+        return null;
+      }
+      
+      return data.data as RecRow;
+    } else {
+      // modeが指定されていない場合は、organicとinorganicの両方を試して最新を取得
+      const [organicData, inorganicData] = await Promise.all([
+        fetchLatestRecRow(userKey, 'organic'),
+        fetchLatestRecRow(userKey, 'inorganic'),
+      ]);
+      
+      // 両方のデータを比較して、recordedAtが新しい方を返す
+      if (!organicData && !inorganicData) {
+        return null;
+      }
+      if (!organicData) {
+        return inorganicData;
+      }
+      if (!inorganicData) {
+        return organicData;
+      }
+      
+      // recordedAt または timestamp で比較（数値の場合）
+      const organicTimestamp = organicData.recordedAt || organicData.timestamp || 0;
+      const inorganicTimestamp = inorganicData.recordedAt || inorganicData.timestamp || 0;
+      
+      return organicTimestamp > inorganicTimestamp ? organicData : inorganicData;
+    }
+  } catch (error) {
+    console.warn('Failed to get latest rec by user:', error);
+    return null;
+  }
+};
+
+/**
+ * 公開ランキングを取得（isPublic=trueのユーザーの最新行のみ、allAve降順）
+ * @param mode - オプション: 'organic' または 'inorganic' でフィルタ
+ * @returns RecRow[]
+ */
+export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Promise<RecRow[]> => {
+  try {
+    // modeが指定されている場合は、そのcategoryのGAS URLを使用
+    if (mode) {
+      const gasUrl = GAS_URLS[mode];
+      
+      if (!gasUrl) {
+        throw new Error(`GAS URL not configured for mode: ${mode}`);
+      }
+      
+      const response = await fetch(`${gasUrl}?type=rec-ranking&mode=${encodeURIComponent(mode)}`, {
+        method: 'GET',
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ranking: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.data || !Array.isArray(data.data)) {
+        return [];
+      }
+      
+      // GAS側で既にフィルタ・ソート済みなので、そのまま返す
+      return data.data as RecRow[];
+    } else {
+      // modeが指定されていない場合は、organicとinorganicの両方を取得してマージ
+      const [organicRanking, inorganicRanking] = await Promise.all([
+        getPublicRankingLatest('organic'),
+        getPublicRankingLatest('inorganic'),
+      ]);
+      
+      // 両方をマージして、allAve降順でソート
+      const merged = [...organicRanking, ...inorganicRanking];
+      
+      // userKeyごとに最新行のみを残す（recordedAtが最新のもの）
+      const userLatestMap = new Map<string, RecRow>();
+      for (const row of merged) {
+        const userKey = row.userKey;
+        const existing = userLatestMap.get(userKey);
+        if (!existing) {
+          userLatestMap.set(userKey, row);
+        } else {
+          const existingTimestamp = existing.recordedAt || existing.timestamp || 0;
+          const currentTimestamp = row.recordedAt || row.timestamp || 0;
+          if (currentTimestamp > existingTimestamp) {
+            userLatestMap.set(userKey, row);
+          }
+        }
+      }
+      
+      // allAve降順でソート
+      const ranking = Array.from(userLatestMap.values());
+      ranking.sort((a, b) => {
+        const allAveA = a.allAve || 0;
+        const allAveB = b.allAve || 0;
+        if (allAveB !== allAveA) {
+          return allAveB - allAveA;
+        }
+        const sessA = a.sess || 0;
+        const sessB = b.sess || 0;
+        if (sessB !== sessA) {
+          return sessB - sessA;
+        }
+        const lastA = a.last || '';
+        const lastB = b.last || '';
+        return lastB.localeCompare(lastA);
+      });
+      
+      return ranking;
+    }
+  } catch (error) {
+    console.warn('Failed to get public ranking:', error);
+    return [];
   }
 };

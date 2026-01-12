@@ -9,6 +9,7 @@ import { playFinishSound } from '../../utils/soundManager';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import { playCorrect, playWrong } from '../../utils/soundManager';
+import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface ReactionQuizProps {
@@ -37,6 +38,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const isProcessingRef = useRef(false);
   const lastTapRef = useRef<number>(0);
   const tapTimeoutRef = useRef<number | null>(null);
+  const questionLogsRef = useRef<QuestionLog[]>([]); // セッション内の問題ログ
 
   // モード④は常にtoを答えるため、パターンは不要
 
@@ -183,6 +185,28 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     if (isCorrect) {
       setScore(prev => prev + 1);
     }
+
+    // 問題ログを追加
+    const getModeAndRangeKey = () => {
+      const mode = `reaction-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+        ? getRangeKey('batch-20', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+        ? getRangeKey('batch-40', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+    const { mode, rangeKey } = getModeAndRangeKey();
+    const questionLog: QuestionLog = {
+      questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
+      isCorrect,
+      timestamp: Date.now(),
+      mode,
+      category: 'organic',
+    };
+    questionLogsRef.current.push(questionLog);
   };
 
   const handleNext = () => {
@@ -213,6 +237,50 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+      };
+      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      
       setIsFinished(true);
     } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -229,6 +297,50 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+      };
+      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      
       setIsFinished(true);
     }    
     setTimeout(() => {
@@ -300,6 +412,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     setQuestionStartTime(Date.now());
     setLastQuestionKey(null);
     setConsecutiveCount(0);
+    questionLogsRef.current = []; // 問題ログをリセット
   };
 
   // 画面全体をクリック/タップで次に進む（PCはシングルクリック、スマホはダブルタップ）

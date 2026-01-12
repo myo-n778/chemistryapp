@@ -11,6 +11,7 @@ import { TeXRenderer } from '../../TeXRenderer';
 import { ChoiceDisplay } from '../../ChoiceDisplay';
 import { RenderMaybeTeX } from '../../RenderMaybeTeX';
 import { playCorrect, playWrong } from '../../../utils/soundManager';
+import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
 import '../../Quiz.css';
 
 /**
@@ -85,6 +86,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
   const [consecutiveCount, setConsecutiveCount] = useState(0);
   const isProcessingRef = useRef(false);
+  const questionLogsRef = useRef<QuestionLog[]>([]); // セッション内の問題ログ
 
   // App.tsxで既に確定した出題セットを受け取るので、そのまま使用
   const filteredReactions = useMemo(() => {
@@ -165,6 +167,50 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     if (totalAnswered >= maxQuestions) {
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+        
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'inorganic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'inorganic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+      };
+      pushRecRowToSheetRec(recRow, 'inorganic').catch(err => console.warn('Failed to push rec row:', err));
+      
       setIsFinished(true);
     } else if (currentIndex < filteredReactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -178,6 +224,50 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     } else {
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser();
+      if (!activeUser) {
+        console.error('Active user not found');
+        return;
+      }
+      
+        
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'inorganic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'inorganic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+        isPublic: activeUser.isPublic,
+      };
+      pushRecRowToSheetRec(recRow, 'inorganic').catch(err => console.warn('Failed to push rec row:', err));
+      
       setIsFinished(true);
     }
     setTimeout(() => {
@@ -291,6 +381,29 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
       setScore(prev => prev + 1);
     }
     setTotalAnswered(prev => prev + 1);
+
+    // 問題ログを追加
+    const getModeAndRangeKey = () => {
+      const mode = `inorganic-type-a-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+        ? getRangeKey('batch-20', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+        ? getRangeKey('batch-40', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+    const { mode, rangeKey } = getModeAndRangeKey();
+    const questionLog: QuestionLog = {
+      questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
+      isCorrect,
+      timestamp: Date.now(),
+      mode,
+      category: 'inorganic',
+    };
+    questionLogsRef.current.push(questionLog);
+
     setTimeout(() => {
       isProcessingRef.current = false;
     }, 100);
