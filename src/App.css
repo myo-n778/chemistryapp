@@ -16,11 +16,13 @@ body {
   min-height: 100vh;
   padding: clamp(5px, 1.5vw, 10px);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-y: auto; /* 縦スクロールを有効化 */
 }
 
 /* 横向き警告メッセージ */
@@ -81,11 +83,10 @@ body {
 /* スマホ向け（横向き） */
 @media screen and (max-width: 767px) and (orientation: landscape) {
   .App {
-    padding: 0;
-    height: 100dvh;
+    padding: 8px;
     min-height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
+    /* height/max-height固定とoverflow:hiddenを削除してスクロール可能に */
+    overflow-y: auto;
     align-items: stretch;
   }
 }
@@ -93,11 +94,10 @@ body {
 /* スマホ向け（縦向き） */
 @media screen and (max-width: 767px) and (orientation: portrait) {
   .App {
-    padding: 0;
-    height: 100dvh;
+    padding: 8px;
     min-height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
+    /* height/max-height固定とoverflow:hiddenを削除してスクロール可能に */
+    overflow-y: auto;
     align-items: stretch;
   }
 }
