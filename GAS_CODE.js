@@ -154,13 +154,48 @@ function doPost(e) {
     if (!sheet) {
       // recシートが存在しない場合は作成
       sheet = spreadsheet.insertSheet('rec');
-      // ヘッダー行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount）
+      // ヘッダー行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount + 可読性向上用recordedAtReadable）
       sheet.appendRow([
         'name', 'userKey', 'mode',
         'EXP', 'LV', 'tenAve', 'allAve',
         'sess', 'cst', 'mst', 'last', 'isPublic', 'recordedAt',
-        'correctCount', 'totalCount' // 集計用の列（内部使用）
+        'correctCount', 'totalCount', // 集計用の列（内部使用）
+        'recordedAtReadable' // 可読性向上用（YYYY/MM/DD HH:MM形式）
       ]);
+    } else {
+      // 既存シートの場合、recordedAtReadable列が存在するか確認
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      if (headers.length < 16 || headers[15] !== 'recordedAtReadable') {
+        // recordedAtReadable列が存在しない場合は追加
+        var lastCol = sheet.getLastColumn();
+        if (lastCol < 16) {
+          sheet.getRange(1, 16).setValue('recordedAtReadable');
+          // 既存データに対してrecordedAtReadableを計算
+          var sheetData = sheet.getDataRange().getValues();
+          if (sheetData.length > 1) {
+            for (var i = 1; i < sheetData.length; i++) {
+              var recordedAt = sheetData[i][12] || 0;
+              var recordedAtReadable = '';
+              if (recordedAt) {
+                try {
+                  var date = new Date(recordedAt);
+                  if (!isNaN(date.getTime())) {
+                    var year = date.getFullYear();
+                    var month = String(date.getMonth() + 1).padStart(2, '0');
+                    var day = String(date.getDate()).padStart(2, '0');
+                    var hours = String(date.getHours()).padStart(2, '0');
+                    var minutes = String(date.getMinutes()).padStart(2, '0');
+                    recordedAtReadable = year + '/' + month + '/' + day + ' ' + hours + ':' + minutes;
+                  }
+                } catch (e) {
+                  // 日付変換に失敗した場合は空文字列
+                }
+              }
+              sheet.getRange(i + 1, 16).setValue(recordedAtReadable);
+            }
+          }
+        }
+      }
     }
     
     // POSTデータを取得
@@ -177,7 +212,26 @@ function doPost(e) {
     const userKey = data.userKey || '';
     const aggregated = aggregateUserData(sheet, userKey, data);
     
-    // 新しい行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount）
+    // recordedAtReadableを計算
+    var recordedAt = data.timestamp || Date.now();
+    var recordedAtReadable = '';
+    if (recordedAt) {
+      try {
+        var date = new Date(recordedAt);
+        if (!isNaN(date.getTime())) {
+          var year = date.getFullYear();
+          var month = String(date.getMonth() + 1).padStart(2, '0');
+          var day = String(date.getDate()).padStart(2, '0');
+          var hours = String(date.getHours()).padStart(2, '0');
+          var minutes = String(date.getMinutes()).padStart(2, '0');
+          recordedAtReadable = year + '/' + month + '/' + day + ' ' + hours + ':' + minutes;
+        }
+      } catch (e) {
+        // 日付変換に失敗した場合は空文字列
+      }
+    }
+    
+    // 新しい行を追加（要求仕様に合わせた列構造 + 集計用のcorrectCount/totalCount + 可読性向上用recordedAtReadable）
     sheet.appendRow([
       data.displayName || '', // name
       userKey, // userKey
@@ -191,9 +245,10 @@ function doPost(e) {
       aggregated.mst, // mst
       aggregated.last, // last
       data.isPublic !== undefined ? data.isPublic : false, // isPublic
-      data.timestamp || Date.now(), // recordedAt
+      recordedAt, // recordedAt
       data.correctCount || 0, // correctCount（集計用）
-      data.totalCount || 0 // totalCount（集計用）
+      data.totalCount || 0, // totalCount（集計用）
+      recordedAtReadable // recordedAtReadable（可読性向上用）
     ]);
     
     return ContentService
@@ -440,6 +495,82 @@ function getLatestRecRow(userKey, mode) {
     };
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
+ */
+function getAllRecData() {
+  try {
+    const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
+    
+    var spreadsheet;
+    try {
+      spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (error) {
+      return [];
+    }
+    
+    var sheet = spreadsheet.getSheetByName('rec');
+    if (!sheet) {
+      return [];
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return []; // ヘッダーのみ
+    }
+    
+    // ヘッダーをスキップ
+    var rows = data.slice(1);
+    
+    // 全行をオブジェクトに変換
+    var result = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12), correctCount(13), totalCount(14), recordedAtReadable(15)
+      var recordedAt = row[12] || 0;
+      var recordedAtReadable = '';
+      if (recordedAt) {
+        try {
+          var date = new Date(recordedAt);
+          if (!isNaN(date.getTime())) {
+            var year = date.getFullYear();
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var day = String(date.getDate()).padStart(2, '0');
+            var hours = String(date.getHours()).padStart(2, '0');
+            var minutes = String(date.getMinutes()).padStart(2, '0');
+            recordedAtReadable = year + '/' + month + '/' + day + ' ' + hours + ':' + minutes;
+          }
+        } catch (e) {
+          // 日付変換に失敗した場合は空文字列
+        }
+      }
+      
+      result.push({
+        name: row[0] || '',
+        userKey: row[1] || '',
+        mode: row[2] || '',
+        EXP: row[3] || 0,
+        LV: row[4] || 0,
+        tenAve: row[5] || 0,
+        allAve: row[6] || 0,
+        sess: row[7] || 0,
+        cst: row[8] || 0,
+        mst: row[9] || 0,
+        last: row[10] || '',
+        isPublic: row[11] !== undefined ? row[11] : false,
+        recordedAt: recordedAt,
+        correctCount: row[13] || 0,
+        totalCount: row[14] || 0,
+        recordedAtReadable: recordedAtReadable || row[15] || ''
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    return [];
   }
 }
 

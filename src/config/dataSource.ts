@@ -16,8 +16,8 @@ export const DATA_SOURCE: DataSource = 'gas'; // 'csv' または 'gas'
  * 環境変数から取得。設定されていない場合は空文字列を返す
  */
 export const GAS_URLS: Record<Category, string> = {
-  organic: import.meta.env.VITE_GAS_URL_ORGANIC || 'https://script.google.com/macros/s/AKfycbwV4CEWYG41K37a0aClgweOka6KbbCWNQ9wXPIXc2hnE6ukJK8vh2Irghp1iUEPc64BhQ/exec',
-  inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || 'https://script.google.com/macros/s/AKfycbwV4CEWYG41K37a0aClgweOka6KbbCWNQ9wXPIXc2hnE6ukJK8vh2Irghp1iUEPc64BhQ/exec',
+  organic: import.meta.env.VITE_GAS_URL_ORGANIC || 'https://script.google.com/macros/s/AKfycbxfp42cN0KyFrBsWJIwRnWdnEhYPBayEOKk1DVYsYrBBZ7RiA3y3GE9oi8Inzk-d8tsnQ/exec',
+  inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || 'https://script.google.com/macros/s/AKfycbxfp42cN0KyFrBsWJIwRnWdnEhYPBayEOKk1DVYsYrBBZ7RiA3y3GE9oi8Inzk-d8tsnQ/exec',
 };
 
 // 環境変数が設定されているか検証（開発環境のみ警告）

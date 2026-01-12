@@ -89,12 +89,16 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     
     const data = await response.json();
     if (data.error) {
+      console.error('[recLoader] GAS error:', data.error);
       throw new Error(data.error);
     }
     
     if (!data.data || !Array.isArray(data.data)) {
+      console.warn('[recLoader] Invalid response format:', data);
       return [];
     }
+    
+    console.log(`[recLoader] Received ${data.data.length} rec rows from GAS`);
     
     // 全行を正規化
     const normalized: RecRow[] = data.data
