@@ -63,13 +63,14 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
         setLoading(true);
         setError(null);
         
-        // userStatsから通算データを取得
-        const stats = await getUserStatsByUserKey(userKey);
+        // userStatsから通算データを取得（userId = userKey + name の複合キー）
+        const userName = activeUser?.displayName || '';
+        const stats = await getUserStatsByUserKey(userKey, userName);
         console.log('[UserStatsPanel] UserStats loaded:', stats);
         setUserStats(stats);
         
-        // tenAveはrecから最新10セッションを計算
-        const tenAveValue = await calculateTenAveFromRec(userKey, mode);
+        // tenAveはrecから最新10セッションを計算（userId = userKey + name の複合キー）
+        const tenAveValue = await calculateTenAveFromRec(userKey, mode, userName);
         setTenAve(tenAveValue);
         
         // 問題単位の連続正解数を計算

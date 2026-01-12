@@ -921,19 +921,36 @@ export const fetchLatestRecRow = async (userKey: string, _category: 'organic' | 
 };
 
 /**
- * recシートから最新行を取得（userKey + mode でフィルタ）
+ * 複合ユーザーIDを生成（userKey + name）
+ */
+const getUserId = (row: RecRow | UserStatsRow): string => {
+  const userKey = String(row.userKey || '');
+  const name = String((row as RecRow).name || (row as RecRow).displayName || (row as UserStatsRow).name || '');
+  return `${userKey}|${name}`;
+};
+
+/**
+ * recシートから最新行を取得（userId + mode でフィルタ）
+ * userId = userKey + name の複合キー
  * @param userKey - ユーザーキー
+ * @param userName - ユーザー名（displayName/name）
  * @param mode - オプション: 'organic' または 'inorganic' でフィルタ
  * @returns RecRow | null
  */
-export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'inorganic'): Promise<RecRow | null> => {
+export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string): Promise<RecRow | null> => {
   try {
     // 全recデータを取得（キャッシュから）
     const allRecData = await fetchAllRecData();
     
-    // userKeyでフィルタ（stringに正規化して比較）
-    const normalizedUserKey = String(userKey);
-    let filtered = allRecData.filter(row => String(row.userKey) === normalizedUserKey);
+    // userId（userKey + name）でフィルタ
+    const targetUserId = userName ? `${String(userKey)}|${String(userName)}` : null;
+    let filtered = allRecData.filter(row => {
+      if (targetUserId) {
+        return getUserId(row) === targetUserId;
+      }
+      // userNameが指定されていない場合は、userKeyのみでフィルタ（後方互換性）
+      return String(row.userKey) === String(userKey);
+    });
     
     if (filtered.length === 0) {
       return null;
@@ -1050,16 +1067,26 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
 };
 
 /**
- * userStatsからユーザーの通算データを取得
+ * userStatsからユーザーの通算データを取得（userId = userKey + name の複合キー）
  * @param userKey - ユーザーキー
+ * @param userName - ユーザー名（displayName/name）
  * @returns UserStatsRow | null
  */
-export const getUserStatsByUserKey = async (userKey: string): Promise<UserStatsRow | null> => {
+export const getUserStatsByUserKey = async (userKey: string, userName?: string): Promise<UserStatsRow | null> => {
   try {
     const allUserStats = await fetchAllUserStats();
-    const normalizedUserKey = String(userKey);
-    const stats = allUserStats.find(row => String(row.userKey) === normalizedUserKey);
-    return stats || null;
+    const targetUserId = userName ? `${String(userKey)}|${String(userName)}` : null;
+    
+    if (targetUserId) {
+      // userId（複合キー）で検索
+      const stats = allUserStats.find(row => getUserId(row) === targetUserId);
+      return stats || null;
+    } else {
+      // userNameが指定されていない場合は、userKeyのみで検索（後方互換性）
+      const normalizedUserKey = String(userKey);
+      const stats = allUserStats.find(row => String(row.userKey) === normalizedUserKey);
+      return stats || null;
+    }
   } catch (error) {
     console.warn('Failed to get userStats by userKey:', error);
     return null;
@@ -1067,18 +1094,25 @@ export const getUserStatsByUserKey = async (userKey: string): Promise<UserStatsR
 };
 
 /**
- * recから最新10セッションのtenAveを計算
+ * recから最新10セッションのtenAveを計算（userId = userKey + name の複合キー）
  * @param userKey - ユーザーキー
  * @param mode - オプション: 'organic' または 'inorganic' でフィルタ
+ * @param userName - ユーザー名（displayName/name）
  * @returns number (0-1)
  */
-export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic'): Promise<number> => {
+export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string): Promise<number> => {
   try {
     const allRecData = await fetchAllRecData();
-    const normalizedUserKey = String(userKey);
+    const targetUserId = userName ? `${String(userKey)}|${String(userName)}` : null;
     
-    // userKeyでフィルタ
-    let filtered = allRecData.filter(row => String(row.userKey) === normalizedUserKey);
+    // userId（複合キー）でフィルタ
+    let filtered = allRecData.filter(row => {
+      if (targetUserId) {
+        return getUserId(row) === targetUserId;
+      }
+      // userNameが指定されていない場合は、userKeyのみでフィルタ（後方互換性）
+      return String(row.userKey) === String(userKey);
+    });
     
     // modeでフィルタ（指定されている場合）
     if (mode) {
@@ -1121,6 +1155,7 @@ export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' |
 
 /**
  * userStatsから公開ランキングを取得（isPublic=trueのユーザーのみ、allAve降順）
+ * userId = userKey + name の複合キーでグループ化（既にuserStatsは1ユーザー=1行なので、そのまま使用）
  * @returns UserStatsRow[]
  */
 export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> => {
@@ -1134,8 +1169,24 @@ export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> =
       return [];
     }
     
+    // userId（userKey + name）でグループ化（同名でもuserKeyが違えば別ユーザー）
+    const userStatsMap = new Map<string, UserStatsRow>();
+    for (const row of publicStats) {
+      const userId = getUserId(row);
+      const existing = userStatsMap.get(userId);
+      if (!existing) {
+        userStatsMap.set(userId, row);
+      } else {
+        // 既に存在する場合は、updatedAtが新しい方を採用
+        if (row.updatedAt > existing.updatedAt) {
+          userStatsMap.set(userId, row);
+        }
+      }
+    }
+    
     // allAve降順でソート（同率の場合はsess → lastAtで安定ソート）
-    publicStats.sort((a, b) => {
+    const ranking = Array.from(userStatsMap.values());
+    ranking.sort((a, b) => {
       const allAveA = a.totalQuestions > 0 ? a.totalCorrect / a.totalQuestions : 0;
       const allAveB = b.totalQuestions > 0 ? b.totalCorrect / b.totalQuestions : 0;
       if (allAveB !== allAveA) {
@@ -1153,7 +1204,7 @@ export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> =
       return lastAtB - lastAtA; // lastAt降順
     });
     
-    return publicStats;
+    return ranking;
   } catch (error) {
     console.warn('Failed to get public ranking from userStats:', error);
     return [];

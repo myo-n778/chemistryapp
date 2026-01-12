@@ -7,6 +7,8 @@
   max-width: 800px;
   color: #ffffff;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
+  position: relative; /* stacking context を作成 */
+  z-index: 1; /* 低いz-indexで他UIをブロックしない */
 }
 
 .ranking-header {
@@ -35,9 +37,12 @@
 /* 横スクロールコンテナ（ヘッダーとボディを一緒にスクロール） */
 .ranking-scroll-container {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  max-height: 400px; /* 縦スクロールの高さ制限 */
+  overflow-x: auto; /* 横スクロール */
+  overflow-y: auto; /* 縦スクロール */
   -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
+  position: relative; /* stacking context を作成 */
+  z-index: 1; /* 低いz-indexで他UIをブロックしない */
 }
 
 .ranking-table {
@@ -57,13 +62,11 @@
   position: sticky;
   top: 0;
   background-color: rgba(42, 31, 26, 0.95);
-  z-index: 10;
+  z-index: 2; /* パネル内でのみ有効な低いz-index */
 }
 
 .ranking-table-body {
-  max-height: 400px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
+  /* 縦スクロールは .ranking-scroll-container で管理 */
 }
 
 .ranking-row {

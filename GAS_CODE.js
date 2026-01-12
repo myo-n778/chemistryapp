@@ -778,6 +778,7 @@ function getAllUserStats() {
 
 /**
  * userStats を更新（加算更新）
+ * userId = userKey + name の複合キーで行を特定
  * @param {Spreadsheet} spreadsheet - スプレッドシートオブジェクト
  * @param {string} userKey - ユーザーキー（文字列として正規化）
  * @param {Object} data - 更新データ { name, isPublic, correctCount, totalCount, lastAt }
@@ -786,15 +787,19 @@ function updateUserStats(spreadsheet, userKey, data) {
   try {
     var sheet = getUserStatsSheet(spreadsheet);
     var normalizedUserKey = String(userKey); // 必ず文字列として正規化
+    var normalizedName = String(data.name || ''); // nameも文字列として正規化
+    var targetUserId = normalizedUserKey + '|' + normalizedName; // 複合キー
     
     // 既存データを取得
     var sheetData = sheet.getDataRange().getValues();
     var userRowIndex = -1;
     
-    // userKeyで検索（ヘッダーをスキップ）
+    // userId（userKey + name）で検索（ヘッダーをスキップ）
     for (var i = 1; i < sheetData.length; i++) {
       var rowUserKey = String(sheetData[i][0] || ''); // userKeyは0列目
-      if (rowUserKey === normalizedUserKey) {
+      var rowName = String(sheetData[i][1] || ''); // nameは1列目
+      var rowUserId = rowUserKey + '|' + rowName; // 複合キー
+      if (rowUserId === targetUserId) {
         userRowIndex = i;
         break;
       }
@@ -875,14 +880,15 @@ function backfillUserStatsFromRec() {
     // ヘッダーをスキップ
     var rows = recData.slice(1);
     
-    // userKeyごとに集計
+    // userId（userKey + name）ごとに集計
     var userStatsMap = {};
     
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
       // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12), correctCount(13), totalCount(14), recordedAtReadable(15)
       var userKey = String(row[1] || ''); // 必ず文字列として正規化
-      var name = row[0] || '';
+      var name = String(row[0] || ''); // nameも文字列として正規化
+      var userId = userKey + '|' + name; // 複合キー
       var isPublic = row[11] !== undefined ? row[11] : false;
       var correctCount = row[13] || 0;
       var totalCount = row[14] || 0;
@@ -892,8 +898,8 @@ function backfillUserStatsFromRec() {
         continue; // userKeyが空の行はスキップ
       }
       
-      if (!userStatsMap[userKey]) {
-        userStatsMap[userKey] = {
+      if (!userStatsMap[userId]) {
+        userStatsMap[userId] = {
           userKey: userKey,
           name: name,
           isPublic: isPublic,
@@ -906,16 +912,16 @@ function backfillUserStatsFromRec() {
       }
       
       // 加算
-      userStatsMap[userKey].exp += correctCount;
-      userStatsMap[userKey].totalCorrect += correctCount;
-      userStatsMap[userKey].totalQuestions += totalCount;
-      userStatsMap[userKey].sess += 1;
+      userStatsMap[userId].exp += correctCount;
+      userStatsMap[userId].totalCorrect += correctCount;
+      userStatsMap[userId].totalQuestions += totalCount;
+      userStatsMap[userId].sess += 1;
       
       // 最新の recordedAt を保持
-      if (recordedAt > userStatsMap[userKey].lastAt) {
-        userStatsMap[userKey].lastAt = recordedAt;
-        userStatsMap[userKey].name = name; // 最新のnameを使用
-        userStatsMap[userKey].isPublic = isPublic; // 最新のisPublicを使用
+      if (recordedAt > userStatsMap[userId].lastAt) {
+        userStatsMap[userId].lastAt = recordedAt;
+        userStatsMap[userId].name = name; // 最新のnameを使用
+        userStatsMap[userId].isPublic = isPublic; // 最新のisPublicを使用
       }
     }
     
