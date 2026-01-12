@@ -11,39 +11,58 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   const [ranking, setRanking] = useState<RecRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeUser, setActiveUser] = useState<User | null>(() => getActiveUser());
+  const [userKey, setUserKey] = useState<string | null>(null);
+  const [activeUser, setActiveUser] = useState<User | null>(null);
 
-  // activeUserの変更を監視（localStorageの変更を検知）
+  // activeUserの初期化と監視（localStorageの変更を検知）
   useEffect(() => {
-    const checkActiveUser = () => {
-      const currentActiveUser = getActiveUser();
-      setActiveUser(currentActiveUser);
-    };
-
-    // 初回チェック
-    checkActiveUser();
+    // 初回のみgetActiveUser()を呼ぶ
+    const initialUser = getActiveUser();
+    const initialUserKey = initialUser?.userKey || null;
+    setUserKey(initialUserKey);
+    setActiveUser(initialUser);
 
     // 定期的にチェック（ユーザー切替時に更新されるように）
-    const interval = setInterval(checkActiveUser, 500);
-    return () => clearInterval(interval);
-  }, []);
+    // userKeyのみをチェックして、変更があったときのみgetActiveUser()を呼ぶ
+    const checkUserKey = () => {
+      try {
+        const stored = localStorage.getItem('chem.activeUser');
+        const currentUserKey = stored || null;
+        
+        // userKeyが変わったときのみ更新（無限レンダリングを防ぐ）
+        if (currentUserKey !== userKey) {
+          const currentActiveUser = getActiveUser();
+          setUserKey(currentUserKey);
+          setActiveUser(currentActiveUser);
+        }
+      } catch (error) {
+        // localStorageアクセスエラーは無視
+      }
+    };
 
-  // activeUserまたはmodeが変更されたときにデータを再取得
+    const interval = setInterval(checkUserKey, 500);
+    return () => clearInterval(interval);
+  }, [userKey]); // userKeyを依存配列に含める（変更検知用）
+
+  // userKeyまたはmodeが変更されたときにデータを再取得
   useEffect(() => {
-    if (!activeUser) {
+    if (!userKey) {
       setLoading(false);
       setRanking([]);
       return;
     }
 
+    console.log('[PublicRankingPanel] Loading ranking for mode:', mode);
+    
     const loadRanking = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await getPublicRankingLatest(mode);
+        console.log('[PublicRankingPanel] Ranking loaded:', data.length, 'entries');
         setRanking(data);
       } catch (err) {
-        console.error('Failed to load ranking:', err);
+        console.error('[PublicRankingPanel] Failed to load ranking:', err);
         setError('ランキングの読み込みに失敗しました');
       } finally {
         setLoading(false);
@@ -51,7 +70,7 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     };
 
     loadRanking();
-  }, [mode, activeUser?.userKey]); // activeUser.userKeyを依存配列に追加（activeUser変更時に再取得）
+  }, [mode, userKey]); // userKey（文字列）のみを依存配列に含める
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
   if (!activeUser) {
