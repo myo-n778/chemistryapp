@@ -3,21 +3,18 @@
  * このコードをGoogle Apps Scriptエディタに貼り付けてください
  */
 function doGet(e) {
-  // rec取得専用エンドポイント（最優先処理、type検証を完全に回避）
-  // action=rec の場合は type を一切参照しない
-  const action = e.parameter.action;
-  if (action === 'rec') {
-    // recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
-    const allRecData = getAllRecData();
+  // 1) rec取得専用エンドポイント（最優先で処理）
+  //    - action=rec の場合は type を一切参照しない
+  //    - CSV ではなく「配列JSON」をそのまま返す
+  if (e && e.parameter && e.parameter.action === 'rec') {
+    const allRecData = getAllRecData(); // RecRow[] の配列
     return ContentService
-      .createTextOutput(JSON.stringify({ 
-        data: allRecData 
-      }))
+      .createTextOutput(JSON.stringify(allRecData))
       .setMimeType(ContentService.MimeType.JSON);
   }
   
-  // 以下は問題データ用API（type検証あり）
-  // rec取得時はここには到達しない
+  // 2) 以下は問題データ用API（type検証あり）
+  //    - /exec?action=rec 以外のときのみ到達
   const type = e.parameter.type || 'compounds';
   const category = e.parameter.category || 'organic';
   
