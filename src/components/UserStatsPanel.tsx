@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveUser, User } from '../utils/sessionLogger';
-import { getLatestRecByUser, RecRow, calculateQuestionConsecutiveStreak } from '../utils/sessionLogger';
+import { getActiveUser, User, getUserStatsByUserKey, UserStatsRow, calculateTenAveFromRec, calculateQuestionConsecutiveStreak, formatDateJST } from '../utils/sessionLogger';
 import './UserStatsPanel.css';
 
 interface UserStatsPanelProps {
@@ -9,7 +8,8 @@ interface UserStatsPanelProps {
 
 export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
-  const [recData, setRecData] = useState<RecRow | null>(null);
+  const [userStats, setUserStats] = useState<UserStatsRow | null>(null);
+  const [tenAve, setTenAve] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userKey, setUserKey] = useState<string | null>(null);
@@ -50,26 +50,33 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   useEffect(() => {
     if (!userKey) {
       setLoading(false);
-      setRecData(null);
+      setUserStats(null);
+      setTenAve(null);
       setQuestionStreak(null);
       return;
     }
 
-    console.log('[UserStatsPanel] Loading rec data for userKey:', userKey, 'mode:', mode);
+    console.log('[UserStatsPanel] Loading userStats for userKey:', userKey, 'mode:', mode);
     
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getLatestRecByUser(userKey, mode);
-        console.log('[UserStatsPanel] Rec data loaded:', data);
-        setRecData(data);
+        
+        // userStatsから通算データを取得
+        const stats = await getUserStatsByUserKey(userKey);
+        console.log('[UserStatsPanel] UserStats loaded:', stats);
+        setUserStats(stats);
+        
+        // tenAveはrecから最新10セッションを計算
+        const tenAveValue = await calculateTenAveFromRec(userKey, mode);
+        setTenAve(tenAveValue);
         
         // 問題単位の連続正解数を計算
         const streak = calculateQuestionConsecutiveStreak(userKey, mode);
         setQuestionStreak(streak);
       } catch (err) {
-        console.error('[UserStatsPanel] Failed to load rec data:', err);
+        console.error('[UserStatsPanel] Failed to load userStats:', err);
         setError('データの読み込みに失敗しました');
       } finally {
         setLoading(false);
@@ -115,98 +122,59 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     return `${(value * 100).toFixed(1)}%`;
   };
 
-  const formatDate = (recRow: RecRow | null | undefined): string => {
-    if (!recRow) {
-      return '--';
+  // LVを計算（exp / 100 + 1）
+  const calculateLV = (exp: number): number => {
+    return Math.floor(exp / 100) + 1;
+  };
+  
+  // allAveを計算（totalCorrect / totalQuestions）
+  const calculateAllAve = (stats: UserStatsRow | null): number => {
+    if (!stats || stats.totalQuestions === 0) {
+      return 0;
     }
-    
-    try {
-      let date: Date | null = null;
-      
-      // 優先順位1: recordedAt（number ms）があるならそれを表示（最も信頼）
-      if (recRow.recordedAt && typeof recRow.recordedAt === 'number' && recRow.recordedAt > 0) {
-        date = new Date(recRow.recordedAt);
-      }
-      // 優先順位2: recordedAtReadable が日時文字列ならそれを表示
-      else if ((recRow as any)?.recordedAtReadable && typeof (recRow as any).recordedAtReadable === 'string') {
-        const recordedAtReadable = (recRow as any).recordedAtReadable;
-        // YYYY/MM/DD HH:MM形式の場合はそのまま使用
-        if (/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/.test(recordedAtReadable)) {
-          // 文字列をパースしてDateオブジェクトに変換
-          const parts = recordedAtReadable.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
-          if (parts) {
-            date = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]));
-          }
-        } else {
-          date = new Date(recordedAtReadable);
-        }
-      }
-      // 優先順位3: last が ISO ならそれを表示
-      else if (recRow.last && typeof recRow.last === 'string') {
-        // 日付のみ（00:00Z固定）の場合は時刻の根拠にならないため、recordedAtを優先
-        // ISO形式（YYYY-MM-DDTHH:mm:ss）の場合は使用
-        if (recRow.last.includes('T') || recRow.last.includes(' ')) {
-          date = new Date(recRow.last);
-        } else {
-          // 日付のみの場合は時刻が00:00Z固定なので、recordedAtがあればそれを使う
-          // ここでは既にrecordedAtがないことが確定しているので、日付のみとして扱う
-          date = new Date(recRow.last);
-        }
-      }
-      
-      if (!date || isNaN(date.getTime())) {
-        return '--';
-      }
-      
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${year}/${month}/${day} ${hours}:${minutes}`;
-    } catch {
-      return '--';
-    }
+    return stats.totalCorrect / stats.totalQuestions;
   };
 
+  const lv = userStats ? calculateLV(userStats.exp) : 0;
+  const allAve = calculateAllAve(userStats);
+  
   return (
     <div className="user-stats-panel">
       <div className="stats-header">
-        <div className="stats-name">{displayValue(recData?.displayName || recData?.name || activeUser.displayName)}</div>
+        <div className="stats-name">{displayValue(userStats?.name || activeUser.displayName)}</div>
       </div>
       <div className="stats-grid">
         <div className="stats-item">
           <div className="stats-label">LV</div>
-          <div className="stats-value">{displayValue(recData?.LV)}</div>
+          <div className="stats-value">{displayValue(lv)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">EXP</div>
-          <div className="stats-value">{displayValue(recData?.EXP)}</div>
+          <div className="stats-value">{displayValue(userStats?.exp)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">10回平均</div>
-          <div className="stats-value">{displayValue(recData?.tenAve, formatPercentage)}</div>
+          <div className="stats-value">{displayValue(tenAve, formatPercentage)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">全体平均</div>
-          <div className="stats-value">{displayValue(recData?.allAve, formatPercentage)}</div>
+          <div className="stats-value">{displayValue(allAve, formatPercentage)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">セッション</div>
-          <div className="stats-value">{displayValue(recData?.sess)}</div>
+          <div className="stats-value">{displayValue(userStats?.sess)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">連続正解</div>
-          <div className="stats-value">{displayValue(questionStreak?.cst ?? recData?.cst)}</div>
+          <div className="stats-value">{displayValue(questionStreak?.cst)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">最大連続</div>
-          <div className="stats-value">{displayValue(questionStreak?.mst ?? recData?.mst)}</div>
+          <div className="stats-value">{displayValue(questionStreak?.mst)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">最終</div>
-          <div className="stats-value stats-value-date">{formatDate(recData)}</div>
+          <div className="stats-value stats-value-date">{formatDateJST(userStats?.lastAt)}</div>
         </div>
       </div>
     </div>

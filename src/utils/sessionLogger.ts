@@ -11,10 +11,18 @@ const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7Xbe0Q89w1QNGJ2l
 // rec取得専用URL（action=recのみ、typeパラメータは一切含めない）
 const GAS_REC_URL = `${GAS_BASE_URL}?action=rec`;
 
+// userStats取得専用URL（action=userStatsのみ、typeパラメータは一切含めない）
+const GAS_USERSTATS_URL = `${GAS_BASE_URL}?action=userStats`;
+
 // recデータのキャッシュ（全データを1回取得して再利用）
 let recDataCache: RecRow[] | null = null;
 let recDataCacheTimestamp: number = 0;
 const REC_CACHE_TTL = 30 * 1000; // 30秒キャッシュ
+
+// userStatsデータのキャッシュ（全データを1回取得して再利用）
+let userStatsCache: UserStatsRow[] | null = null;
+let userStatsCacheTimestamp: number = 0;
+const USERSTATS_CACHE_TTL = 30 * 1000; // 30秒キャッシュ
 
 /**
  * RecRowを正規化（recordedAtを数値に変換、その他の型を保証）
@@ -265,6 +273,100 @@ export const clearRecDataCache = (): void => {
   recDataCacheTimestamp = 0;
 };
 
+/**
+ * userStatsシートの全データを取得（キャッシュ付き）
+ */
+async function fetchAllUserStats(): Promise<UserStatsRow[]> {
+  const now = Date.now();
+  
+  // キャッシュが有効な場合は再利用
+  if (userStatsCache && (now - userStatsCacheTimestamp) < USERSTATS_CACHE_TTL) {
+    return userStatsCache;
+  }
+  
+  try {
+    console.log('[userStatsLoader] Fetching userStats data from:', GAS_USERSTATS_URL);
+    
+    const response = await fetch(GAS_USERSTATS_URL, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch all userStats: ${response.status} ${response.statusText}`);
+    }
+    
+    const rawText = await response.text();
+    console.log('[userStatsLoader] Raw response text:', rawText.substring(0, 500));
+    
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error('[userStatsLoader] Failed to parse JSON:', parseError, 'Raw text:', rawText);
+      throw new Error('Invalid JSON response');
+    }
+    
+    console.log('[userStatsLoader] Parsed response:', data);
+    
+    if (data.error) {
+      console.error('[userStatsLoader] GAS error:', data.error);
+      throw new Error(data.error);
+    }
+    
+    let userStatsRows: any[] = [];
+    if (Array.isArray(data)) {
+      userStatsRows = data;
+    } else if (data.data && Array.isArray(data.data)) {
+      userStatsRows = data.data;
+    } else if (data.rows && Array.isArray(data.rows)) {
+      userStatsRows = data.rows;
+    }
+    
+    if (userStatsRows.length === 0) {
+      console.warn('[userStatsLoader] No userStats rows found in response.');
+      return [];
+    }
+    
+    console.log(`[userStatsLoader] Loaded userStats rows: ${userStatsRows.length}`);
+    
+    // 正規化（userKeyを必ず文字列に）
+    const normalized: UserStatsRow[] = userStatsRows.map((row: Record<string, any>) => ({
+      userKey: String(row.userKey || ''),
+      name: String(row.name || ''),
+      isPublic: Boolean(row.isPublic),
+      exp: Number(row.exp || 0),
+      totalCorrect: Number(row.totalCorrect || 0),
+      totalQuestions: Number(row.totalQuestions || 0),
+      sess: Number(row.sess || 0),
+      lastAt: Number(row.lastAt || 0),
+      updatedAt: Number(row.updatedAt || 0)
+    })).filter((row: UserStatsRow) => row.userKey !== ''); // userKeyが空の行を除外
+    
+    userStatsCache = normalized;
+    userStatsCacheTimestamp = now;
+    
+    console.log(`[userStatsLoader] Fetched ${normalized.length} userStats rows (cached)`);
+    
+    return normalized;
+  } catch (error) {
+    console.warn('[userStatsLoader] Failed to fetch all userStats:', error);
+    if (userStatsCache) {
+      console.log('[userStatsLoader] Using cached data due to fetch error');
+      return userStatsCache;
+    }
+    return [];
+  }
+}
+
+/**
+ * userStatsキャッシュをクリア（ユーザー切替時など）
+ */
+export const clearUserStatsCache = (): void => {
+  userStatsCache = null;
+  userStatsCacheTimestamp = 0;
+};
+
 // Storage keys
 const STORAGE_KEY_ACTIVE_USER = 'chem.activeUser'; // userKey | null
 const STORAGE_KEY_USERS = 'chem.users'; // User[]
@@ -345,6 +447,21 @@ export interface RecRow {
   mst?: number;
   last?: string;
   recordedAt?: number; // GAS側から返される時
+}
+
+/**
+ * userStatsシートの行データ（通算集計）
+ */
+export interface UserStatsRow {
+  userKey: string; // 必ず文字列
+  name: string;
+  isPublic: boolean;
+  exp: number; // 累計正解数（EXP）
+  totalCorrect: number; // 累計正解数（expと同じ）
+  totalQuestions: number; // 累計問題数
+  sess: number; // セッション数
+  lastAt: number; // 最終取り組み日時（ms）
+  updatedAt: number; // 更新日時（ms）
 }
 
 /**
@@ -929,5 +1046,157 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
   } catch (error) {
     console.warn('Failed to get public ranking:', error);
     return [];
+  }
+};
+
+/**
+ * userStatsからユーザーの通算データを取得
+ * @param userKey - ユーザーキー
+ * @returns UserStatsRow | null
+ */
+export const getUserStatsByUserKey = async (userKey: string): Promise<UserStatsRow | null> => {
+  try {
+    const allUserStats = await fetchAllUserStats();
+    const normalizedUserKey = String(userKey);
+    const stats = allUserStats.find(row => String(row.userKey) === normalizedUserKey);
+    return stats || null;
+  } catch (error) {
+    console.warn('Failed to get userStats by userKey:', error);
+    return null;
+  }
+};
+
+/**
+ * recから最新10セッションのtenAveを計算
+ * @param userKey - ユーザーキー
+ * @param mode - オプション: 'organic' または 'inorganic' でフィルタ
+ * @returns number (0-1)
+ */
+export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic'): Promise<number> => {
+  try {
+    const allRecData = await fetchAllRecData();
+    const normalizedUserKey = String(userKey);
+    
+    // userKeyでフィルタ
+    let filtered = allRecData.filter(row => String(row.userKey) === normalizedUserKey);
+    
+    // modeでフィルタ（指定されている場合）
+    if (mode) {
+      filtered = filtered.filter(row => {
+        const rowMode = (row.mode || '').toLowerCase();
+        const rowCategory = (row.category || '').toLowerCase();
+        const modeLower = mode.toLowerCase();
+        return rowMode.includes(modeLower) || rowCategory === modeLower;
+      });
+    }
+    
+    if (filtered.length === 0) {
+      return 0;
+    }
+    
+    // recordedAtでソート（新しい順）
+    filtered.sort((a, b) => {
+      const timestampA = Number(a.recordedAt || a.timestamp || 0);
+      const timestampB = Number(b.recordedAt || b.timestamp || 0);
+      return timestampB - timestampA; // 降順
+    });
+    
+    // 最新10セッションを取得
+    const recent10 = filtered.slice(0, 10);
+    
+    // 合計を計算
+    const totalCorrect = recent10.reduce((sum, row) => sum + (row.correctCount || 0), 0);
+    const totalQuestions = recent10.reduce((sum, row) => sum + (row.totalCount || 0), 0);
+    
+    if (totalQuestions === 0) {
+      return 0;
+    }
+    
+    return totalCorrect / totalQuestions;
+  } catch (error) {
+    console.warn('Failed to calculate tenAve from rec:', error);
+    return 0;
+  }
+};
+
+/**
+ * userStatsから公開ランキングを取得（isPublic=trueのユーザーのみ、allAve降順）
+ * @returns UserStatsRow[]
+ */
+export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> => {
+  try {
+    const allUserStats = await fetchAllUserStats();
+    
+    // isPublic=trueでフィルタ
+    let publicStats = allUserStats.filter(row => row.isPublic === true);
+    
+    if (publicStats.length === 0) {
+      return [];
+    }
+    
+    // allAve降順でソート（同率の場合はsess → lastAtで安定ソート）
+    publicStats.sort((a, b) => {
+      const allAveA = a.totalQuestions > 0 ? a.totalCorrect / a.totalQuestions : 0;
+      const allAveB = b.totalQuestions > 0 ? b.totalCorrect / b.totalQuestions : 0;
+      if (allAveB !== allAveA) {
+        return allAveB - allAveA; // allAve降順
+      }
+      // 同率の場合
+      const sessA = a.sess || 0;
+      const sessB = b.sess || 0;
+      if (sessB !== sessA) {
+        return sessB - sessA; // sess降順
+      }
+      // さらに同率の場合
+      const lastAtA = a.lastAt || 0;
+      const lastAtB = b.lastAt || 0;
+      return lastAtB - lastAtA; // lastAt降順
+    });
+    
+    return publicStats;
+  } catch (error) {
+    console.warn('Failed to get public ranking from userStats:', error);
+    return [];
+  }
+};
+
+/**
+ * 時刻をJST（Asia/Tokyo）でフォーマット
+ * @param timestamp - ミリ秒のタイムスタンプ
+ * @returns YYYY/MM/DD HH:mm 形式の文字列
+ */
+export const formatDateJST = (timestamp: number | null | undefined): string => {
+  if (!timestamp || timestamp <= 0) {
+    return '--';
+  }
+  
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      return '--';
+    }
+    
+    // Intl.DateTimeFormat で JST に変換
+    const formatter = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const parts = formatter.formatToParts(date);
+    const year = parts.find(p => p.type === 'year')?.value || '';
+    const month = parts.find(p => p.type === 'month')?.value || '';
+    const day = parts.find(p => p.type === 'day')?.value || '';
+    const hour = parts.find(p => p.type === 'hour')?.value || '';
+    const minute = parts.find(p => p.type === 'minute')?.value || '';
+    
+    return `${year}/${month}/${day} ${hour}:${minute}`;
+  } catch (error) {
+    console.warn('Failed to format date JST:', error);
+    return '--';
   }
 };

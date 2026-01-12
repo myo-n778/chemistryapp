@@ -56,8 +56,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
       {/* 成績表示パネル（mode指定 = categoryでフィルタ） */}
       <UserStatsPanel mode={category} />
       
-      {/* 公開ランキング（mode指定 = categoryでフィルタ） */}
-      <PublicRankingPanel mode={category} />
+      {/* 公開ランキング（userStatsから取得、modeフィルタなし） */}
+      <PublicRankingPanel />
       <div className="mode-grid">
         {category === 'organic' ? (
           <>

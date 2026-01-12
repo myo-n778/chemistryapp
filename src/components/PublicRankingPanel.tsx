@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveUser, User } from '../utils/sessionLogger';
-import { getPublicRankingLatest, RecRow } from '../utils/sessionLogger';
+import { getActiveUser, User, getPublicRankingFromUserStats, UserStatsRow, formatDateJST } from '../utils/sessionLogger';
 import './PublicRankingPanel.css';
 
 interface PublicRankingPanelProps {
-  mode?: 'organic' | 'inorganic'; // mode指定時はフィルタ適用
+  // modeはuserStatsでは使わない（全データから取得）
 }
 
-export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) => {
+export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = () => {
   // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
-  const [ranking, setRanking] = useState<RecRow[]>([]);
+  const [ranking, setRanking] = useState<UserStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userKey, setUserKey] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     return () => clearInterval(interval);
   }, [userKey]); // userKeyを依存配列に含める（変更検知用）
 
-  // userKeyまたはmodeが変更されたときにデータを再取得
+  // userKeyが変更されたときにデータを再取得（modeはuserStatsでは使わない）
   useEffect(() => {
     if (!userKey) {
       setLoading(false);
@@ -53,13 +52,13 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
       return;
     }
 
-    console.log('[PublicRankingPanel] Loading ranking for mode:', mode);
+    console.log('[PublicRankingPanel] Loading ranking from userStats');
     
     const loadRanking = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getPublicRankingLatest(mode);
+        const data = await getPublicRankingFromUserStats();
         console.log('[PublicRankingPanel] Ranking loaded:', data.length, 'entries');
         setRanking(data);
       } catch (err) {
@@ -71,7 +70,7 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     };
 
     loadRanking();
-  }, [mode, userKey]); // userKey（文字列）のみを依存配列に含める
+  }, [userKey]); // userKey（文字列）のみを依存配列に含める
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
   if (!activeUser) {
@@ -117,60 +116,18 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   const formatPercentage = (value: number): string => {
     return `${(value * 100).toFixed(1)}%`;
   };
-
-  const formatDate = (recRow: RecRow | null | undefined): string => {
-    if (!recRow) {
-      return '--';
+  
+  // allAveを計算（totalCorrect / totalQuestions）
+  const calculateAllAve = (stats: UserStatsRow): number => {
+    if (stats.totalQuestions === 0) {
+      return 0;
     }
-    
-    try {
-      let date: Date | null = null;
-      
-      // 優先順位1: recordedAt（number ms）があるならそれを表示（最も信頼）
-      if (recRow.recordedAt && typeof recRow.recordedAt === 'number' && recRow.recordedAt > 0) {
-        date = new Date(recRow.recordedAt);
-      }
-      // 優先順位2: recordedAtReadable が日時文字列ならそれを表示
-      else if ((recRow as any)?.recordedAtReadable && typeof (recRow as any).recordedAtReadable === 'string') {
-        const recordedAtReadable = (recRow as any).recordedAtReadable;
-        // YYYY/MM/DD HH:MM形式の場合はそのまま使用
-        if (/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/.test(recordedAtReadable)) {
-          // 文字列をパースしてDateオブジェクトに変換
-          const parts = recordedAtReadable.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
-          if (parts) {
-            date = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]));
-          }
-        } else {
-          date = new Date(recordedAtReadable);
-        }
-      }
-      // 優先順位3: last が ISO ならそれを表示
-      else if (recRow.last && typeof recRow.last === 'string') {
-        // 日付のみ（00:00Z固定）の場合は時刻の根拠にならないため、recordedAtを優先
-        // ISO形式（YYYY-MM-DDTHH:mm:ss）の場合は使用
-        if (recRow.last.includes('T') || recRow.last.includes(' ')) {
-          date = new Date(recRow.last);
-        } else {
-          // 日付のみの場合は時刻が00:00Z固定なので、recordedAtがあればそれを使う
-          // ここでは既にrecordedAtがないことが確定しているので、日付のみとして扱う
-          date = new Date(recRow.last);
-        }
-      }
-      
-      if (!date || isNaN(date.getTime())) {
-        return '--';
-      }
-      
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${year}/${month}/${day} ${hours}:${minutes}`;
-    } catch {
-      return '--';
-    }
+    return stats.totalCorrect / stats.totalQuestions;
+  };
+  
+  // LVを計算（exp / 100 + 1）
+  const calculateLV = (exp: number): number => {
+    return Math.floor(exp / 100) + 1;
   };
 
   return (
@@ -188,24 +145,26 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
             <div className="ranking-col-last">最終</div>
           </div>
           <div className="ranking-table-body">
-            {ranking.map((row, index) => {
-              const rankClass = index === 0 ? 'rankTop1' : index === 1 ? 'rankTop2' : index === 2 ? 'rankTop3' : '';
-              const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
-              return (
-                <div key={`${row.userKey}-${row.recordedAt || row.timestamp || index}`} className={`ranking-row ${rankClass}`}>
-                  <div className="ranking-col-rank">
-                    {medal && <span className="rank-medal">{medal}</span>}
-                    {index + 1}
-                  </div>
-                  <div className="ranking-col-name">{displayValue(row.displayName || row.name)}</div>
-                  <div className="ranking-col-lv">{displayValue(row.LV)}</div>
-                  <div className="ranking-col-exp">{displayValue(row.EXP)}</div>
-                  <div className="ranking-col-ave">{displayValue(row.allAve, formatPercentage)}</div>
-                  <div className="ranking-col-sess">{displayValue(row.sess)}</div>
-                  <div className="ranking-col-last">{formatDate(row)}</div>
+          {ranking.map((row, index) => {
+            const rankClass = index === 0 ? 'rankTop1' : index === 1 ? 'rankTop2' : index === 2 ? 'rankTop3' : '';
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+            const allAve = calculateAllAve(row);
+            const lv = calculateLV(row.exp);
+            return (
+              <div key={`${row.userKey}-${row.updatedAt || index}`} className={`ranking-row ${rankClass}`}>
+                <div className="ranking-col-rank">
+                  {medal && <span className="rank-medal">{medal}</span>}
+                  {index + 1}
                 </div>
-              );
-            })}
+                <div className="ranking-col-name">{displayValue(row.name)}</div>
+                <div className="ranking-col-lv">{displayValue(lv)}</div>
+                <div className="ranking-col-exp">{displayValue(row.exp)}</div>
+                <div className="ranking-col-ave">{displayValue(allAve, formatPercentage)}</div>
+                <div className="ranking-col-sess">{displayValue(row.sess)}</div>
+                <div className="ranking-col-last">{formatDateJST(row.lastAt)}</div>
+              </div>
+            );
+          })}
           </div>
         </div>
       </div>
