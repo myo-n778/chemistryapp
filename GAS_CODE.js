@@ -713,3 +713,244 @@ function convertSheetToCSV(sheet) {
   }
 }
 
+/**
+ * userStats シートを取得または作成
+ */
+function getUserStatsSheet(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName('userStats');
+  if (!sheet) {
+    // userStatsシートが存在しない場合は作成
+    sheet = spreadsheet.insertSheet('userStats');
+    // ヘッダー行を追加
+    sheet.appendRow([
+      'userKey', 'name', 'isPublic', 'exp', 'totalCorrect', 'totalQuestions', 'sess', 'lastAt', 'updatedAt'
+    ]);
+  }
+  return sheet;
+}
+
+/**
+ * userStats シートの全データを取得
+ */
+function getAllUserStats() {
+  try {
+    const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
+    
+    var spreadsheet;
+    try {
+      spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (error) {
+      return [];
+    }
+    
+    var sheet = spreadsheet.getSheetByName('userStats');
+    if (!sheet) {
+      return [];
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return []; // ヘッダーのみ
+    }
+    
+    // ヘッダーをスキップ
+    var rows = data.slice(1);
+    
+    // 全行をオブジェクトに変換
+    var result = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      // 列構造: userKey(0), name(1), isPublic(2), exp(3), totalCorrect(4), totalQuestions(5), sess(6), lastAt(7), updatedAt(8)
+      result.push({
+        userKey: String(row[0] || ''), // 必ず文字列として扱う
+        name: row[1] || '',
+        isPublic: row[2] !== undefined ? row[2] : false,
+        exp: row[3] || 0,
+        totalCorrect: row[4] || 0,
+        totalQuestions: row[5] || 0,
+        sess: row[6] || 0,
+        lastAt: row[7] || 0,
+        updatedAt: row[8] || 0
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
+ * userStats を更新（加算更新）
+ * @param {Spreadsheet} spreadsheet - スプレッドシートオブジェクト
+ * @param {string} userKey - ユーザーキー（文字列として正規化）
+ * @param {Object} data - 更新データ { name, isPublic, correctCount, totalCount, lastAt }
+ */
+function updateUserStats(spreadsheet, userKey, data) {
+  try {
+    var sheet = getUserStatsSheet(spreadsheet);
+    var normalizedUserKey = String(userKey); // 必ず文字列として正規化
+    
+    // 既存データを取得
+    var sheetData = sheet.getDataRange().getValues();
+    var userRowIndex = -1;
+    
+    // userKeyで検索（ヘッダーをスキップ）
+    for (var i = 1; i < sheetData.length; i++) {
+      var rowUserKey = String(sheetData[i][0] || ''); // userKeyは0列目
+      if (rowUserKey === normalizedUserKey) {
+        userRowIndex = i;
+        break;
+      }
+    }
+    
+    var now = Date.now();
+    
+    if (userRowIndex >= 0) {
+      // 既存行を更新（加算更新）
+      var row = sheetData[userRowIndex];
+      // 列構造: userKey(0), name(1), isPublic(2), exp(3), totalCorrect(4), totalQuestions(5), sess(6), lastAt(7), updatedAt(8)
+      var currentExp = row[3] || 0;
+      var currentTotalCorrect = row[4] || 0;
+      var currentTotalQuestions = row[5] || 0;
+      var currentSess = row[6] || 0;
+      
+      // 加算更新
+      var newExp = currentExp + (data.correctCount || 0);
+      var newTotalCorrect = currentTotalCorrect + (data.correctCount || 0);
+      var newTotalQuestions = currentTotalQuestions + (data.totalCount || 0);
+      var newSess = currentSess + 1;
+      
+      // 上書き更新
+      sheet.getRange(userRowIndex + 1, 2).setValue(data.name || ''); // name
+      sheet.getRange(userRowIndex + 1, 3).setValue(data.isPublic !== undefined ? data.isPublic : false); // isPublic
+      sheet.getRange(userRowIndex + 1, 4).setValue(newExp); // exp
+      sheet.getRange(userRowIndex + 1, 5).setValue(newTotalCorrect); // totalCorrect
+      sheet.getRange(userRowIndex + 1, 6).setValue(newTotalQuestions); // totalQuestions
+      sheet.getRange(userRowIndex + 1, 7).setValue(newSess); // sess
+      sheet.getRange(userRowIndex + 1, 8).setValue(data.lastAt || now); // lastAt
+      sheet.getRange(userRowIndex + 1, 9).setValue(now); // updatedAt
+    } else {
+      // 新規作成
+      var newExp = data.correctCount || 0;
+      var newTotalCorrect = data.correctCount || 0;
+      var newTotalQuestions = data.totalCount || 0;
+      var newSess = 1;
+      
+      sheet.appendRow([
+        normalizedUserKey, // userKey
+        data.name || '', // name
+        data.isPublic !== undefined ? data.isPublic : false, // isPublic
+        newExp, // exp
+        newTotalCorrect, // totalCorrect
+        newTotalQuestions, // totalQuestions
+        newSess, // sess
+        data.lastAt || now, // lastAt
+        now // updatedAt
+      ]);
+    }
+  } catch (error) {
+    Logger.log('Failed to update userStats: ' + error.toString());
+  }
+}
+
+/**
+ * 既存の rec データから userStats を初期生成（1回限りの実行）
+ * 実行方法: GASエディタで backfillUserStatsFromRec() を実行
+ */
+function backfillUserStatsFromRec() {
+  try {
+    const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
+    
+    var spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var recSheet = spreadsheet.getSheetByName('rec');
+    
+    if (!recSheet) {
+      Logger.log('rec sheet not found');
+      return;
+    }
+    
+    var recData = recSheet.getDataRange().getValues();
+    if (recData.length < 2) {
+      Logger.log('No rec data found');
+      return;
+    }
+    
+    // ヘッダーをスキップ
+    var rows = recData.slice(1);
+    
+    // userKeyごとに集計
+    var userStatsMap = {};
+    
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      // 列構造: name(0), userKey(1), mode(2), EXP(3), LV(4), tenAve(5), allAve(6), sess(7), cst(8), mst(9), last(10), isPublic(11), recordedAt(12), correctCount(13), totalCount(14), recordedAtReadable(15)
+      var userKey = String(row[1] || ''); // 必ず文字列として正規化
+      var name = row[0] || '';
+      var isPublic = row[11] !== undefined ? row[11] : false;
+      var correctCount = row[13] || 0;
+      var totalCount = row[14] || 0;
+      var recordedAt = row[12] || 0;
+      
+      if (!userKey) {
+        continue; // userKeyが空の行はスキップ
+      }
+      
+      if (!userStatsMap[userKey]) {
+        userStatsMap[userKey] = {
+          userKey: userKey,
+          name: name,
+          isPublic: isPublic,
+          exp: 0,
+          totalCorrect: 0,
+          totalQuestions: 0,
+          sess: 0,
+          lastAt: 0
+        };
+      }
+      
+      // 加算
+      userStatsMap[userKey].exp += correctCount;
+      userStatsMap[userKey].totalCorrect += correctCount;
+      userStatsMap[userKey].totalQuestions += totalCount;
+      userStatsMap[userKey].sess += 1;
+      
+      // 最新の recordedAt を保持
+      if (recordedAt > userStatsMap[userKey].lastAt) {
+        userStatsMap[userKey].lastAt = recordedAt;
+        userStatsMap[userKey].name = name; // 最新のnameを使用
+        userStatsMap[userKey].isPublic = isPublic; // 最新のisPublicを使用
+      }
+    }
+    
+    // userStats シートを取得または作成
+    var userStatsSheet = getUserStatsSheet(spreadsheet);
+    
+    // 既存データをクリア（ヘッダーを除く）
+    var existingData = userStatsSheet.getDataRange().getValues();
+    if (existingData.length > 1) {
+      userStatsSheet.deleteRows(2, existingData.length - 1);
+    }
+    
+    // 集計結果を書き込み
+    var now = Date.now();
+    for (var userKey in userStatsMap) {
+      var stats = userStatsMap[userKey];
+      userStatsSheet.appendRow([
+        stats.userKey,
+        stats.name,
+        stats.isPublic,
+        stats.exp,
+        stats.totalCorrect,
+        stats.totalQuestions,
+        stats.sess,
+        stats.lastAt,
+        now // updatedAt
+      ]);
+    }
+    
+    Logger.log('Backfill completed. ' + Object.keys(userStatsMap).length + ' users processed.');
+  } catch (error) {
+    Logger.log('Error in backfillUserStatsFromRec: ' + error.toString());
+  }
+}
