@@ -20,6 +20,13 @@ export const GAS_URLS: Record<Category, string> = {
   inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || 'https://script.google.com/macros/s/AKfycbwXruDTkThxD7dIoRjl9RECWmd55uFFYpfPmaxpi8QV4r_EBQbUYf5PaiURBlQSpltqSQ/exec',
 };
 
+/**
+ * recデータ取得専用のGAS URL
+ * 問題データ用APIとは完全に分離
+ * 環境変数から取得。設定されていない場合は新しいGAS URLを使用
+ */
+export const GAS_URL_REC: string = import.meta.env.VITE_GAS_URL_REC || 'https://script.google.com/macros/s/AKfycby56m2gHAx33pyEKAk1tzzxBG5GJ1BGFmeUPmNj66j0LZG1fjzZu20ZfwEfCC13YjLExw/exec';
+
 // 環境変数が設定されているか検証（開発環境のみ警告）
 if (import.meta.env.DEV) {
   if (!GAS_URLS.organic || !GAS_URLS.inorganic) {

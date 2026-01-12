@@ -3,7 +3,8 @@
  * このコードをGoogle Apps Scriptエディタに貼り付けてください
  */
 function doGet(e) {
-  // rec取得専用エンドポイント（type検証を完全に回避）
+  // rec取得専用エンドポイント（最優先処理、type検証を完全に回避）
+  // action=rec の場合は type を一切参照しない
   const action = e.parameter.action;
   if (action === 'rec') {
     // recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
@@ -16,6 +17,7 @@ function doGet(e) {
   }
   
   // 以下は問題データ用API（type検証あり）
+  // rec取得時はここには到達しない
   const type = e.parameter.type || 'compounds';
   const category = e.parameter.category || 'organic';
   

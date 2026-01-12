@@ -3,7 +3,7 @@
  * ローカルに1問ごとの正誤ログを保存し、セッション完了時にスプレッドシートに記録する
  */
 
-import { GAS_URLS } from '../config/dataSource';
+import { GAS_URLS, GAS_URL_REC } from '../config/dataSource';
 
 // recデータのキャッシュ（全データを1回取得して再利用）
 let recDataCache: RecRow[] | null = null;
@@ -72,15 +72,19 @@ async function fetchAllRecData(): Promise<RecRow[]> {
   }
   
   try {
-    // organicのGAS URLを使用（どちらでも同じスプレッドシートを参照）
-    const gasUrl = GAS_URLS.organic;
+    // rec専用のGAS URLを使用（問題データ用APIとは完全に分離）
+    const recGasUrl = GAS_URL_REC;
     
-    if (!gasUrl) {
-      throw new Error('GAS URL not configured');
+    if (!recGasUrl) {
+      throw new Error('GAS URL for rec not configured');
     }
     
     // rec取得専用エンドポイント（action=rec、typeパラメータは一切使わない）
-    const response = await fetch(`${gasUrl}?action=rec`, {
+    // URLにtype=***が含まれないことを保証
+    const recUrl = `${recGasUrl}?action=rec`;
+    console.log('[recLoader] Fetching rec data from:', recUrl);
+    
+    const response = await fetch(recUrl, {
       method: 'GET',
       mode: 'cors',
     });
