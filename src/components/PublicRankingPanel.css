@@ -32,15 +32,21 @@
   color: #ff6666;
 }
 
-.ranking-table {
+/* 横スクロールコンテナ（ヘッダーとボディを一緒にスクロール） */
+.ranking-scroll-container {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
+}
+
+.ranking-table {
+  min-width: 700px; /* 最小幅を設定（横スクロール対応） */
 }
 
 .ranking-table-header {
   display: grid;
-  grid-template-columns: 45px minmax(120px, 1fr) 55px 110px 75px 140px;
+  grid-template-columns: 45px minmax(120px, 1fr) 55px 70px 110px 75px 140px;
   gap: 8px 12px;
   padding: 10px 4px;
   border-bottom: 2px solid #ffa500;
@@ -62,14 +68,13 @@
 
 .ranking-row {
   display: grid;
-  grid-template-columns: 45px minmax(120px, 1fr) 55px 110px 75px 140px;
+  grid-template-columns: 45px minmax(120px, 1fr) 55px 70px 110px 75px 140px;
   gap: 8px 12px;
   padding: 10px 4px;
   border-bottom: 1px solid rgba(255, 165, 0, 0.2);
   font-size: 0.9em;
   transition: background-color 0.15s;
   align-items: center;
-  min-width: 600px; /* 最小幅を設定（横スクロール対応） */
 }
 
 .ranking-row:hover {
@@ -131,6 +136,12 @@
   padding-right: 4px;
 }
 
+.ranking-col-exp {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 4px;
+}
+
 .ranking-col-ave {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -162,16 +173,15 @@
   }
 
   .ranking-table {
-    overflow-x: visible;
+    min-width: 600px; /* モバイルでも最小幅を設定 */
   }
 
   .ranking-table-header,
   .ranking-row {
-    grid-template-columns: 40px minmax(100px, 1fr) 50px 95px 65px 120px;
+    grid-template-columns: 40px minmax(100px, 1fr) 50px 65px 95px 65px 120px;
     gap: 6px 8px;
     font-size: 0.85em;
     padding: 8px 2px;
-    min-width: 550px; /* モバイルでも最小幅を設定 */
   }
   
   .ranking-col-name {
@@ -193,13 +203,16 @@
     margin: 6px;
   }
 
+  .ranking-table {
+    min-width: 550px; /* 小画面でも最小幅を設定 */
+  }
+
   .ranking-table-header,
   .ranking-row {
-    grid-template-columns: 35px minmax(90px, 1fr) 45px 85px 55px 110px;
+    grid-template-columns: 35px minmax(90px, 1fr) 45px 60px 85px 55px 110px;
     gap: 4px 6px;
     font-size: 0.8em;
     padding: 6px 2px;
-    min-width: 500px; /* 小画面でも最小幅を設定 */
   }
   
   .ranking-col-name {

@@ -118,23 +118,46 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     return `${(value * 100).toFixed(1)}%`;
   };
 
-  const formatDate = (value: string | number | undefined | null): string => {
-    if (!value || value === '--') {
+  const formatDate = (recRow: RecRow | null | undefined): string => {
+    if (!recRow) {
       return '--';
     }
+    
     try {
-      let date: Date;
-      if (typeof value === 'string') {
-        // 既にYYYY/MM/DD形式の場合はそのまま返す
-        if (/^\d{4}\/\d{2}\/\d{2}/.test(value)) {
-          return value;
+      let date: Date | null = null;
+      
+      // 優先順位1: recordedAt（number ms）があるならそれを表示（最も信頼）
+      if (recRow.recordedAt && typeof recRow.recordedAt === 'number' && recRow.recordedAt > 0) {
+        date = new Date(recRow.recordedAt);
+      }
+      // 優先順位2: recordedAtReadable が日時文字列ならそれを表示
+      else if ((recRow as any)?.recordedAtReadable && typeof (recRow as any).recordedAtReadable === 'string') {
+        const recordedAtReadable = (recRow as any).recordedAtReadable;
+        // YYYY/MM/DD HH:MM形式の場合はそのまま使用
+        if (/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/.test(recordedAtReadable)) {
+          // 文字列をパースしてDateオブジェクトに変換
+          const parts = recordedAtReadable.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+          if (parts) {
+            date = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]));
+          }
+        } else {
+          date = new Date(recordedAtReadable);
         }
-        date = new Date(value);
-      } else {
-        date = new Date(value);
+      }
+      // 優先順位3: last が ISO ならそれを表示
+      else if (recRow.last && typeof recRow.last === 'string') {
+        // 日付のみ（00:00Z固定）の場合は時刻の根拠にならないため、recordedAtを優先
+        // ISO形式（YYYY-MM-DDTHH:mm:ss）の場合は使用
+        if (recRow.last.includes('T') || recRow.last.includes(' ')) {
+          date = new Date(recRow.last);
+        } else {
+          // 日付のみの場合は時刻が00:00Z固定なので、recordedAtがあればそれを使う
+          // ここでは既にrecordedAtがないことが確定しているので、日付のみとして扱う
+          date = new Date(recRow.last);
+        }
       }
       
-      if (isNaN(date.getTime())) {
+      if (!date || isNaN(date.getTime())) {
         return '--';
       }
       
@@ -153,33 +176,37 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   return (
     <div className="public-ranking-panel">
       <div className="ranking-header">公開ランキング</div>
-      <div className="ranking-table">
-        <div className="ranking-table-header">
-          <div className="ranking-col-rank">順位</div>
-          <div className="ranking-col-name">名前</div>
-          <div className="ranking-col-lv">LV</div>
-          <div className="ranking-col-ave">全体平均</div>
-          <div className="ranking-col-sess">セッション</div>
-          <div className="ranking-col-last">最終</div>
-        </div>
-        <div className="ranking-table-body">
-          {ranking.map((row, index) => {
-            const rankClass = index === 0 ? 'rankTop1' : index === 1 ? 'rankTop2' : index === 2 ? 'rankTop3' : '';
-            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
-            return (
-              <div key={`${row.userKey}-${row.recordedAt || row.timestamp || index}`} className={`ranking-row ${rankClass}`}>
-                <div className="ranking-col-rank">
-                  {medal && <span className="rank-medal">{medal}</span>}
-                  {index + 1}
+      <div className="ranking-scroll-container">
+        <div className="ranking-table">
+          <div className="ranking-table-header">
+            <div className="ranking-col-rank">順位</div>
+            <div className="ranking-col-name">名前</div>
+            <div className="ranking-col-lv">LV</div>
+            <div className="ranking-col-exp">EXP</div>
+            <div className="ranking-col-ave">全体平均</div>
+            <div className="ranking-col-sess">セッション</div>
+            <div className="ranking-col-last">最終</div>
+          </div>
+          <div className="ranking-table-body">
+            {ranking.map((row, index) => {
+              const rankClass = index === 0 ? 'rankTop1' : index === 1 ? 'rankTop2' : index === 2 ? 'rankTop3' : '';
+              const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+              return (
+                <div key={`${row.userKey}-${row.recordedAt || row.timestamp || index}`} className={`ranking-row ${rankClass}`}>
+                  <div className="ranking-col-rank">
+                    {medal && <span className="rank-medal">{medal}</span>}
+                    {index + 1}
+                  </div>
+                  <div className="ranking-col-name">{displayValue(row.displayName || row.name)}</div>
+                  <div className="ranking-col-lv">{displayValue(row.LV)}</div>
+                  <div className="ranking-col-exp">{displayValue(row.EXP)}</div>
+                  <div className="ranking-col-ave">{displayValue(row.allAve, formatPercentage)}</div>
+                  <div className="ranking-col-sess">{displayValue(row.sess)}</div>
+                  <div className="ranking-col-last">{formatDate(row)}</div>
                 </div>
-                <div className="ranking-col-name">{displayValue(row.displayName || row.name)}</div>
-                <div className="ranking-col-lv">{displayValue(row.LV)}</div>
-                <div className="ranking-col-ave">{displayValue(row.allAve, formatPercentage)}</div>
-                <div className="ranking-col-sess">{displayValue(row.sess)}</div>
-                <div className="ranking-col-last">{formatDate(row.last || (row as any)?.recordedAtReadable)}</div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

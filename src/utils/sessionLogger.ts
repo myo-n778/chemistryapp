@@ -823,10 +823,14 @@ export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'in
     }
     
     // modeでフィルタ（指定されている場合）
+    // mode フィルタは 'organic'/'inorganic' を「含むか」で判定する
     if (mode) {
       filtered = filtered.filter(row => {
-        const rowMode = row.mode || '';
-        return rowMode.indexOf(mode) === 0;
+        const rowMode = (row.mode || '').toLowerCase();
+        const rowCategory = (row.category || '').toLowerCase();
+        const modeLower = mode.toLowerCase();
+        // mode文字列に含まれるか、またはcategoryが一致するか
+        return rowMode.includes(modeLower) || rowCategory === modeLower;
       });
     }
     
@@ -866,10 +870,14 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
     }
     
     // modeでフィルタ（指定されている場合）
+    // mode フィルタは 'organic'/'inorganic' を「含むか」で判定する
     if (mode) {
       publicRows = publicRows.filter(row => {
-        const rowMode = row.mode || '';
-        return rowMode.indexOf(mode) === 0;
+        const rowMode = (row.mode || '').toLowerCase();
+        const rowCategory = (row.category || '').toLowerCase();
+        const modeLower = mode.toLowerCase();
+        // mode文字列に含まれるか、またはcategoryが一致するか
+        return rowMode.includes(modeLower) || rowCategory === modeLower;
       });
     }
     

@@ -115,25 +115,46 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     return `${(value * 100).toFixed(1)}%`;
   };
 
-  const formatDate = (value: string | number | undefined | null): string => {
-    if (!value || value === '--') {
+  const formatDate = (recRow: RecRow | null | undefined): string => {
+    if (!recRow) {
       return '--';
     }
+    
     try {
-      // valueが文字列の場合（YYYY/MM/DD HH:MM形式またはISO形式）
-      let date: Date;
-      if (typeof value === 'string') {
-        // 既にYYYY/MM/DD形式の場合はそのまま返す
-        if (/^\d{4}\/\d{2}\/\d{2}/.test(value)) {
-          return value;
+      let date: Date | null = null;
+      
+      // 優先順位1: recordedAt（number ms）があるならそれを表示（最も信頼）
+      if (recRow.recordedAt && typeof recRow.recordedAt === 'number' && recRow.recordedAt > 0) {
+        date = new Date(recRow.recordedAt);
+      }
+      // 優先順位2: recordedAtReadable が日時文字列ならそれを表示
+      else if ((recRow as any)?.recordedAtReadable && typeof (recRow as any).recordedAtReadable === 'string') {
+        const recordedAtReadable = (recRow as any).recordedAtReadable;
+        // YYYY/MM/DD HH:MM形式の場合はそのまま使用
+        if (/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/.test(recordedAtReadable)) {
+          // 文字列をパースしてDateオブジェクトに変換
+          const parts = recordedAtReadable.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+          if (parts) {
+            date = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]));
+          }
+        } else {
+          date = new Date(recordedAtReadable);
         }
-        // ISO形式やタイムスタンプの場合
-        date = new Date(value);
-      } else {
-        date = new Date(value);
+      }
+      // 優先順位3: last が ISO ならそれを表示
+      else if (recRow.last && typeof recRow.last === 'string') {
+        // 日付のみ（00:00Z固定）の場合は時刻の根拠にならないため、recordedAtを優先
+        // ISO形式（YYYY-MM-DDTHH:mm:ss）の場合は使用
+        if (recRow.last.includes('T') || recRow.last.includes(' ')) {
+          date = new Date(recRow.last);
+        } else {
+          // 日付のみの場合は時刻が00:00Z固定なので、recordedAtがあればそれを使う
+          // ここでは既にrecordedAtがないことが確定しているので、日付のみとして扱う
+          date = new Date(recRow.last);
+        }
       }
       
-      if (isNaN(date.getTime())) {
+      if (!date || isNaN(date.getTime())) {
         return '--';
       }
       
@@ -185,7 +206,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
         </div>
         <div className="stats-item">
           <div className="stats-label">最終</div>
-          <div className="stats-value stats-value-date">{formatDate(recData?.last || (recData as any)?.recordedAtReadable)}</div>
+          <div className="stats-value stats-value-date">{formatDate(recData)}</div>
         </div>
       </div>
     </div>
