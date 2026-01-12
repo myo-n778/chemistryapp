@@ -30,8 +30,10 @@ https://script.google.com/macros/s/AKfycbxU4eANa9Q0t77ZftT2EFHvGfGSHloB1e0G3IZ86
 
 **完全URL例**:
 ```
-https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec?action=rec
+https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec?action=rec
 ```
+
+**注意**: URLの役割が入れ替わっていたため修正済み（2024年修正）
 
 **期待されるレスポンス**:
 - JSON配列: `[{ name: "...", userKey: "...", ... }, ...]`
@@ -52,8 +54,10 @@ https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5
 
 **完全URL例**:
 ```
-https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec?action=userStats
+https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec?action=userStats
 ```
+
+**注意**: URLの役割が入れ替わっていたため修正済み（2024年修正）
 
 **期待されるレスポンス**:
 - JSON配列: `[{ userKey: "...", name: "...", exp: 0, ... }, ...]`
