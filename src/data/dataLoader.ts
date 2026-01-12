@@ -5,7 +5,6 @@ import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser'
 import { Category } from '../components/CategorySelector';
 import { DATA_SOURCE } from '../config/dataSource';
 import { loadCompoundsFromGAS, loadReactionsFromGAS, loadExperimentsFromGAS } from './gasLoader';
-import { loadInorganicReactions } from './inorganicLoader';
 
 // キャッシュの有効期限（1時間）
 const CACHE_TTL = 60 * 60 * 1000; // 1時間（ミリ秒）
@@ -334,11 +333,12 @@ export const loadInorganicReactionsData = async (): Promise<InorganicReaction[]>
         return quizQuestions;
       }
     } catch (quizError) {
-      console.warn('[dataLoader] Failed to load new Excel format, falling back to old format:', quizError);
+      console.warn('[dataLoader] Failed to load new Excel format:', quizError);
     }
     
-    // フォールバック: 既存の形式を読み込む
-    return await loadInorganicReactions();
+    // フォールバック: 空配列を返す（旧形式は削除されたため）
+    console.warn('[dataLoader] No inorganic reactions loaded, returning empty array');
+    return [];
   } catch (error) {
     console.error('Failed to load inorganic reactions:', error);
     return [];
