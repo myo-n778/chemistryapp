@@ -18,25 +18,54 @@ const REC_CACHE_TTL = 30 * 1000; // 30秒キャッシュ
 
 /**
  * RecRowを正規化（recordedAtを数値に変換、その他の型を保証）
+ * recordedAtがnullの場合は救済処理を行う（除外しない）
  */
 function normalizeRecRow(row: Record<string, any>): RecRow | null {
   try {
-    // recordedAtを数値に変換
+    // userKeyを必ずstringに正規化（numberでも許容）
+    const userKey = String(row.userKey || '');
+    
+    // recordedAtを数値に変換（救済処理付き）
     let recordedAt: number;
     if (typeof row.recordedAt === 'string') {
       recordedAt = Number(row.recordedAt);
       if (isNaN(recordedAt)) {
         recordedAt = 0;
       }
-    } else if (typeof row.recordedAt === 'number') {
+    } else if (typeof row.recordedAt === 'number' && !isNaN(row.recordedAt)) {
       recordedAt = row.recordedAt;
     } else {
-      // timestampから取得を試みる
-      recordedAt = typeof row.timestamp === 'number' ? row.timestamp : 0;
+      // recordedAtがnull/undefinedの場合、救済処理を試みる
+      // 優先順位1: recordedAtReadableから取得
+      if (row.recordedAtReadable) {
+        const parsed = Date.parse(row.recordedAtReadable);
+        if (!isNaN(parsed)) {
+          recordedAt = parsed;
+        } else {
+          recordedAt = 0;
+        }
+      }
+      // 優先順位2: last（ISO文字列）から取得
+      else if (row.last) {
+        const parsed = Date.parse(row.last);
+        if (!isNaN(parsed)) {
+          recordedAt = parsed;
+        } else {
+          recordedAt = 0;
+        }
+      }
+      // 優先順位3: timestampから取得
+      else if (typeof row.timestamp === 'number' && !isNaN(row.timestamp)) {
+        recordedAt = row.timestamp;
+      }
+      // それも無い場合は0を入れて残す（表示は可能にする）
+      else {
+        recordedAt = 0;
+      }
     }
     
     return {
-      userKey: String(row.userKey || ''),
+      userKey: userKey,
       displayName: String(row.name || row.displayName || ''),
       mode: String(row.mode || ''),
       category: (row.mode || '').indexOf('organic') === 0 ? 'organic' : 'inorganic',
@@ -162,36 +191,38 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       .map((row: Record<string, any>) => normalizeRecRow(row))
       .filter((row: RecRow | null): row is RecRow => row !== null);
     
-    // ① 説明行・不正行を除外（nameが説明文やヘッダっぽいもの、userKey欠損、recordedAt無効など）
+    // ① 説明行のみを除外（最低限のフィルタ、全捨てを絶対にしない）
     const filtered: RecRow[] = normalized.filter((row: RecRow) => {
-      // userKeyは必須（空文字やnullは除外）
-      const userKey = (row.userKey || '').trim();
+      // userKeyをstringに正規化（numberでも許容）
+      const userKey = String(row.userKey || '').trim();
+      
+      // userKeyが空の場合は除外
       if (!userKey) {
         return false;
       }
       
-      // recordedAtが0または無効値の行はlatest判定を壊すので除外
-      if (!row.recordedAt || row.recordedAt <= 0) {
-        return false;
+      // 説明行の判定（厳密に）
+      // name が "表示名（displayName）" の行、または userKey が "ユーザーキー（一意ID）" の行は除外
+      const name = (row.name || row.displayName || '').trim();
+      const userKeyLower = userKey.toLowerCase();
+      const nameLower = name.toLowerCase();
+      
+      // 説明行の典型的なパターンをチェック
+      if (
+        nameLower === '表示名（displayname）' ||
+        nameLower === '表示名(displayname)' ||
+        nameLower === 'displayname' ||
+        userKeyLower === 'ユーザーキー（一意id）' ||
+        userKeyLower === 'ユーザーキー(一意id)' ||
+        userKeyLower === 'userkey' ||
+        (nameLower.includes('表示名') && nameLower.includes('displayname')) ||
+        (userKeyLower.includes('ユーザーキー') && userKeyLower.includes('一意'))
+      ) {
+        return false; // 説明行として除外
       }
       
-      // name/displayNameが明らかに説明行・ヘッダっぽい場合は除外
-      const name = (row.name || row.displayName || '').trim();
-      if (!name) {
-        return false;
-      }
-      const lower = name.toLowerCase();
-      if (
-        lower.includes('displayname') ||
-        lower.includes('表示名') ||
-        lower.includes('ユーザー名') ||
-        lower.includes('userkey') ||
-        lower.includes('説明') ||
-        lower.startsWith('name(') ||
-        lower.startsWith('name（')
-      ) {
-        return false;
-      }
+      // recordedAtが0でも残す（latest抽出時に「古い」として扱われるだけ）
+      // nameが空でも残す（displayNameがあればOK、両方空でもuserKeyがあれば残す）
       
       return true;
     });
@@ -691,8 +722,9 @@ export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'in
     // 全recデータを取得（キャッシュから）
     const allRecData = await fetchAllRecData();
     
-    // userKeyでフィルタ
-    let filtered = allRecData.filter(row => row.userKey === userKey);
+    // userKeyでフィルタ（stringに正規化して比較）
+    const normalizedUserKey = String(userKey);
+    let filtered = allRecData.filter(row => String(row.userKey) === normalizedUserKey);
     
     if (filtered.length === 0) {
       return null;
@@ -754,16 +786,19 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
     }
     
     // userKeyごとに最新行のみを残す（recordedAtが最新のもの）
+    // userKeyは必ずstringに正規化してMapキーにする
     const userLatestMap = new Map<string, RecRow>();
     for (const row of publicRows) {
-      const userKey = row.userKey;
+      const userKey = String(row.userKey); // 必ずstringに正規化
       const existing = userLatestMap.get(userKey);
       if (!existing) {
         userLatestMap.set(userKey, row);
       } else {
+        // recordedAtで比較（補完後の値を使用）
         const existingTimestamp = Number(existing.recordedAt || existing.timestamp || 0);
         const currentTimestamp = Number(row.recordedAt || row.timestamp || 0);
-        if (!isNaN(currentTimestamp) && !isNaN(existingTimestamp) && currentTimestamp > existingTimestamp) {
+        // recordedAt=0の行は「古い」として扱われる（除外はしない）
+        if (currentTimestamp > existingTimestamp) {
           userLatestMap.set(userKey, row);
         }
       }
