@@ -3,7 +3,13 @@
  * ローカルに1問ごとの正誤ログを保存し、セッション完了時にスプレッドシートに記録する
  */
 
-import { GAS_URLS, GAS_URL_REC } from '../config/dataSource';
+import { GAS_URLS } from '../config/dataSource';
+
+// GAS BASE URL（rec取得専用）
+const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycby56m2gHAx33pyEKAk1tzzxBG5GJ1BGFmeUPmNj66j0LZG1fjzZu20ZfwEfCC13YjLExw/exec';
+
+// rec取得専用URL（action=recのみ、typeパラメータは一切含めない）
+const GAS_REC_URL = `${GAS_BASE_URL}?action=rec`;
 
 // recデータのキャッシュ（全データを1回取得して再利用）
 let recDataCache: RecRow[] | null = null;
@@ -72,19 +78,11 @@ async function fetchAllRecData(): Promise<RecRow[]> {
   }
   
   try {
-    // rec専用のGAS URLを使用（問題データ用APIとは完全に分離）
-    const recGasUrl = GAS_URL_REC;
+    // rec取得専用URLを使用（問題データ用APIとは完全に分離）
+    // GAS_REC_URL = BASE_URL?action=rec（typeパラメータは一切含めない）
+    console.log('[recLoader] Fetching rec data from:', GAS_REC_URL);
     
-    if (!recGasUrl) {
-      throw new Error('GAS URL for rec not configured');
-    }
-    
-    // rec取得専用エンドポイント（action=rec、typeパラメータは一切使わない）
-    // URLにtype=***が含まれないことを保証
-    const recUrl = `${recGasUrl}?action=rec`;
-    console.log('[recLoader] Fetching rec data from:', recUrl);
-    
-    const response = await fetch(recUrl, {
+    const response = await fetch(GAS_REC_URL, {
       method: 'GET',
       mode: 'cors',
     });
@@ -107,10 +105,17 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     console.log('[recLoader] Parsed response:', data);
     
     // csvが含まれている場合は問題データ用APIが呼ばれている（エラー）
+    // 開発中のみエラーを出力（本番環境では警告のみ）
     if (data.csv) {
-      console.error('[recLoader] ERROR: Received CSV data instead of rec data. This means problem data API was called instead of rec API.');
+      const errorMsg = '[recLoader] ERROR: Received CSV data instead of rec data. This means problem data API was called instead of rec API.';
+      console.error(errorMsg);
       console.error('[recLoader] Response contains csv field:', data.csv.substring(0, 100));
-      throw new Error('Received CSV data instead of rec data. Check that rec URL is correctly configured and action=rec parameter is used.');
+      console.error('[recLoader] Used URL:', GAS_REC_URL);
+      if (import.meta.env.DEV) {
+        throw new Error('Received CSV data instead of rec data. Check that rec URL is correctly configured and action=rec parameter is used.');
+      }
+      // 本番環境では警告のみで空配列を返す
+      return [];
     }
     
     if (data.error) {
