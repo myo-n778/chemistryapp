@@ -19,16 +19,24 @@ export const GasHealthCheck = () => {
       const checks: HealthCheckResult[] = [];
 
       // 1. REC_BASE_URL?action=rec のチェック
-      const recUrl = `${REC_BASE_URL}?action=rec`;
-      checks.push({
-        url: recUrl,
-        name: 'REC (rec専用)',
-        status: 'checking',
-        message: 'チェック中...',
-      });
+      if (!REC_BASE_URL || REC_BASE_URL.trim() === '') {
+        checks.push({
+          url: '（未設定）',
+          name: 'REC (rec専用)',
+          status: 'error',
+          message: '✗ エラー: REC_BASE_URLが設定されていません。src/config/gasUrls.ts または環境変数 VITE_GAS_URL_REC を設定してください。',
+        });
+      } else {
+        const recUrl = `${REC_BASE_URL}?action=rec`;
+        checks.push({
+          url: recUrl,
+          name: 'REC (rec専用)',
+          status: 'checking',
+          message: 'チェック中...',
+        });
 
-      try {
-        const recResponse = await fetch(recUrl, { method: 'GET', mode: 'cors' });
+        try {
+          const recResponse = await fetch(recUrl, { method: 'GET', mode: 'cors' });
         const recText = await recResponse.text();
         const recPreview = recText.substring(0, 200);
 
@@ -82,13 +90,14 @@ export const GasHealthCheck = () => {
             responsePreview: recPreview,
           };
         }
-      } catch (error) {
-        checks[0] = {
-          url: recUrl,
-          name: 'REC (rec専用)',
-          status: 'error',
-          message: `✗ エラー: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        };
+        } catch (error) {
+          checks[0] = {
+            url: recUrl,
+            name: 'REC (rec専用)',
+            status: 'error',
+            message: `✗ エラー: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          };
+        }
       }
 
       setResults([...checks]);
@@ -159,16 +168,24 @@ export const GasHealthCheck = () => {
       setResults([...checks]);
 
       // 3. PROBLEM_BASE_URL?type=compounds のチェック
-      const problemUrl = `${PROBLEM_BASE_URL}?type=compounds&category=organic`;
-      checks.push({
-        url: problemUrl,
-        name: 'PROBLEM (問題データ)',
-        status: 'checking',
-        message: 'チェック中...',
-      });
+      if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
+        checks.push({
+          url: '（未設定）',
+          name: 'PROBLEM (問題データ)',
+          status: 'error',
+          message: '✗ エラー: PROBLEM_BASE_URLが設定されていません。src/config/gasUrls.ts または環境変数 VITE_GAS_URL_PROBLEM を設定してください。',
+        });
+      } else {
+        const problemUrl = `${PROBLEM_BASE_URL}?type=compounds&category=organic`;
+        checks.push({
+          url: problemUrl,
+          name: 'PROBLEM (問題データ)',
+          status: 'checking',
+          message: 'チェック中...',
+        });
 
-      try {
-        const problemResponse = await fetch(problemUrl, { method: 'GET', mode: 'cors' });
+        try {
+          const problemResponse = await fetch(problemUrl, { method: 'GET', mode: 'cors' });
         const problemText = await problemResponse.text();
         const problemPreview = problemText.substring(0, 200);
 
@@ -221,13 +238,14 @@ export const GasHealthCheck = () => {
             responsePreview: problemPreview,
           };
         }
-      } catch (error) {
-        checks[2] = {
-          url: problemUrl,
-          name: 'PROBLEM (問題データ)',
-          status: 'error',
-          message: `✗ エラー: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        };
+        } catch (error) {
+          checks[2] = {
+            url: problemUrl,
+            name: 'PROBLEM (問題データ)',
+            status: 'error',
+            message: `✗ エラー: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          };
+        }
       }
 
       setResults([...checks]);
