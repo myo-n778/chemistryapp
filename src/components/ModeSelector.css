@@ -6,7 +6,7 @@
   color: #ffffff;
   text-align: center;
   position: relative; /* stacking context を作成 */
-  z-index: 10; /* ボタンがクリックできるように高いz-index */
+  z-index: 1; /* 最小限のz-index */
 }
 
 .mode-selector-header {
@@ -88,6 +88,15 @@
   margin-bottom: 12px;
 }
 
+/* モード一覧を包むスクロールコンテナ */
+.mode-grid-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
+  position: relative; /* stacking context を作成 */
+  z-index: 1; /* 最小限のz-index */
+}
+
 .mode-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -97,7 +106,7 @@
   margin-left: auto;
   margin-right: auto;
   position: relative; /* stacking context を作成 */
-  z-index: 10; /* ボタンがクリックできるように高いz-index */
+  z-index: 1; /* 最小限のz-index */
 }
 
 .mode-button {
@@ -110,7 +119,7 @@
   text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   position: relative; /* stacking context を作成 */
-  z-index: 11; /* ボタンがクリックできるように高いz-index */
+  z-index: 2; /* 最小限のz-index */
 }
 
 .mode-button:hover {
