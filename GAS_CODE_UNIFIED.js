@@ -377,7 +377,7 @@ function getAllRecData() {
       
       result.push({
         name: row[0] || '',
-        userKey: row[1] || '',
+        userKey: String(row[1] || ''), // 必ず文字列として正規化
         mode: row[2] || '',
         EXP: row[3] || 0,
         LV: row[4] || 0,
