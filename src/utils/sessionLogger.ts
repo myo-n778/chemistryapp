@@ -11,8 +11,10 @@ const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7Xbe0Q89w1QNGJ2l
 // rec取得専用URL（action=recのみ、typeパラメータは一切含めない）
 const GAS_REC_URL = `${GAS_BASE_URL}?action=rec`;
 
-// userStats取得専用URL（action=userStatsのみ、typeパラメータは一切含めない）
-const GAS_USERSTATS_URL = `${GAS_BASE_URL}?action=userStats`;
+// userStats取得専用URL（別のGASプロジェクトとしてデプロイ）
+// 注意: userStats専用GAS（GAS_CODE_USERSTATS.js）のWebアプリURLを設定してください
+// デプロイ後、このURLを更新してください
+const GAS_USERSTATS_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 'https://script.google.com/macros/s/YOUR_USERSTATS_GAS_URL/exec';
 
 // recデータのキャッシュ（全データを1回取得して再利用）
 let recDataCache: RecRow[] | null = null;

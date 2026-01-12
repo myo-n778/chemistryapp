@@ -13,15 +13,6 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
   
-  // 2) userStats取得専用エンドポイント
-  //    - action=userStats の場合は userStats シートを返す
-  if (e && e.parameter && e.parameter.action === 'userStats') {
-    const allUserStats = getAllUserStats(); // UserStatsRow[] の配列
-    return ContentService
-      .createTextOutput(JSON.stringify(allUserStats))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  
   // 2) 以下は問題データ用API（type検証あり）
   //    - /exec?action=rec 以外のときのみ到達
   const type = e.parameter.type || 'compounds';
