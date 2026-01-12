@@ -13,10 +13,9 @@
  * - ?type=compounds|reactions|experiment|inorganic-new → {csv:"..."}（問題データ）
  * - ?action=rec → JSON配列（recデータ）
  * - ?action=userStats → JSON配列（userStatsデータ）
- * - ?action=health → ヘルスチェック情報
  * - POST → recに追記＋userStatsを加算更新
  */
-const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz5Tsfh3Ky6Wim2IB0Gsw68C5z-p8nwKXaCSpGOIUL2kh-DgVek3C3iXvAbSw0kqmeE5A/exec';
+const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzzqLNLfRjmotZQvdLunNiJ6G_BQDv390X5W4a8i5aRdQAZmn0UaAHfVC7rHK_LO4SFsw/exec';
 
 /**
  * 問題データ用GAS URL（CSVを返す）
