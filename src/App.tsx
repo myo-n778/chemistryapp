@@ -13,6 +13,7 @@ import { InorganicReactionNew } from './types/inorganic';
 import { ExperimentCSVRow } from './utils/experimentParser';
 import { TeXTest } from './components/TeXTest';
 import { getActiveUser } from './utils/sessionLogger';
+import { GasHealthCheck } from './components/GasHealthCheck';
 import './App.css';
 
 // 一時的にTeXTestを表示するためのフラグ（開発用）
@@ -58,6 +59,7 @@ function App() {
     console.log('[App] No activeUser, showing UserManager');
     return (
       <div className="App">
+        <GasHealthCheck />
         <UserManager
           onUserSelected={() => {
             const user = getActiveUser();
@@ -572,6 +574,7 @@ function App() {
   if (!selectedCategory) {
     return (
       <div className="App">
+        <GasHealthCheck />
         <SoundSelector />
         <CategorySelector onSelectCategory={setSelectedCategory} />
       </div>
@@ -581,6 +584,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="App">
+        <GasHealthCheck />
         <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p className="loading-text">loading…</p>
@@ -592,6 +596,7 @@ function App() {
   if (currentLoadingError) {
     return (
       <div className="App">
+        <GasHealthCheck />
         <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
@@ -622,6 +627,7 @@ function App() {
   if (!selectedMode) {
     return (
       <div className="App">
+        <GasHealthCheck />
         <SoundSelector />
         <ModeSelector
           category={selectedCategory}
@@ -754,6 +760,7 @@ function App() {
 
   return (
     <div className="App">
+      <GasHealthCheck />
       <SoundSelector />
       {mainContent}
     </div>

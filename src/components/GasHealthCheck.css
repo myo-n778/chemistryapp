@@ -1,0 +1,181 @@
+.gas-health-check {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.gas-health-check.has-error {
+  border-color: #ff4444;
+  background: #fff5f5;
+}
+
+.health-check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.health-check-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.health-check-toggle {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  min-width: 24px;
+  height: 24px;
+}
+
+.health-check-toggle:hover {
+  background: #e0e0e0;
+}
+
+.health-check-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.health-check-item {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.health-check-item.checking {
+  background: #fff9e6;
+  border-color: #ffd700;
+}
+
+.health-check-item.ok {
+  background: #f0fff4;
+  border-color: #4caf50;
+}
+
+.health-check-item.error {
+  background: #fff5f5;
+  border-color: #ff4444;
+}
+
+.health-check-name {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.health-check-message {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: #666;
+  word-break: break-word;
+}
+
+.health-check-item.ok .health-check-message {
+  color: #2e7d32;
+}
+
+.health-check-item.error .health-check-message {
+  color: #c62828;
+}
+
+.health-check-details {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.health-check-details summary {
+  cursor: pointer;
+  color: #666;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.health-check-details summary:hover {
+  color: #333;
+}
+
+.health-check-preview {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.health-check-url {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
+  word-break: break-all;
+  font-family: 'Courier New', monospace;
+}
+
+.health-check-loading {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 8px;
+}
+
+/* モバイル対応 */
+@media screen and (max-width: 767px) {
+  .gas-health-check {
+    top: 5px;
+    right: 5px;
+    left: 5px;
+    max-width: calc(100vw - 10px);
+    font-size: 11px;
+    padding: 8px;
+  }
+
+  .health-check-header h3 {
+    font-size: 12px;
+  }
+
+  .health-check-name {
+    font-size: 12px;
+  }
+
+  .health-check-message {
+    font-size: 11px;
+  }
+
+  .health-check-preview {
+    font-size: 9px;
+    max-height: 100px;
+  }
+
+  .health-check-url {
+    font-size: 9px;
+  }
+}
