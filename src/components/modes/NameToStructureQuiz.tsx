@@ -6,6 +6,7 @@ import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../utils/scoreCalculator';
 import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
+import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface NameToStructureQuizProps {
@@ -33,6 +34,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   const isProcessingRef = useRef(false);
   const lastTapRef = useRef<number>(0);
   const tapTimeoutRef = useRef<number | null>(null);
+  const questionLogsRef = useRef<QuestionLog[]>([]); // セッション内の問題ログ
 
   // 化合物が空の場合はエラーメッセージを表示
   if (compounds.length === 0) {
@@ -110,6 +112,28 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (isCorrect) {
       setScore(prev => prev + 1);
     }
+
+    // 問題ログを追加
+    const getModeAndRangeKey = () => {
+      const mode = `name-to-structure-${category}`;
+      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
+        ? getRangeKey('batch-10', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
+        ? getRangeKey('batch-20', quizSettings.startIndex)
+        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
+        ? getRangeKey('batch-40', quizSettings.startIndex)
+        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      return { mode, rangeKey };
+    };
+    const { mode, rangeKey } = getModeAndRangeKey();
+    const questionLog: QuestionLog = {
+      questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
+      isCorrect,
+      timestamp: Date.now(),
+      mode,
+      category: 'organic',
+    };
+    questionLogsRef.current.push(questionLog);
   };
 
   const handleNext = () => {
@@ -140,6 +164,45 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser() || { userKey: generateUUID(), displayName: 'Anonymous', public: false };
+      if (!getActiveUser()) {
+        setActiveUser(activeUser);
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+      };
+      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      
       // finish音声はuseEffectで再生（結果画面表示時）
       setIsFinished(true);
     } else if (currentIndex < compounds.length - 1) {
@@ -157,6 +220,45 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       // 最高記録を保存（モード×範囲ごとに分離）
       const { mode, rangeKey } = getModeAndRangeKey();
       saveHighScore(pointScore, score, totalAnswered, mode, rangeKey);
+      
+      // セッションログを保存
+      const activeUser = getActiveUser() || { userKey: generateUUID(), displayName: 'Anonymous', public: false };
+      if (!getActiveUser()) {
+        setActiveUser(activeUser);
+      }
+      const sessionId = generateUUID();
+      const now = Date.now();
+      const dateStr = new Date(now).toISOString().split('T')[0];
+      const sessionLog: SessionLog = {
+        sessionId,
+        userKey: activeUser.userKey,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        timestamp: now,
+        date: dateStr,
+      };
+      saveSessionLog(sessionLog);
+      saveQuestionLogsForSession(sessionId, questionLogsRef.current);
+      
+      const recRow: RecRow = {
+        userKey: activeUser.userKey,
+        displayName: activeUser.displayName,
+        mode,
+        category: 'organic',
+        rangeKey,
+        correctCount: score,
+        totalCount: totalAnswered,
+        pointScore,
+        accuracy: totalAnswered > 0 ? score / totalAnswered : 0,
+        date: dateStr,
+        timestamp: now,
+      };
+      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      
       // finish音声はuseEffectで再生（結果画面表示時）
       setIsFinished(true);
     }
@@ -178,6 +280,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     setQuestionStartTime(Date.now());
     setLastQuestionId(null);
     setConsecutiveCount(0);
+    questionLogsRef.current = []; // 問題ログをリセット
   };
 
   // quizSettings.startIndexが変更された時（Next押下時）に状態をリセット
@@ -194,6 +297,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
       setQuestionStartTime(Date.now());
       setLastQuestionId(null);
       setConsecutiveCount(0);
+      questionLogsRef.current = []; // 問題ログをリセット
     }
   }, [quizSettings?.startIndex]);
 
