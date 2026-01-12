@@ -124,10 +124,24 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     const requestId = `recLoader#${Date.now()}`;
     console.log(`[${requestId}] Fetching rec data from:`, GAS_REC_URL);
     
-    const response = await fetch(GAS_REC_URL, {
-      method: 'GET',
-      mode: 'cors',
-    });
+    let response: Response;
+    try {
+      response = await fetch(GAS_REC_URL, {
+        method: 'GET',
+        mode: 'cors',
+      });
+    } catch (fetchError) {
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, GAS_REC_URL);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, GAS_REC_URL);
+      throw fetchError;
+    }
     
     // 形式チェック: レスポンス情報をログ出力
     const contentType = response.headers.get('content-type') || 'unknown';
@@ -302,7 +316,15 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     
     return filtered;
   } catch (error) {
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
     console.warn('[recLoader] Failed to fetch all rec data:', error);
+    console.error('[recLoader] Used URL:', GAS_REC_URL);
+    console.error('[recLoader] Origin:', origin);
+    console.error('[recLoader] Error name:', error instanceof Error ? error.name : 'Unknown');
+    console.error('[recLoader] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[recLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.');
+    console.error('[recLoader] Direct test URL (copy to browser):', GAS_REC_URL);
     // キャッシュがあればそれを返す
     if (recDataCache) {
       console.log('[recLoader] Using cached data due to fetch error');
@@ -342,10 +364,24 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
     const requestId = `userStatsLoader#${Date.now()}`;
     console.log(`[${requestId}] Fetching userStats data from:`, GAS_USERSTATS_URL);
     
-    const response = await fetch(GAS_USERSTATS_URL, {
-      method: 'GET',
-      mode: 'cors',
-    });
+    let response: Response;
+    try {
+      response = await fetch(GAS_USERSTATS_URL, {
+        method: 'GET',
+        mode: 'cors',
+      });
+    } catch (fetchError) {
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, GAS_USERSTATS_URL);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, GAS_USERSTATS_URL);
+      throw fetchError;
+    }
     
     // 形式チェック: レスポンス情報をログ出力
     const contentType = response.headers.get('content-type') || 'unknown';
@@ -445,7 +481,15 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
     
     return normalized;
   } catch (error) {
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
     console.warn('[userStatsLoader] Failed to fetch all userStats:', error);
+    console.error('[userStatsLoader] Used URL:', GAS_USERSTATS_URL);
+    console.error('[userStatsLoader] Origin:', origin);
+    console.error('[userStatsLoader] Error name:', error instanceof Error ? error.name : 'Unknown');
+    console.error('[userStatsLoader] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[userStatsLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.');
+    console.error('[userStatsLoader] Direct test URL (copy to browser):', GAS_USERSTATS_URL);
     if (userStatsCache) {
       console.log('[userStatsLoader] Using cached data due to fetch error');
       return userStatsCache;

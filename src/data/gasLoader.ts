@@ -153,7 +153,17 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
       throw new Error('Invalid data format from GAS. Expected "csv" or "compounds" field.');
     }
   } catch (error) {
-    console.error(`Failed to load compounds from GAS for ${category}:`, error);
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    if (!(error instanceof Error && error.name === 'AbortError')) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[problemLoader] Failed to load compounds from GAS for ${category}:`, error);
+      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=compounds&category=${category}`);
+      console.error(`[problemLoader] Origin:`, origin);
+      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
+      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=compounds&category=${category}`);
+    }
     // フォールバック: 有機化学の場合でもデフォルトデータを返さない（スプレッドシート優先）
     // 必要なら空配列を返してエラー表示させる
     if (category === 'organic') {
@@ -199,6 +209,15 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         throw new Error('Request timeout: GAS took too long to respond');
       }
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, url);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
       throw fetchError;
     }
 
@@ -251,7 +270,17 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
       throw new Error('Invalid data format from GAS');
     }
   } catch (error) {
-    console.error(`Failed to load reactions from GAS for ${category}:`, error);
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    if (!(error instanceof Error && error.name === 'AbortError')) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[problemLoader] Failed to load reactions from GAS for ${category}:`, error);
+      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=reactions&category=${category}`);
+      console.error(`[problemLoader] Origin:`, origin);
+      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
+      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=reactions&category=${category}`);
+    }
     return [];
   }
 };
@@ -291,6 +320,15 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         throw new Error('Request timeout: GAS took too long to respond');
       }
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, url);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
       throw fetchError;
     }
 
@@ -343,7 +381,17 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
       throw new Error('Invalid data format from GAS');
     }
   } catch (error) {
-    console.error(`Failed to load experiments from GAS for ${category}:`, error);
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    if (!(error instanceof Error && error.name === 'AbortError')) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[problemLoader] Failed to load experiments from GAS for ${category}:`, error);
+      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=experiment&category=${category}`);
+      console.error(`[problemLoader] Origin:`, origin);
+      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
+      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=experiment&category=${category}`);
+    }
     return [];
   }
 };
@@ -383,6 +431,15 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         throw new Error('Request timeout: GAS took too long to respond');
       }
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, url);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
       throw fetchError;
     }
 
@@ -512,7 +569,17 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
       throw new Error('Invalid data format from GAS. Expected "csv" or "reactions" field.');
     }
   } catch (error) {
-    console.error('Failed to load inorganic reactions new from GAS:', error);
+    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
+    if (!(error instanceof Error && error.name === 'AbortError')) {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[problemLoader] Failed to load inorganic reactions new from GAS:`, error);
+      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`);
+      console.error(`[problemLoader] Origin:`, origin);
+      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
+      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`);
+    }
     throw error;
   }
 };
