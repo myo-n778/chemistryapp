@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveUser } from '../utils/sessionLogger';
+import { getActiveUser, User } from '../utils/sessionLogger';
 import { getPublicRankingLatest, RecRow } from '../utils/sessionLogger';
 import './PublicRankingPanel.css';
 
@@ -11,18 +11,30 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   const [ranking, setRanking] = useState<RecRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasActiveUser, setHasActiveUser] = useState(false);
+  const [activeUser, setActiveUser] = useState<User | null>(() => getActiveUser());
 
-  // Hookは必ずトップレベルで無条件に呼ぶ
+  // activeUserの変更を監視（localStorageの変更を検知）
   useEffect(() => {
-    const activeUser = getActiveUser();
+    const checkActiveUser = () => {
+      const currentActiveUser = getActiveUser();
+      setActiveUser(currentActiveUser);
+    };
+
+    // 初回チェック
+    checkActiveUser();
+
+    // 定期的にチェック（ユーザー切替時に更新されるように）
+    const interval = setInterval(checkActiveUser, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // activeUserまたはmodeが変更されたときにデータを再取得
+  useEffect(() => {
     if (!activeUser) {
-      setHasActiveUser(false);
       setLoading(false);
+      setRanking([]);
       return;
     }
-
-    setHasActiveUser(true);
 
     const loadRanking = async () => {
       try {
@@ -39,10 +51,10 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     };
 
     loadRanking();
-  }, [mode]);
+  }, [mode, activeUser?.userKey]); // activeUser.userKeyを依存配列に追加（activeUser変更時に再取得）
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
-  if (!hasActiveUser) {
+  if (!activeUser) {
     return null;
   }
 

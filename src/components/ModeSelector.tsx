@@ -39,13 +39,17 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
   return (
     <div className="mode-selector">
       <div className="mode-selector-header">
-        <button className="back-to-category-button" onClick={onBack}>
-          ← カテゴリ選択に戻る
-        </button>
-        <h1>{categoryName} Drill</h1>
-        <button className="logout-button" onClick={handleLogout} title="ユーザー切替">
-          ユーザー切替
-        </button>
+        <div className="mode-selector-header-left">
+          <button className="back-to-category-button" onClick={onBack}>
+            ← カテゴリ選択に戻る
+          </button>
+        </div>
+        <h1 className="mode-selector-title">{categoryName} Drill</h1>
+        <div className="mode-selector-header-right">
+          <button className="logout-button" onClick={handleLogout} title="ユーザー切替">
+            ユーザー切替
+          </button>
+        </div>
       </div>
       <p className="mode-description">モードを選択してください</p>
       

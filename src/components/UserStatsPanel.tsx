@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getActiveUser } from '../utils/sessionLogger';
+import { getActiveUser, User } from '../utils/sessionLogger';
 import { getLatestRecByUser, RecRow } from '../utils/sessionLogger';
 import './UserStatsPanel.css';
 
@@ -11,18 +11,30 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   const [recData, setRecData] = useState<RecRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasActiveUser, setHasActiveUser] = useState(false);
+  const [activeUser, setActiveUser] = useState<User | null>(() => getActiveUser());
 
-  // Hookは必ずトップレベルで無条件に呼ぶ
+  // activeUserの変更を監視（localStorageの変更を検知）
   useEffect(() => {
-    const activeUser = getActiveUser();
+    const checkActiveUser = () => {
+      const currentActiveUser = getActiveUser();
+      setActiveUser(currentActiveUser);
+    };
+
+    // 初回チェック
+    checkActiveUser();
+
+    // 定期的にチェック（ユーザー切替時に更新されるように）
+    const interval = setInterval(checkActiveUser, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // activeUserまたはmodeが変更されたときにデータを再取得
+  useEffect(() => {
     if (!activeUser) {
-      setHasActiveUser(false);
       setLoading(false);
+      setRecData(null);
       return;
     }
-
-    setHasActiveUser(true);
 
     const loadData = async () => {
       try {
@@ -39,14 +51,9 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     };
 
     loadData();
-  }, [mode]);
+  }, [mode, activeUser?.userKey]); // activeUser.userKeyを依存配列に追加（activeUser変更時に再取得）
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
-  if (!hasActiveUser) {
-    return null;
-  }
-
-  const activeUser = getActiveUser();
   if (!activeUser) {
     return null;
   }
