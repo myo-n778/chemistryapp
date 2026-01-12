@@ -6,7 +6,7 @@
 import { GAS_URLS } from '../config/dataSource';
 
 // GAS BASE URL（rec取得専用）
-const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycby56m2gHAx33pyEKAk1tzzxBG5GJ1BGFmeUPmNj66j0LZG1fjzZu20ZfwEfCC13YjLExw/exec';
+const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7Xbe0Q89w1QNGJ2lCcBYaAT6f1d_yIdUeRZtlDR3tKwZZ3ESDSWltE1p6FjCSdyAUng/exec';
 
 // rec取得専用URL（action=recのみ、typeパラメータは一切含めない）
 const GAS_REC_URL = `${GAS_BASE_URL}?action=rec`;
@@ -162,15 +162,59 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       .map((row: Record<string, any>) => normalizeRecRow(row))
       .filter((row: RecRow | null): row is RecRow => row !== null);
     
-    console.log(`[recLoader] Normalized ${normalized.length} rec rows`);
+    // ① 説明行・不正行を除外（nameが説明文やヘッダっぽいもの、userKey欠損、recordedAt無効など）
+    const filtered: RecRow[] = normalized.filter((row: RecRow) => {
+      // userKeyは必須（空文字やnullは除外）
+      const userKey = (row.userKey || '').trim();
+      if (!userKey) {
+        return false;
+      }
+      
+      // recordedAtが0または無効値の行はlatest判定を壊すので除外
+      if (!row.recordedAt || row.recordedAt <= 0) {
+        return false;
+      }
+      
+      // name/displayNameが明らかに説明行・ヘッダっぽい場合は除外
+      const name = (row.name || row.displayName || '').trim();
+      if (!name) {
+        return false;
+      }
+      const lower = name.toLowerCase();
+      if (
+        lower.includes('displayname') ||
+        lower.includes('表示名') ||
+        lower.includes('ユーザー名') ||
+        lower.includes('userkey') ||
+        lower.includes('説明') ||
+        lower.startsWith('name(') ||
+        lower.startsWith('name（')
+      ) {
+        return false;
+      }
+      
+      return true;
+    });
     
-    // キャッシュに保存
-    recDataCache = normalized;
+    // 統計ログ（開発用）
+    const totalRows = normalized.length;
+    const filteredRows = filtered.length;
+    const uniqueUserKeys = new Set(filtered.map(row => String(row.userKey))).size;
+    console.log('[recLoader] Stats after normalization/filtering:', {
+      totalRows,
+      filteredRows,
+      uniqueUserKeys
+    });
+    
+    console.log(`[recLoader] Normalized ${normalized.length} rec rows (after filtering: ${filtered.length})`);
+    
+    // キャッシュに保存（正規化＋フィルタ済みデータのみ）
+    recDataCache = filtered;
     recDataCacheTimestamp = now;
     
-    console.log(`[recLoader] Fetched ${normalized.length} rec rows (cached)`);
+    console.log(`[recLoader] Fetched ${filtered.length} rec rows (cached)`);
     
-    return normalized;
+    return filtered;
   } catch (error) {
     console.warn('[recLoader] Failed to fetch all rec data:', error);
     // キャッシュがあればそれを返す
