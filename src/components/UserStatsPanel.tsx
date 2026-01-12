@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getActiveUser, User } from '../utils/sessionLogger';
-import { getLatestRecByUser, RecRow } from '../utils/sessionLogger';
+import { getLatestRecByUser, RecRow, calculateQuestionConsecutiveStreak } from '../utils/sessionLogger';
 import './UserStatsPanel.css';
 
 interface UserStatsPanelProps {
@@ -14,6 +14,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   const [error, setError] = useState<string | null>(null);
   const [userKey, setUserKey] = useState<string | null>(null);
   const [activeUser, setActiveUser] = useState<User | null>(null);
+  const [questionStreak, setQuestionStreak] = useState<{ cst: number; mst: number } | null>(null);
 
   // activeUserの初期化と監視（localStorageの変更を検知）
   useEffect(() => {
@@ -50,6 +51,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     if (!userKey) {
       setLoading(false);
       setRecData(null);
+      setQuestionStreak(null);
       return;
     }
 
@@ -62,6 +64,10 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
         const data = await getLatestRecByUser(userKey, mode);
         console.log('[UserStatsPanel] Rec data loaded:', data);
         setRecData(data);
+        
+        // 問題単位の連続正解数を計算
+        const streak = calculateQuestionConsecutiveStreak(userKey, mode);
+        setQuestionStreak(streak);
       } catch (err) {
         console.error('[UserStatsPanel] Failed to load rec data:', err);
         setError('データの読み込みに失敗しました');
@@ -106,7 +112,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   };
 
   const formatPercentage = (value: number): string => {
-    return `${(value * 100).toFixed(2)}%`;
+    return `${(value * 100).toFixed(1)}%`;
   };
 
   const formatDate = (value: string | number | undefined | null): string => {
@@ -150,12 +156,12 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
       </div>
       <div className="stats-grid">
         <div className="stats-item">
-          <div className="stats-label">EXP</div>
-          <div className="stats-value">{displayValue(recData?.EXP)}</div>
-        </div>
-        <div className="stats-item">
           <div className="stats-label">LV</div>
           <div className="stats-value">{displayValue(recData?.LV)}</div>
+        </div>
+        <div className="stats-item">
+          <div className="stats-label">EXP</div>
+          <div className="stats-value">{displayValue(recData?.EXP)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">10回平均</div>
@@ -171,15 +177,15 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
         </div>
         <div className="stats-item">
           <div className="stats-label">連続正解</div>
-          <div className="stats-value">{displayValue(recData?.cst)}</div>
+          <div className="stats-value">{displayValue(questionStreak?.cst ?? recData?.cst)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">最大連続</div>
-          <div className="stats-value">{displayValue(recData?.mst)}</div>
+          <div className="stats-value">{displayValue(questionStreak?.mst ?? recData?.mst)}</div>
         </div>
         <div className="stats-item">
           <div className="stats-label">最終</div>
-          <div className="stats-value stats-value-date">{formatDate(recData?.last)}</div>
+          <div className="stats-value stats-value-date">{formatDate(recData?.last || (recData as any)?.recordedAtReadable)}</div>
         </div>
       </div>
     </div>

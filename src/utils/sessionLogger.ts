@@ -524,20 +524,112 @@ export const saveQuestionLog = (log: QuestionLog): void => {
 
 /**
  * 問題ログを取得（ユーザーキーでフィルタ）
+ * 注意: QuestionLogにはuserKeyが含まれていないため、セッションログから逆引きする
+ * 簡易実装: セッションログのuserKeyとタイムスタンプ範囲で紐付ける
  */
-export const getQuestionLogs = (_userKey: string): QuestionLog[] => {
+export const getQuestionLogs = (userKey: string): QuestionLog[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_QUESTION_LOGS);
     if (!stored) return [];
     const allLogs: QuestionLog[] = JSON.parse(stored);
-    return allLogs.filter(_log => {
-      // userKeyはQuestionLogに含まれていないため、セッションログから逆引きする必要がある
-      // 簡易実装: 全ログを返す（実際の実装ではセッションIDで紐付ける）
-      return true;
+    
+    // セッションログを取得して、タイムスタンプ範囲で紐付ける
+    const sessionLogs = getSessionLogs(userKey);
+    if (sessionLogs.length === 0) {
+      return [];
+    }
+    
+    // セッションログのタイムスタンプ範囲を取得
+    const sessionTimestamps = new Set<number>();
+    sessionLogs.forEach(session => {
+      // タイムスタンプ範囲を記録（簡易実装: セッションタイムスタンプをキーとして使用）
+      sessionTimestamps.add(session.timestamp);
     });
+    
+    // セッションログのタイムスタンプ範囲内のQuestionLogをフィルタ
+    // 簡易実装: セッションログのタイムスタンプに最も近いQuestionLogを紐付ける
+    const filteredLogs: QuestionLog[] = [];
+    allLogs.forEach(log => {
+      // セッションログのタイムスタンプ範囲内かチェック
+      for (const sessionTimestamp of sessionTimestamps) {
+        const timeDiff = Math.abs(log.timestamp - sessionTimestamp);
+        if (timeDiff < 30 * 60 * 1000) { // 30分以内
+          filteredLogs.push(log);
+          break;
+        }
+      }
+    });
+    
+    // タイムスタンプ順にソート
+    return filteredLogs.sort((a, b) => a.timestamp - b.timestamp);
   } catch (error) {
     console.warn('Failed to get question logs:', error);
     return [];
+  }
+};
+
+/**
+ * 問題単位の連続正解数と最大連続正解数を計算
+ * @param userKey ユーザーキー
+ * @param mode オプション: 'organic' または 'inorganic' でフィルタ
+ * @returns { cst: number, mst: number } 現在の連続正解数と最大連続正解数
+ */
+export const calculateQuestionConsecutiveStreak = (userKey: string, mode?: 'organic' | 'inorganic'): { cst: number; mst: number } => {
+  try {
+    const questionLogs = getQuestionLogs(userKey);
+    
+    // modeでフィルタ（指定されている場合）
+    let filteredLogs = questionLogs;
+    if (mode) {
+      filteredLogs = questionLogs.filter(log => {
+        return log.category === mode;
+      });
+    }
+    
+    if (filteredLogs.length === 0) {
+      return { cst: 0, mst: 0 };
+    }
+    
+    // タイムスタンプ順にソート（既にソート済みだが念のため）
+    const sortedLogs = [...filteredLogs].sort((a, b) => a.timestamp - b.timestamp);
+    
+    let cst = 0; // 現在の連続正解数
+    let mst = 0; // 最大連続正解数
+    let currentStreak = 0;
+    
+    // 最新から遡って連続正解数を計算
+    for (let i = sortedLogs.length - 1; i >= 0; i--) {
+      const log = sortedLogs[i];
+      if (log.isCorrect) {
+        currentStreak++;
+        mst = Math.max(mst, currentStreak);
+        // 最新の連続正解数がcst
+        if (i === sortedLogs.length - 1 || (i < sortedLogs.length - 1 && sortedLogs[i + 1].isCorrect)) {
+          cst = currentStreak;
+        }
+      } else {
+        // 間違えたら連続が途切れる
+        if (i === sortedLogs.length - 1) {
+          cst = 0; // 最新が間違いなら連続正解数は0
+        }
+        currentStreak = 0;
+      }
+    }
+    
+    // 最新から遡って連続正解数を再計算（より正確に）
+    cst = 0;
+    for (let i = sortedLogs.length - 1; i >= 0; i--) {
+      if (sortedLogs[i].isCorrect) {
+        cst++;
+      } else {
+        break; // 間違えたら終了
+      }
+    }
+    
+    return { cst, mst };
+  } catch (error) {
+    console.warn('Failed to calculate question consecutive streak:', error);
+    return { cst: 0, mst: 0 };
   }
 };
 
@@ -785,21 +877,24 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
       return [];
     }
     
-    // userKeyごとに最新行のみを残す（recordedAtが最新のもの）
-    // userKeyは必ずstringに正規化してMapキーにする
+    // ユーザー統合ルール: userKey + name の複合キーでグループ化
+    // 同一ユーザー判定キーを「userKey + name」の組み合わせにする
     const userLatestMap = new Map<string, RecRow>();
     for (const row of publicRows) {
-      const userKey = String(row.userKey); // 必ずstringに正規化
-      const existing = userLatestMap.get(userKey);
+      const userKey = String(row.userKey || ''); // 必ずstringに正規化
+      const name = String(row.name || row.displayName || ''); // nameを取得
+      const compositeKey = `${userKey}|${name}`; // 複合キー
+      
+      const existing = userLatestMap.get(compositeKey);
       if (!existing) {
-        userLatestMap.set(userKey, row);
+        userLatestMap.set(compositeKey, row);
       } else {
         // recordedAtで比較（補完後の値を使用）
         const existingTimestamp = Number(existing.recordedAt || existing.timestamp || 0);
         const currentTimestamp = Number(row.recordedAt || row.timestamp || 0);
         // recordedAt=0の行は「古い」として扱われる（除外はしない）
         if (currentTimestamp > existingTimestamp) {
-          userLatestMap.set(userKey, row);
+          userLatestMap.set(compositeKey, row);
         }
       }
     }

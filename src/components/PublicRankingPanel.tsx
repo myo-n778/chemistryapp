@@ -115,7 +115,7 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   };
 
   const formatPercentage = (value: number): string => {
-    return `${(value * 100).toFixed(2)}%`;
+    return `${(value * 100).toFixed(1)}%`;
   };
 
   const formatDate = (value: string | number | undefined | null): string => {
@@ -176,7 +176,7 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
                 <div className="ranking-col-lv">{displayValue(row.LV)}</div>
                 <div className="ranking-col-ave">{displayValue(row.allAve, formatPercentage)}</div>
                 <div className="ranking-col-sess">{displayValue(row.sess)}</div>
-                <div className="ranking-col-last">{formatDate(row.last)}</div>
+                <div className="ranking-col-last">{formatDate(row.last || (row as any)?.recordedAtReadable)}</div>
               </div>
             );
           })}

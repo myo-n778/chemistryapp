@@ -35,11 +35,12 @@
 .ranking-table {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
 }
 
 .ranking-table-header {
   display: grid;
-  grid-template-columns: 45px 1fr 55px 110px 75px 140px;
+  grid-template-columns: 45px minmax(120px, 1fr) 55px 110px 75px 140px;
   gap: 8px 12px;
   padding: 10px 4px;
   border-bottom: 2px solid #ffa500;
@@ -47,22 +48,28 @@
   font-size: 0.85em;
   color: #ffa500;
   align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: rgba(42, 31, 26, 0.95);
+  z-index: 10;
 }
 
 .ranking-table-body {
   max-height: 400px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
 }
 
 .ranking-row {
   display: grid;
-  grid-template-columns: 45px 1fr 55px 110px 75px 140px;
+  grid-template-columns: 45px minmax(120px, 1fr) 55px 110px 75px 140px;
   gap: 8px 12px;
   padding: 10px 4px;
   border-bottom: 1px solid rgba(255, 165, 0, 0.2);
   font-size: 0.9em;
   transition: background-color 0.15s;
   align-items: center;
+  min-width: 600px; /* 最小幅を設定（横スクロール対応） */
 }
 
 .ranking-row:hover {
@@ -115,6 +122,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   padding-left: 4px;
+  min-width: 120px; /* 名前列の最小幅を設定 */
 }
 
 .ranking-col-lv {
@@ -159,10 +167,15 @@
 
   .ranking-table-header,
   .ranking-row {
-    grid-template-columns: 40px 1fr 50px 95px 65px 120px;
+    grid-template-columns: 40px minmax(100px, 1fr) 50px 95px 65px 120px;
     gap: 6px 8px;
     font-size: 0.85em;
     padding: 8px 2px;
+    min-width: 550px; /* モバイルでも最小幅を設定 */
+  }
+  
+  .ranking-col-name {
+    min-width: 100px; /* モバイルでの名前列の最小幅 */
   }
 
   .ranking-col-last {
@@ -182,10 +195,15 @@
 
   .ranking-table-header,
   .ranking-row {
-    grid-template-columns: 35px 1fr 45px 85px 55px 110px;
+    grid-template-columns: 35px minmax(90px, 1fr) 45px 85px 55px 110px;
     gap: 4px 6px;
     font-size: 0.8em;
     padding: 6px 2px;
+    min-width: 500px; /* 小画面でも最小幅を設定 */
+  }
+  
+  .ranking-col-name {
+    min-width: 90px; /* 小画面での名前列の最小幅 */
   }
 
   .ranking-col-last {
