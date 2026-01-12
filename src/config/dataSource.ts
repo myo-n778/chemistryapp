@@ -1,4 +1,5 @@
 import { Category } from '../components/CategorySelector';
+import { PROBLEM_BASE_URL } from './gasUrls';
 
 /**
  * データソースの種類
@@ -13,31 +14,20 @@ export const DATA_SOURCE: DataSource = 'gas'; // 'csv' または 'gas'
 
 /**
  * GAS WebアプリのURL（カテゴリごと）
- * 環境変数から取得。設定されていない場合は空文字列を返す
+ * 問題データ用URLは gasUrls.ts の PROBLEM_BASE_URL を一元管理
+ * 後方互換性のため、両方のカテゴリで同じURLを使用
  */
 export const GAS_URLS: Record<Category, string> = {
-  organic: import.meta.env.VITE_GAS_URL_ORGANIC || 'https://script.google.com/macros/s/AKfycbxXc3xz7seg_3x7NouBO3OzDYxYMfCAZib9CqRFVdpEMEtEScKp5jdCFNdjRsIkIgFRWw/exec',
-  inorganic: import.meta.env.VITE_GAS_URL_INORGANIC || 'https://script.google.com/macros/s/AKfycbxXc3xz7seg_3x7NouBO3OzDYxYMfCAZib9CqRFVdpEMEtEScKp5jdCFNdjRsIkIgFRWw/exec',
+  organic: PROBLEM_BASE_URL,
+  inorganic: PROBLEM_BASE_URL,
 };
-
-/**
- * recデータ取得専用のGAS URL
- * 問題データ用APIとは完全に分離
- * 環境変数から取得。設定されていない場合は新しいGAS URLを使用
- */
-export const GAS_URL_REC: string = import.meta.env.VITE_GAS_URL_REC || 'https://script.google.com/macros/s/AKfycby56m2gHAx33pyEKAk1tzzxBG5GJ1BGFmeUPmNj66j0LZG1fjzZu20ZfwEfCC13YjLExw/exec';
 
 // 環境変数が設定されているか検証（開発環境のみ警告）
 if (import.meta.env.DEV) {
-  if (!GAS_URLS.organic || !GAS_URLS.inorganic) {
-    console.warn('GAS URLs are not configured. Please set VITE_GAS_URL_ORGANIC and VITE_GAS_URL_INORGANIC environment variables.');
-  } else {
-    console.log(`[DataSource] GAS URLs configured:`, {
-      organic: GAS_URLS.organic ? '✓' : '✗',
-      inorganic: GAS_URLS.inorganic ? '✓' : '✗',
-      dataSource: DATA_SOURCE
-    });
-  }
+  console.log(`[DataSource] GAS URLs configured:`, {
+    problem: PROBLEM_BASE_URL ? '✓' : '✗',
+    dataSource: DATA_SOURCE
+  });
 }
 
 /**

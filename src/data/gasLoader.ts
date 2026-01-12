@@ -1,6 +1,6 @@
 import { Compound } from '../types';
 import { Category } from '../components/CategorySelector';
-import { GAS_URLS } from '../config/dataSource';
+import { PROBLEM_BASE_URL } from '../config/gasUrls';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
 import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
@@ -8,13 +8,13 @@ import { InorganicReactionNew } from '../types/inorganic';
 
 /**
  * GASから化合物データを取得
+ * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadCompoundsFromGAS = async (category: Category): Promise<Compound[]> => {
-  const gasUrl = GAS_URLS[category];
-
-  if (!gasUrl) {
-    throw new Error(`GAS URL not configured for category: ${category}`);
-  }
+  const requestId = `problemLoader#compounds#${Date.now()}`;
+  const url = `${PROBLEM_BASE_URL}?type=compounds&category=${category}`;
+  
+  console.log(`[${requestId}] Fetching compounds from:`, url);
 
   try {
     // GASエンドポイントからデータを取得（タイムアウト付き）
@@ -23,7 +23,7 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
 
     let response: Response;
     try {
-      response = await fetch(`${gasUrl}?type=compounds&category=${category}`, {
+      response = await fetch(url, {
         method: 'GET',
         mode: 'cors', // CORS対応が必要
         signal: controller.signal,
@@ -37,14 +37,33 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
       throw fetchError;
     }
 
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+
     if (!response.ok) {
       throw new Error(`Failed to load compounds from GAS: ${response.status} ${response.statusText}`);
     }
 
+    const rawText = await response.text();
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+
+    // HTMLが返ってきた場合（ログイン画面など）を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON. This may be a login page or error page.`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Used URL:`, url);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
+
     let data: any;
     try {
-      data = await response.json();
+      data = JSON.parse(rawText);
     } catch (jsonError) {
+      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
+      console.error(`[${requestId}] Raw text (first 500 chars):`, rawText.substring(0, 500));
       throw new Error('Failed to parse JSON response from GAS');
     }
 
@@ -52,7 +71,21 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
       throw new Error('Invalid response format from GAS');
     }
 
-    console.log(`[${category}] GAS response received`);
+    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
+
+    // 問題データ取得なのにJSON配列が直接返されている場合を検知（rec/userStats APIの可能性）
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0];
+      // recデータには name, userKey, mode などのフィールドがある
+      // userStatsデータには userKey, name, exp などのフィールドがある
+      if (firstItem.userKey || firstItem.name === '表示名（displayName）') {
+        const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] First item keys:`, Object.keys(firstItem));
+        console.error(`[${requestId}] Used URL:`, url);
+        throw new Error('Received rec/userStats data instead of problem data. Check that problem URL (PROBLEM_BASE_URL) is correctly configured.');
+      }
+    }
 
     // GASから返されるデータ形式に応じて処理
     if (data.csv) {
@@ -97,13 +130,13 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
 
 /**
  * GASから反応データを取得
+ * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadReactionsFromGAS = async (category: Category): Promise<ReactionCSVRow[]> => {
-  const gasUrl = GAS_URLS[category];
-
-  if (!gasUrl) {
-    throw new Error(`GAS URL not configured for category: ${category}`);
-  }
+  const requestId = `problemLoader#reactions#${Date.now()}`;
+  const url = `${PROBLEM_BASE_URL}?type=reactions&category=${category}`;
+  
+  console.log(`[${requestId}] Fetching reactions from:`, url);
 
   try {
     // GASエンドポイントからデータを取得（タイムアウト付き）
@@ -112,7 +145,7 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
 
     let response: Response;
     try {
-      response = await fetch(`${gasUrl}?type=reactions&category=${category}`, {
+      response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         signal: controller.signal,
@@ -126,19 +159,43 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
       throw fetchError;
     }
 
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+
     if (!response.ok) {
       throw new Error(`Failed to load reactions from GAS: ${response.status} ${response.statusText}`);
     }
 
+    const rawText = await response.text();
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+
+    // HTMLが返ってきた場合を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
+      console.error(errorMsg);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
+
     let data: any;
     try {
-      data = await response.json();
+      data = JSON.parse(rawText);
     } catch (jsonError) {
+      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
       throw new Error('Failed to parse JSON response from GAS');
     }
 
     if (!data || (typeof data !== 'object')) {
       throw new Error('Invalid response format from GAS');
+    }
+
+    // 問題データ取得なのにJSON配列が直接返されている場合を検知
+    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
+      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
+      console.error(errorMsg);
+      throw new Error('Received rec/userStats data instead of problem data.');
     }
 
     if (data.csv) {
@@ -158,13 +215,13 @@ export const loadReactionsFromGAS = async (category: Category): Promise<Reaction
 
 /**
  * GASからexperimentシートのデータを取得
+ * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadExperimentsFromGAS = async (category: Category): Promise<ExperimentCSVRow[]> => {
-  const gasUrl = GAS_URLS[category];
-
-  if (!gasUrl) {
-    throw new Error(`GAS URL not configured for category: ${category}`);
-  }
+  const requestId = `problemLoader#experiments#${Date.now()}`;
+  const url = `${PROBLEM_BASE_URL}?type=experiment&category=${category}`;
+  
+  console.log(`[${requestId}] Fetching experiments from:`, url);
 
   try {
     // GASエンドポイントからデータを取得（タイムアウト付き）
@@ -173,7 +230,7 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
 
     let response: Response;
     try {
-      response = await fetch(`${gasUrl}?type=experiment&category=${category}`, {
+      response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         signal: controller.signal,
@@ -187,19 +244,43 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
       throw fetchError;
     }
 
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+
     if (!response.ok) {
       throw new Error(`Failed to load experiments from GAS: ${response.status} ${response.statusText}`);
     }
 
+    const rawText = await response.text();
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+
+    // HTMLが返ってきた場合を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
+      console.error(errorMsg);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
+
     let data: any;
     try {
-      data = await response.json();
+      data = JSON.parse(rawText);
     } catch (jsonError) {
+      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
       throw new Error('Failed to parse JSON response from GAS');
     }
 
     if (!data || (typeof data !== 'object')) {
       throw new Error('Invalid response format from GAS');
+    }
+
+    // 問題データ取得なのにJSON配列が直接返されている場合を検知
+    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
+      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
+      console.error(errorMsg);
+      throw new Error('Received rec/userStats data instead of problem data.');
     }
 
     if (data.csv) {
@@ -219,13 +300,13 @@ export const loadExperimentsFromGAS = async (category: Category): Promise<Experi
 
 /**
  * GASから新しい無機化学反応データを取得
+ * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
  */
 export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReactionNew[]> => {
-  const gasUrl = GAS_URLS.inorganic;
-
-  if (!gasUrl) {
-    throw new Error('GAS URL not configured for inorganic category');
-  }
+  const requestId = `problemLoader#inorganic-new#${Date.now()}`;
+  const url = `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`;
+  
+  console.log(`[${requestId}] Fetching inorganic-new from:`, url);
 
   try {
     // GASエンドポイントからデータを取得（タイムアウト付き）
@@ -234,7 +315,7 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
 
     let response: Response;
     try {
-      response = await fetch(`${gasUrl}?type=inorganic-new&category=inorganic`, {
+      response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         signal: controller.signal,
@@ -248,14 +329,31 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
       throw fetchError;
     }
 
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+
     if (!response.ok) {
       throw new Error(`Failed to load inorganic reactions new from GAS: ${response.status} ${response.statusText}`);
     }
 
+    const rawText = await response.text();
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+
+    // HTMLが返ってきた場合を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
+      console.error(errorMsg);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
+
     let data: any;
     try {
-      data = await response.json();
+      data = JSON.parse(rawText);
     } catch (jsonError) {
+      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
       throw new Error('Failed to parse JSON response from GAS');
     }
 
@@ -263,7 +361,14 @@ export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReact
       throw new Error('Invalid response format from GAS');
     }
 
-    console.log('[gasLoader] GAS response received for inorganic-new');
+    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
+
+    // 問題データ取得なのにJSON配列が直接返されている場合を検知
+    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
+      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
+      console.error(errorMsg);
+      throw new Error('Received rec/userStats data instead of problem data.');
+    }
 
     if (data.csv) {
       // CSV形式で返される場合

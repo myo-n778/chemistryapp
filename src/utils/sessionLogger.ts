@@ -3,16 +3,13 @@
  * ローカルに1問ごとの正誤ログを保存し、セッション完了時にスプレッドシートに記録する
  */
 
-import { GAS_URLS } from '../config/dataSource';
-
-// GAS BASE URL（rec取得専用）
-const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7Xbe0Q89w1QNGJ2lCcBYaAT6f1d_yIdUeRZtlDR3tKwZZ3ESDSWltE1p6FjCSdyAUng/exec';
+import { REC_BASE_URL, STATS_BASE_URL } from '../config/gasUrls';
 
 // rec取得専用URL（action=recのみ、typeパラメータは一切含めない）
-const GAS_REC_URL = `${GAS_BASE_URL}?action=rec`;
+const GAS_REC_URL = `${REC_BASE_URL}?action=rec`;
 
-// userStats取得専用URL（別のGASプロジェクトとしてデプロイ）
-const GAS_USERSTATS_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 'https://script.google.com/macros/s/AKfycbw8-GSwdyLiO3bhKggKAS2PPFcBSFIUsbFuQS9nSULjUZBuK4Lb5Ep4Zlc1jZB6FgRwfQ/exec';
+// userStats取得専用URL（action=userStatsのみ）
+const GAS_USERSTATS_URL = `${STATS_BASE_URL}?action=userStats`;
 
 // recデータのキャッシュ（全データを1回取得して再利用）
 let recDataCache: RecRow[] | null = null;
@@ -116,43 +113,68 @@ async function fetchAllRecData(): Promise<RecRow[]> {
   
   try {
     // rec取得専用URLを使用（問題データ用APIとは完全に分離）
-    // GAS_REC_URL = BASE_URL?action=rec（typeパラメータは一切含めない）
-    console.log('[recLoader] Fetching rec data from:', GAS_REC_URL);
+    // GAS_REC_URL = REC_BASE_URL?action=rec（typeパラメータは一切含めない）
+    const requestId = `recLoader#${Date.now()}`;
+    console.log(`[${requestId}] Fetching rec data from:`, GAS_REC_URL);
     
     const response = await fetch(GAS_REC_URL, {
       method: 'GET',
       mode: 'cors',
     });
     
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+    
     if (!response.ok) {
       throw new Error(`Failed to fetch all rec data: ${response.status} ${response.statusText}`);
     }
     
     const rawText = await response.text();
-    console.log('[recLoader] Raw response text:', rawText.substring(0, 500)); // 最初の500文字をログ
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+    
+    // HTMLが返ってきた場合（ログイン画面など）を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON. This may be a login page or error page.`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Used URL:`, GAS_REC_URL);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
     
     let data: any;
     try {
       data = JSON.parse(rawText);
     } catch (parseError) {
-      console.error('[recLoader] Failed to parse JSON:', parseError, 'Raw text:', rawText);
-      throw new Error('Invalid JSON response');
+      console.error(`[${requestId}] Failed to parse JSON:`, parseError);
+      console.error(`[${requestId}] Raw text (first 500 chars):`, rawText.substring(0, 500));
+      throw new Error('Invalid JSON response for rec data');
     }
     
-    console.log('[recLoader] Parsed response:', data);
+    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
     
     // csvが含まれている場合は問題データ用APIが呼ばれている（エラー）
-    // 開発中のみエラーを出力（本番環境では警告のみ）
     if (data.csv) {
-      const errorMsg = '[recLoader] ERROR: Received CSV data instead of rec data. This means problem data API was called instead of rec API.';
+      const errorMsg = `[${requestId}] ERROR: Received CSV data instead of rec data. This means problem data API was called instead of rec API.`;
       console.error(errorMsg);
-      console.error('[recLoader] Response contains csv field:', data.csv.substring(0, 100));
-      console.error('[recLoader] Used URL:', GAS_REC_URL);
-      if (import.meta.env.DEV) {
-        throw new Error('Received CSV data instead of rec data. Check that rec URL is correctly configured and action=rec parameter is used.');
+      console.error(`[${requestId}] Response contains csv field (first 100 chars):`, String(data.csv).substring(0, 100));
+      console.error(`[${requestId}] Used URL:`, GAS_REC_URL);
+      throw new Error('Received CSV data instead of rec data. Check that rec URL (REC_BASE_URL) is correctly configured and action=rec parameter is used.');
+    }
+    
+    // JSON配列が直接返されている場合を検知（問題データAPIの可能性）
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0];
+      // recデータには name, userKey, mode などのフィールドがあるはず
+      // 問題データ（compounds）には structure, atoms などのフィールドがある
+      if (firstItem.structure || firstItem.atoms) {
+        const errorMsg = `[${requestId}] ERROR: Received problem data (compounds) instead of rec data.`;
+        console.error(errorMsg);
+        console.error(`[${requestId}] First item keys:`, Object.keys(firstItem));
+        console.error(`[${requestId}] Used URL:`, GAS_REC_URL);
+        throw new Error('Received problem data instead of rec data. Check that rec URL (REC_BASE_URL) is correctly configured.');
       }
-      // 本番環境では警告のみで空配列を返す
-      return [];
     }
     
     if (data.error) {
@@ -285,32 +307,57 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
   }
   
   try {
-    console.log('[userStatsLoader] Fetching userStats data from:', GAS_USERSTATS_URL);
+    const requestId = `userStatsLoader#${Date.now()}`;
+    console.log(`[${requestId}] Fetching userStats data from:`, GAS_USERSTATS_URL);
     
     const response = await fetch(GAS_USERSTATS_URL, {
       method: 'GET',
       mode: 'cors',
     });
     
+    // 形式チェック: レスポンス情報をログ出力
+    const contentType = response.headers.get('content-type') || 'unknown';
+    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+    
     if (!response.ok) {
       throw new Error(`Failed to fetch all userStats: ${response.status} ${response.statusText}`);
     }
     
     const rawText = await response.text();
-    console.log('[userStatsLoader] Raw response text:', rawText.substring(0, 500));
+    const rawPreview = rawText.substring(0, 200);
+    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
+    
+    // HTMLが返ってきた場合（ログイン画面など）を検知
+    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON. This may be a login page or error page.`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Used URL:`, GAS_USERSTATS_URL);
+      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
+    }
     
     let data: any;
     try {
       data = JSON.parse(rawText);
     } catch (parseError) {
-      console.error('[userStatsLoader] Failed to parse JSON:', parseError, 'Raw text:', rawText);
-      throw new Error('Invalid JSON response');
+      console.error(`[${requestId}] Failed to parse JSON:`, parseError);
+      console.error(`[${requestId}] Raw text (first 500 chars):`, rawText.substring(0, 500));
+      throw new Error('Invalid JSON response for userStats data');
     }
     
-    console.log('[userStatsLoader] Parsed response:', data);
+    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
+    
+    // csvが含まれている場合は問題データ用APIが呼ばれている（エラー）
+    if (data.csv) {
+      const errorMsg = `[${requestId}] ERROR: Received CSV data instead of userStats data. This means problem data API was called instead of userStats API.`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Response contains csv field (first 100 chars):`, String(data.csv).substring(0, 100));
+      console.error(`[${requestId}] Used URL:`, GAS_USERSTATS_URL);
+      throw new Error('Received CSV data instead of userStats data. Check that userStats URL (STATS_BASE_URL) is correctly configured and action=userStats parameter is used.');
+    }
     
     if (data.error) {
-      console.error('[userStatsLoader] GAS error:', data.error);
+      console.error(`[${requestId}] GAS error:`, data.error);
       throw new Error(data.error);
     }
     
@@ -871,13 +918,14 @@ export const saveQuestionLogsForSession = (
  */
 export const pushRecRowToSheetRec = async (row: RecRow, category: 'organic' | 'inorganic'): Promise<boolean> => {
   try {
-    const gasUrl = GAS_URLS[category];
+    // 問題データ保存時はPROBLEM_BASE_URLを使用（rec保存とは別のGAS）
+    const { PROBLEM_BASE_URL } = await import('../config/gasUrls');
+    const requestId = `recSaver#${Date.now()}`;
     
-    if (!gasUrl) {
-      throw new Error(`GAS URL not configured for category: ${category}`);
-    }
+    console.log(`[${requestId}] Pushing rec row to:`, PROBLEM_BASE_URL);
+    console.log(`[${requestId}] Rec row data:`, { userKey: row.userKey, name: row.name, mode: row.mode });
     
-    await fetch(gasUrl, {
+    await fetch(PROBLEM_BASE_URL, {
       method: 'POST',
       mode: 'no-cors', // CORS問題を回避（レスポンスは取得できない）
       headers: {
@@ -885,6 +933,8 @@ export const pushRecRowToSheetRec = async (row: RecRow, category: 'organic' | 'i
       },
       body: JSON.stringify(row),
     });
+    
+    console.log(`[${requestId}] Rec row pushed successfully`);
     
     // no-corsモードではレスポンスを取得できないため、常にtrueを返す
     // エラーハンドリングはGAS側で行う
