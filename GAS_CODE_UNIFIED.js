@@ -14,7 +14,6 @@
  * 【API仕様】
  * - GET ?action=rec → JSON配列（recデータ）
  * - GET ?action=userStats → JSON配列（userStatsデータ）
- * - GET ?action=health → ヘルスチェック情報
  * - GET ?type=compounds|reactions|experiment|inorganic-new → {csv:"..."}
  * - POST → recに追記＋userStatsを加算更新
  */
@@ -31,9 +30,13 @@ function doGet(e) {
   // パラメータの安全化（eが無い/parameterが無い場合に落ちない）
   var params = (e && e.parameter) ? e.parameter : {};
   
+  // パラメータの正規化（String().trim()で統一）
+  const action = String(params.action || '').trim();
+  const type = String(params.type || '').trim();
+  const category = String(params.category || '').trim() || 'organic';
+  
   // 【重要】action判定を最優先（type判定より先に処理）
-  if (params.action) {
-    const action = params.action;
+  if (action) {
     
     // 1) action=rec → recデータ取得（JSON配列）
     if (action === 'rec') {
@@ -67,51 +70,20 @@ function doGet(e) {
       }
     }
     
-    // 3) action=health → ヘルスチェック情報
-    if (action === 'health') {
-      try {
-        var spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-        var recSheet = spreadsheet.getSheetByName('rec');
-        var userStatsSheet = spreadsheet.getSheetByName('userStats');
-        var compoundsSheet = spreadsheet.getSheetByName('compounds');
-        
-        return ContentService
-          .createTextOutput(JSON.stringify({
-            ok: true,
-            endpoints: {
-              rec: recSheet ? 'available' : 'not found',
-              userStats: userStatsSheet ? 'available' : 'not found',
-              compounds: compoundsSheet ? 'available' : 'not found'
-            },
-            spreadsheetId: SPREADSHEET_ID
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
-      } catch (error) {
-        return ContentService
-          .createTextOutput(JSON.stringify({ 
-            ok: false,
-            error: error.toString() 
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-    }
-    
     // 無効なaction
     return ContentService
       .createTextOutput(JSON.stringify({ 
-        error: 'Invalid action. Use "rec", "userStats", or "health". For problem data, use type parameter.' 
+        error: 'Invalid action. Use "rec" or "userStats". For problem data, use type parameter.' 
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
   
   // 【重要】actionがない場合のみtype判定（問題CSV）
-  const type = params.type;
-  
   if (!type) {
     // actionもtypeもない場合はエラー（勝手にCSVを返さない）
     return ContentService
       .createTextOutput(JSON.stringify({ 
-        error: 'Invalid request. Use action=rec, action=userStats, action=health, or type=compounds|reactions|experiment|inorganic-new' 
+        error: 'Invalid request. Use action=rec, action=userStats, or type=compounds|reactions|experiment|inorganic-new' 
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -129,7 +101,6 @@ function doGet(e) {
   
   var sheet;
   var csvData;
-  const category = params.category || 'organic';
   
   try {
     if (type === 'compounds') {
