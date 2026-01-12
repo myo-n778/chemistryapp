@@ -41,6 +41,15 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         throw new Error('Request timeout: GAS took too long to respond');
       }
+      // CORS/Failed to fetch エラーの診断情報を出力
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
+      console.error(`[${requestId}] Used URL:`, url);
+      console.error(`[${requestId}] Origin:`, origin);
+      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
+      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
+      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
+      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
       throw fetchError;
     }
 
