@@ -91,29 +91,39 @@ export const loadCompoundsFromGAS = async (category: Category): Promise<Compound
     if (data.csv) {
       // CSV形式で返される場合
       const csvRows = parseCSV(data.csv);
-      console.log(`[${category}] Parsed ${csvRows.length} CSV rows from GAS`);
+      console.log(`[${requestId}] Parsed ${csvRows.length} CSV rows from GAS`);
 
       // デフォルトデータ（defaultOrganicCompounds）は使用せず、GASからのデータのみを使用する
       // これにより、スプレッドシートのデータが確実に優先される
       const compounds = csvToCompounds(csvRows, []);
-      console.log(`[${category}] Converted to ${compounds.length} compounds from GAS`);
+      console.log(`[${requestId}] Converted to ${compounds.length} compounds from GAS`);
 
-      // デバッグ: 全化合物名を出力
-      console.log(`[${category}] All compound names:`, compounds.map(c => c.name));
+      // デバッグ: 全化合物名を出力（最初の10件のみ）
+      if (compounds.length > 0) {
+        console.log(`[${requestId}] First 10 compound names:`, compounds.slice(0, 10).map(c => c.name));
+      }
 
       if (compounds.length === 0) {
         // GASデータが空の場合のみ警告を出すが、デフォルトフォールバックはしない
-        console.warn('No compounds found in GAS data.');
+        console.warn(`[${requestId}] No compounds found in GAS data.`);
         return [];
       }
 
       return compounds;
     } else if (data.compounds) {
       // 既にパース済みの化合物データが返される場合
+      console.log(`[${requestId}] Received pre-parsed compounds array:`, data.compounds.length);
       return data.compounds as Compound[];
     } else if (data.error) {
+      const errorMsg = `[${requestId}] GAS error: ${data.error}`;
+      console.error(errorMsg);
       throw new Error(`GAS error: ${data.error}`);
     } else {
+      // 予期しない形式の場合、詳細をログ出力
+      const errorMsg = `[${requestId}] Invalid data format from GAS. Expected "csv" or "compounds" field.`;
+      console.error(errorMsg);
+      console.error(`[${requestId}] Response keys:`, Object.keys(data));
+      console.error(`[${requestId}] Response preview:`, JSON.stringify(data).substring(0, 500));
       throw new Error('Invalid data format from GAS. Expected "csv" or "compounds" field.');
     }
   } catch (error) {

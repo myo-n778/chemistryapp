@@ -13,26 +13,16 @@ export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM ||
 /**
  * recデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=rec → JSON配列
- * 
- * 【注意】URLの役割が入れ替わっていたため修正:
- * - 以前のREC_BASE_URLが実際にはuserStats専用GASだった
- * - 以前のSTATS_BASE_URLが実際にはrec専用GASだった
- * 以下は正しい役割に修正済み
  */
 export const REC_BASE_URL = import.meta.env.VITE_GAS_URL_REC || 
-  'https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec';
+  'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
 
 /**
  * userStatsデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=userStats → JSON配列
- * 
- * 【注意】URLの役割が入れ替わっていたため修正:
- * - 以前のREC_BASE_URLが実際にはuserStats専用GASだった
- * - 以前のSTATS_BASE_URLが実際にはrec専用GASだった
- * 以下は正しい役割に修正済み
  */
 export const STATS_BASE_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 
-  'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
+  'https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec';
 
 /**
  * 直叩き検証用URL（コメント）
