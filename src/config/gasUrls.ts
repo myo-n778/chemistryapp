@@ -4,42 +4,43 @@
  */
 
 /**
+ * 統合GAS URL（問題CSV / rec / userStats を1本で運用）
+ * 
+ * 【重要】統合GAS（GAS_CODE_UNIFIED.js）を使用しています。
+ * 3つのURL（PROBLEM_BASE_URL, REC_BASE_URL, STATS_BASE_URL）はすべて同じ統合GASのURLを指します。
+ * 
+ * 統合GASのAPI仕様：
+ * - ?type=compounds|reactions|experiment|inorganic-new → {csv:"..."}（問題データ）
+ * - ?action=rec → JSON配列（recデータ）
+ * - ?action=userStats → JSON配列（userStatsデータ）
+ * - ?action=health → ヘルスチェック情報
+ * - POST → recに追記＋userStatsを加算更新
+ */
+const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbz5Tsfh3Ky6Wim2IB0Gsw68C5z-p8nwKXaCSpGOIUL2kh-DgVek3C3iXvAbSw0kqmeE5A/exec';
+
+/**
  * 問題データ用GAS URL（CSVを返す）
  * 想定: ?type=compounds|reactions|experiment|inorganic-new → CSVまたは {csv:"..."}
  * 
- * 【重要】ヘルスチェック結果により、現在のURLはuserStats専用GASです。
- * 正しい問題データ用GASのURLを設定してください。
- * 
- * 設定方法：
- * 1. GAS_CODE.js をデプロイしたGASプロジェクトのWebアプリURLを取得
- * 2. 環境変数 VITE_GAS_URL_PROBLEM に設定するか、以下のデフォルト値を置き換えてください
+ * 【統合GAS使用】統合GASのURLを使用（action判定よりtype判定が優先される）
  */
-export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM || 
-  ''; // 正しい問題データ用GASのURLを設定してください
+export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM || UNIFIED_GAS_URL;
 
 /**
  * recデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=rec → JSON配列
  * 
- * 【重要】ヘルスチェック結果により、現在のURLはuserStats専用GASです。
- * 正しいrec専用GASのURLを設定してください。
- * 
- * 設定方法：
- * 1. GAS_CODE_REC_ONLY.js をデプロイしたGASプロジェクトのWebアプリURLを取得
- * 2. 環境変数 VITE_GAS_URL_REC に設定するか、以下のデフォルト値を置き換えてください
+ * 【統合GAS使用】統合GASのURLを使用（action=recで取得）
  */
-export const REC_BASE_URL = import.meta.env.VITE_GAS_URL_REC || 
-  ''; // 正しいrec専用GASのURLを設定してください
+export const REC_BASE_URL = import.meta.env.VITE_GAS_URL_REC || UNIFIED_GAS_URL;
 
 /**
  * userStatsデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=userStats → JSON配列
  * 
- * 【確定】ヘルスチェックにより、このURLは正しく動作しています。
- * GAS_CODE_USERSTATS.js をデプロイしたGASプロジェクトのURLです。
+ * 【統合GAS使用】統合GASのURLを使用（action=userStatsで取得）
  */
-export const STATS_BASE_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 
-  'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
+export const STATS_BASE_URL = import.meta.env.VITE_GAS_URL_USERSTATS || UNIFIED_GAS_URL;
 
 /**
  * 直叩き検証用URL（コメント）
