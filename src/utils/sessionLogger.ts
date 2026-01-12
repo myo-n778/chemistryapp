@@ -916,7 +916,7 @@ export const saveQuestionLogsForSession = (
 /**
  * recシートに1行追加（GAS経由）
  */
-export const pushRecRowToSheetRec = async (row: RecRow, category: 'organic' | 'inorganic'): Promise<boolean> => {
+export const pushRecRowToSheetRec = async (row: RecRow, _category: 'organic' | 'inorganic'): Promise<boolean> => {
   try {
     // 問題データ保存時はPROBLEM_BASE_URLを使用（rec保存とは別のGAS）
     const { PROBLEM_BASE_URL } = await import('../config/gasUrls');
