@@ -33,7 +33,7 @@ function doGet(e) {
   // パラメータの正規化（String().trim()で統一）
   const action = String(params.action || '').trim();
   const type = String(params.type || '').trim();
-  const category = String(params.category || '').trim() || 'organic';
+  const category = String(params.category || '').trim();
   
   // 【重要】action判定を最優先（type判定より先に処理）
   if (action) {
@@ -80,10 +80,10 @@ function doGet(e) {
   
   // 【重要】actionがない場合のみtype判定（問題CSV）
   if (!type) {
-    // actionもtypeもない場合はエラー（勝手にCSVを返さない）
+    // typeが空ならエラー（混線防止：デフォルトにしない）
     return ContentService
       .createTextOutput(JSON.stringify({ 
-        error: 'Invalid request. Use action=rec, action=userStats, or type=compounds|reactions|experiment|inorganic-new' 
+        error: 'type is required. Use type=compounds|reactions|experiment|inorganic-new' 
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
