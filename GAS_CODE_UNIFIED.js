@@ -28,9 +28,12 @@ const SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
  * GETリクエスト処理（混線防止のためaction判定を最優先）
  */
 function doGet(e) {
+  // パラメータの安全化（eが無い/parameterが無い場合に落ちない）
+  var params = (e && e.parameter) ? e.parameter : {};
+  
   // 【重要】action判定を最優先（type判定より先に処理）
-  if (e && e.parameter && e.parameter.action) {
-    const action = e.parameter.action;
+  if (params.action) {
+    const action = params.action;
     
     // 1) action=rec → recデータ取得（JSON配列）
     if (action === 'rec') {
@@ -102,7 +105,7 @@ function doGet(e) {
   }
   
   // 【重要】actionがない場合のみtype判定（問題CSV）
-  const type = e.parameter.type;
+  const type = params.type;
   
   if (!type) {
     // actionもtypeもない場合はエラー（勝手にCSVを返さない）
@@ -126,7 +129,7 @@ function doGet(e) {
   
   var sheet;
   var csvData;
-  const category = e.parameter.category || 'organic';
+  const category = params.category || 'organic';
   
   try {
     if (type === 'compounds') {
@@ -281,14 +284,15 @@ function doPost(e) {
     }
   }
   
-  // 同一ユーザーの過去データを集計
+  // 同一ユーザーの過去データを集計（複合キー: userKey + name）
   const userKey = data.userKey || '';
-  const aggregated = aggregateUserData(sheet, userKey, data);
+  const displayName = data.displayName || '';
+  const aggregated = aggregateUserData(sheet, userKey, displayName, data);
   
   // recに新しい行を追加
   sheet.appendRow([
     data.displayName || '', // name
-    userKey, // userKey
+    String(userKey), // userKey（必ず文字列として保存）
     data.mode || '', // mode
     aggregated.EXP, // EXP
     aggregated.LV, // LV
@@ -443,9 +447,18 @@ function getAllUserStats() {
 
 /**
  * ユーザーデータを集計（過去データから EXP, LV, tenAve, allAve, sess, cst, mst, last を計算）
+ * 複合キー（userKey + name）で同一ユーザーを判定
+ * @param {Sheet} sheet - recシート
+ * @param {string} userKey - ユーザーキー（文字列として正規化）
+ * @param {string} displayName - ユーザー名（displayName/name）
+ * @param {Object} currentData - 現在のセッションデータ
  */
-function aggregateUserData(sheet, userKey, currentData) {
+function aggregateUserData(sheet, userKey, displayName, currentData) {
   try {
+    // userKeyとdisplayNameを文字列として正規化（trimも入れる）
+    var normalizedUserKey = String(userKey || '').trim();
+    var normalizedDisplayName = String(displayName || '').trim();
+    
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) {
       // データが無い場合は現在のデータのみで初期化
@@ -461,10 +474,13 @@ function aggregateUserData(sheet, userKey, currentData) {
       };
     }
     
-    // ヘッダーをスキップして、同一ユーザーの行を取得
+    // ヘッダーをスキップして、同一ユーザーの行を取得（複合キー: userKey + name）
     const rows = data.slice(1);
     const userRows = rows.filter(function(row) {
-      return row[1] === userKey; // userKeyは1列目（0-indexed）
+      // 列構造: name(0), userKey(1), ...
+      var rowUserKey = String(row[1] || '').trim();
+      var rowName = String(row[0] || '').trim();
+      return rowUserKey === normalizedUserKey && rowName === normalizedDisplayName;
     });
     
     if (userRows.length === 0) {
@@ -512,8 +528,17 @@ function aggregateUserData(sheet, userKey, currentData) {
     // allAveを計算（全セッション合算の正解数 / 全セッション合算の問題数）
     const allAve = totalQuestionCount > 0 ? totalCorrectCount / totalQuestionCount : 0;
     
-    // 過去10セッションのtenAveを計算（最新10件のcorrectCount/totalCountから計算）
-    const recent10 = sortedRows.slice(-10); // 最新10件（古い順にソート済みなので、最後の10件）
+    // 過去10セッションのtenAveを計算（最新10セッションに厳密に）
+    // currentを含めて最大10件になるように計算
+    var sessionsForTenAve = sortedRows.slice(); // 過去のセッション（古い順）
+    sessionsForTenAve.push({
+      13: currentCorrectCount, // correctCount
+      14: currentTotalCount    // totalCount
+    }); // currentを最後に追加
+    
+    // 末尾10件だけを使用（11件以上ある場合は最古を落とす）
+    var recent10 = sessionsForTenAve.slice(-10);
+    
     var recent10Correct = 0;
     var recent10Total = 0;
     for (var i = 0; i < recent10.length; i++) {
@@ -521,9 +546,6 @@ function aggregateUserData(sheet, userKey, currentData) {
       recent10Correct += row[13] || 0; // correctCount
       recent10Total += row[14] || 0; // totalCount
     }
-    // 現在のセッションを含めて計算（10件以下なら全て、10件以上なら最新10件）
-    recent10Correct += currentCorrectCount;
-    recent10Total += currentTotalCount;
     const tenAve = recent10Total > 0 ? recent10Correct / recent10Total : 0;
     
     // EXPを計算（全セッションの合計正解数）
