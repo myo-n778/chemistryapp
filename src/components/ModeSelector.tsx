@@ -2,7 +2,7 @@ import React from 'react';
 import { Category } from './CategorySelector';
 import { UserStatsPanel } from './UserStatsPanel';
 import { PublicRankingPanel } from './PublicRankingPanel';
-import { clearActiveUser } from '../utils/sessionLogger';
+import { clearActiveUser, clearRecDataCache } from '../utils/sessionLogger';
 import './ModeSelector.css';
 
 export type QuizMode =
@@ -32,6 +32,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
 
   const handleLogout = () => {
     clearActiveUser();
+    clearRecDataCache();
     window.location.reload();
   };
 

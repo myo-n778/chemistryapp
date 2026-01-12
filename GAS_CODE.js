@@ -93,6 +93,14 @@ function doGet(e) {
           data: latestRow 
         }))
         .setMimeType(ContentService.MimeType.JSON);
+    } else if (type === 'rec-all') {
+      // recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
+      const allRecData = getAllRecData();
+      return ContentService
+        .createTextOutput(JSON.stringify({ 
+          data: allRecData 
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
     } else if (type === 'rec-ranking') {
       // 公開ランキングを取得
       const modeFilter = e.parameter.mode; // Optional mode filter
@@ -105,7 +113,7 @@ function doGet(e) {
     } else {
       return ContentService
         .createTextOutput(JSON.stringify({ 
-          error: 'Invalid type. Use "compounds", "reactions", "experiment", "inorganic-new", "rec", or "rec-ranking"' 
+          error: 'Invalid type. Use "compounds", "reactions", "experiment", "inorganic-new", "rec", "rec-all", or "rec-ranking"' 
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }

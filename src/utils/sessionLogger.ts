@@ -5,6 +5,128 @@
 
 import { GAS_URLS } from '../config/dataSource';
 
+// recデータのキャッシュ（全データを1回取得して再利用）
+let recDataCache: RecRow[] | null = null;
+let recDataCacheTimestamp: number = 0;
+const REC_CACHE_TTL = 30 * 1000; // 30秒キャッシュ
+
+/**
+ * RecRowを正規化（recordedAtを数値に変換、その他の型を保証）
+ */
+function normalizeRecRow(row: Record<string, any>): RecRow | null {
+  try {
+    // recordedAtを数値に変換
+    let recordedAt: number;
+    if (typeof row.recordedAt === 'string') {
+      recordedAt = Number(row.recordedAt);
+      if (isNaN(recordedAt)) {
+        recordedAt = 0;
+      }
+    } else if (typeof row.recordedAt === 'number') {
+      recordedAt = row.recordedAt;
+    } else {
+      // timestampから取得を試みる
+      recordedAt = typeof row.timestamp === 'number' ? row.timestamp : 0;
+    }
+    
+    return {
+      userKey: String(row.userKey || ''),
+      displayName: String(row.name || row.displayName || ''),
+      mode: String(row.mode || ''),
+      category: (row.mode || '').indexOf('organic') === 0 ? 'organic' : 'inorganic',
+      rangeKey: String(row.rangeKey || ''),
+      correctCount: Number(row.correctCount || 0),
+      totalCount: Number(row.totalCount || 0),
+      pointScore: Number(row.pointScore || 0),
+      accuracy: Number(row.accuracy || 0),
+      date: String(row.date || row.last || ''),
+      timestamp: recordedAt,
+      isPublic: Boolean(row.isPublic),
+      name: String(row.name || ''),
+      EXP: Number(row.EXP || 0),
+      LV: Number(row.LV || 0),
+      tenAve: Number(row.tenAve || 0),
+      allAve: Number(row.allAve || 0),
+      sess: Number(row.sess || 0),
+      cst: Number(row.cst || 0),
+      mst: Number(row.mst || 0),
+      last: String(row.last || ''),
+      recordedAt: recordedAt
+    };
+  } catch (error) {
+    console.warn('Failed to normalize rec row:', error, row);
+    return null;
+  }
+}
+
+/**
+ * recシートの全データを取得（キャッシュ付き）
+ */
+async function fetchAllRecData(): Promise<RecRow[]> {
+  const now = Date.now();
+  
+  // キャッシュが有効な場合は再利用
+  if (recDataCache && (now - recDataCacheTimestamp) < REC_CACHE_TTL) {
+    return recDataCache;
+  }
+  
+  try {
+    // organicのGAS URLを使用（どちらでも同じスプレッドシートを参照）
+    const gasUrl = GAS_URLS.organic;
+    
+    if (!gasUrl) {
+      throw new Error('GAS URL not configured');
+    }
+    
+    const response = await fetch(`${gasUrl}?type=rec-all`, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch all rec data: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    if (!data.data || !Array.isArray(data.data)) {
+      return [];
+    }
+    
+    // 全行を正規化
+    const normalized: RecRow[] = data.data
+      .map((row: Record<string, any>) => normalizeRecRow(row))
+      .filter((row: RecRow | null): row is RecRow => row !== null);
+    
+    // キャッシュに保存
+    recDataCache = normalized;
+    recDataCacheTimestamp = now;
+    
+    console.log(`[recLoader] Fetched ${normalized.length} rec rows (cached)`);
+    
+    return normalized;
+  } catch (error) {
+    console.warn('Failed to fetch all rec data:', error);
+    // キャッシュがあればそれを返す
+    if (recDataCache) {
+      console.log('[recLoader] Using cached data due to fetch error');
+      return recDataCache;
+    }
+    return [];
+  }
+}
+
+/**
+ * キャッシュをクリア（ユーザー切替時など）
+ */
+export const clearRecDataCache = (): void => {
+  recDataCache = null;
+  recDataCacheTimestamp = 0;
+};
+
 // Storage keys
 const STORAGE_KEY_ACTIVE_USER = 'chem.activeUser'; // userKey | null
 const STORAGE_KEY_USERS = 'chem.users'; // User[]
@@ -470,57 +592,36 @@ export const fetchLatestRecRow = async (userKey: string, category: 'organic' | '
  */
 export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'inorganic'): Promise<RecRow | null> => {
   try {
-    // modeが指定されている場合は、そのcategoryのGAS URLを使用
-    if (mode) {
-      const gasUrl = GAS_URLS[mode];
-      
-      if (!gasUrl) {
-        throw new Error(`GAS URL not configured for mode: ${mode}`);
-      }
-      
-      const response = await fetch(`${gasUrl}?type=rec&userKey=${encodeURIComponent(userKey)}&mode=${encodeURIComponent(mode)}`, {
-        method: 'GET',
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch rec row: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      if (!data.data) {
-        return null;
-      }
-      
-      return data.data as RecRow;
-    } else {
-      // modeが指定されていない場合は、organicとinorganicの両方を試して最新を取得
-      const [organicData, inorganicData] = await Promise.all([
-        fetchLatestRecRow(userKey, 'organic'),
-        fetchLatestRecRow(userKey, 'inorganic'),
-      ]);
-      
-      // 両方のデータを比較して、recordedAtが新しい方を返す
-      if (!organicData && !inorganicData) {
-        return null;
-      }
-      if (!organicData) {
-        return inorganicData;
-      }
-      if (!inorganicData) {
-        return organicData;
-      }
-      
-      // recordedAt または timestamp で比較（数値の場合）
-      const organicTimestamp = organicData.recordedAt || organicData.timestamp || 0;
-      const inorganicTimestamp = inorganicData.recordedAt || inorganicData.timestamp || 0;
-      
-      return organicTimestamp > inorganicTimestamp ? organicData : inorganicData;
+    // 全recデータを取得（キャッシュから）
+    const allRecData = await fetchAllRecData();
+    
+    // userKeyでフィルタ
+    let filtered = allRecData.filter(row => row.userKey === userKey);
+    
+    if (filtered.length === 0) {
+      return null;
     }
+    
+    // modeでフィルタ（指定されている場合）
+    if (mode) {
+      filtered = filtered.filter(row => {
+        const rowMode = row.mode || '';
+        return rowMode.indexOf(mode) === 0;
+      });
+    }
+    
+    if (filtered.length === 0) {
+      return null;
+    }
+    
+    // recordedAtでソート（新しい順）して最新を取得
+    filtered.sort((a, b) => {
+      const timestampA = Number(a.recordedAt || a.timestamp || 0);
+      const timestampB = Number(b.recordedAt || b.timestamp || 0);
+      return timestampB - timestampA; // 降順
+    });
+    
+    return filtered[0] || null;
   } catch (error) {
     console.warn('Failed to get latest rec by user:', error);
     return null;
@@ -534,80 +635,63 @@ export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'in
  */
 export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Promise<RecRow[]> => {
   try {
-    // modeが指定されている場合は、そのcategoryのGAS URLを使用
-    if (mode) {
-      const gasUrl = GAS_URLS[mode];
-      
-      if (!gasUrl) {
-        throw new Error(`GAS URL not configured for mode: ${mode}`);
-      }
-      
-      const response = await fetch(`${gasUrl}?type=rec-ranking&mode=${encodeURIComponent(mode)}`, {
-        method: 'GET',
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ranking: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      if (!data.data || !Array.isArray(data.data)) {
-        return [];
-      }
-      
-      // GAS側で既にフィルタ・ソート済みなので、そのまま返す
-      return data.data as RecRow[];
-    } else {
-      // modeが指定されていない場合は、organicとinorganicの両方を取得してマージ
-      const [organicRanking, inorganicRanking] = await Promise.all([
-        getPublicRankingLatest('organic'),
-        getPublicRankingLatest('inorganic'),
-      ]);
-      
-      // 両方をマージして、allAve降順でソート
-      const merged = [...organicRanking, ...inorganicRanking];
-      
-      // userKeyごとに最新行のみを残す（recordedAtが最新のもの）
-      const userLatestMap = new Map<string, RecRow>();
-      for (const row of merged) {
-        const userKey = row.userKey;
-        const existing = userLatestMap.get(userKey);
-        if (!existing) {
-          userLatestMap.set(userKey, row);
-        } else {
-          const existingTimestamp = existing.recordedAt || existing.timestamp || 0;
-          const currentTimestamp = row.recordedAt || row.timestamp || 0;
-          if (currentTimestamp > existingTimestamp) {
-            userLatestMap.set(userKey, row);
-          }
-        }
-      }
-      
-      // allAve降順でソート
-      const ranking = Array.from(userLatestMap.values());
-      ranking.sort((a, b) => {
-        const allAveA = a.allAve || 0;
-        const allAveB = b.allAve || 0;
-        if (allAveB !== allAveA) {
-          return allAveB - allAveA;
-        }
-        const sessA = a.sess || 0;
-        const sessB = b.sess || 0;
-        if (sessB !== sessA) {
-          return sessB - sessA;
-        }
-        const lastA = a.last || '';
-        const lastB = b.last || '';
-        return lastB.localeCompare(lastA);
-      });
-      
-      return ranking;
+    // 全recデータを取得（キャッシュから）
+    const allRecData = await fetchAllRecData();
+    
+    // isPublic=trueでフィルタ
+    let publicRows = allRecData.filter(row => row.isPublic === true);
+    
+    if (publicRows.length === 0) {
+      return [];
     }
+    
+    // modeでフィルタ（指定されている場合）
+    if (mode) {
+      publicRows = publicRows.filter(row => {
+        const rowMode = row.mode || '';
+        return rowMode.indexOf(mode) === 0;
+      });
+    }
+    
+    if (publicRows.length === 0) {
+      return [];
+    }
+    
+    // userKeyごとに最新行のみを残す（recordedAtが最新のもの）
+    const userLatestMap = new Map<string, RecRow>();
+    for (const row of publicRows) {
+      const userKey = row.userKey;
+      const existing = userLatestMap.get(userKey);
+      if (!existing) {
+        userLatestMap.set(userKey, row);
+      } else {
+        const existingTimestamp = Number(existing.recordedAt || existing.timestamp || 0);
+        const currentTimestamp = Number(row.recordedAt || row.timestamp || 0);
+        if (!isNaN(currentTimestamp) && !isNaN(existingTimestamp) && currentTimestamp > existingTimestamp) {
+          userLatestMap.set(userKey, row);
+        }
+      }
+    }
+    
+    // allAve降順でソート（同率の場合はsess → lastで安定ソート）
+    const ranking = Array.from(userLatestMap.values());
+    ranking.sort((a, b) => {
+      const allAveA = Number(a.allAve || 0);
+      const allAveB = Number(b.allAve || 0);
+      if (!isNaN(allAveA) && !isNaN(allAveB) && allAveB !== allAveA) {
+        return allAveB - allAveA;
+      }
+      const sessA = Number(a.sess || 0);
+      const sessB = Number(b.sess || 0);
+      if (!isNaN(sessA) && !isNaN(sessB) && sessB !== sessA) {
+        return sessB - sessA;
+      }
+      const lastA = String(a.last || '');
+      const lastB = String(b.last || '');
+      return lastB.localeCompare(lastA);
+    });
+    
+    return ranking;
   } catch (error) {
     console.warn('Failed to get public ranking:', error);
     return [];

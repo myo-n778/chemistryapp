@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, getUsers, addUser, setActiveUserKey, getActiveUserKey, clearActiveUser } from '../utils/sessionLogger';
+import { User, getUsers, addUser, setActiveUserKey, getActiveUserKey, clearActiveUser, clearRecDataCache } from '../utils/sessionLogger';
 import './UserManager.css';
 
 interface UserManagerProps {
@@ -64,6 +64,9 @@ export const UserManager: React.FC<UserManagerProps> = ({ onUserSelected }) => {
     // 作成したユーザーをアクティブにする
     setActiveUserKey(newUser.userKey);
     
+    // recデータのキャッシュをクリア（新しいユーザーのデータを取得するため）
+    clearRecDataCache();
+    
     // ユーザー一覧を更新
     const updatedUsers = getUsers();
     setUsers(updatedUsers);
@@ -80,6 +83,8 @@ export const UserManager: React.FC<UserManagerProps> = ({ onUserSelected }) => {
 
   const handleSelectUser = (userKey: string) => {
     setActiveUserKey(userKey);
+    // recデータのキャッシュをクリア（ユーザー切替時）
+    clearRecDataCache();
     onUserSelected();
   };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserStatsPanel } from './UserStatsPanel';
 import { PublicRankingPanel } from './PublicRankingPanel';
-import { clearActiveUser } from '../utils/sessionLogger';
+import { clearActiveUser, clearRecDataCache } from '../utils/sessionLogger';
 import './CategorySelector.css';
 
 export type Category = 'organic' | 'inorganic';
@@ -13,6 +13,7 @@ interface CategorySelectorProps {
 export const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelectCategory }) => {
   const handleLogout = () => {
     clearActiveUser();
+    clearRecDataCache();
     window.location.reload();
   };
 
