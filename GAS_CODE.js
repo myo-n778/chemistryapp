@@ -3,6 +3,19 @@
  * このコードをGoogle Apps Scriptエディタに貼り付けてください
  */
 function doGet(e) {
+  // rec取得専用エンドポイント（type検証を完全に回避）
+  const action = e.parameter.action;
+  if (action === 'rec') {
+    // recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
+    const allRecData = getAllRecData();
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        data: allRecData 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // 以下は問題データ用API（type検証あり）
   const type = e.parameter.type || 'compounds';
   const category = e.parameter.category || 'organic';
   
@@ -69,51 +82,10 @@ function doGet(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       csvData = convertSheetToCSV(sheet);
-    } else if (type === 'rec') {
-      // recシートから最新行を取得（userKeyパラメータが必要、modeパラメータはオプション）
-      const userKey = e.parameter.userKey;
-      const mode = e.parameter.mode; // 'organic' または 'inorganic'（オプション）
-      if (!userKey) {
-        return ContentService
-          .createTextOutput(JSON.stringify({ 
-            error: 'userKey parameter is required' 
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      const latestRow = getLatestRecRow(userKey, mode);
-      if (!latestRow) {
-        return ContentService
-          .createTextOutput(JSON.stringify({ 
-            data: null 
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      return ContentService
-        .createTextOutput(JSON.stringify({ 
-          data: latestRow 
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
-    } else if (type === 'rec-all') {
-      // recシートの全データを取得（クライアント側でフィルタ・抽出を行う）
-      const allRecData = getAllRecData();
-      return ContentService
-        .createTextOutput(JSON.stringify({ 
-          data: allRecData 
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
-    } else if (type === 'rec-ranking') {
-      // 公開ランキングを取得
-      const modeFilter = e.parameter.mode; // Optional mode filter
-      const ranking = getPublicRankingLatest(modeFilter);
-      return ContentService
-        .createTextOutput(JSON.stringify({ 
-          data: ranking 
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
     } else {
       return ContentService
         .createTextOutput(JSON.stringify({ 
-          error: 'Invalid type. Use "compounds", "reactions", "experiment", "inorganic-new", "rec", "rec-all", or "rec-ranking"' 
+          error: 'Invalid type. Use "compounds", "reactions", "experiment", or "inorganic-new". For rec data, use action=rec' 
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }

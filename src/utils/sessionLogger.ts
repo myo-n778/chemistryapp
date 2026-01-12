@@ -61,6 +61,7 @@ function normalizeRecRow(row: Record<string, any>): RecRow | null {
 
 /**
  * recシートの全データを取得（キャッシュ付き）
+ * 専用エンドポイント（action=rec）を使用し、type検証を完全に回避
  */
 async function fetchAllRecData(): Promise<RecRow[]> {
   const now = Date.now();
@@ -78,7 +79,8 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       throw new Error('GAS URL not configured');
     }
     
-    const response = await fetch(`${gasUrl}?type=rec-all`, {
+    // rec取得専用エンドポイント（action=rec、typeパラメータは一切使わない）
+    const response = await fetch(`${gasUrl}?action=rec`, {
       method: 'GET',
       mode: 'cors',
     });
@@ -555,33 +557,22 @@ export const pushRecRowToSheetRec = async (row: RecRow, category: 'organic' | 'i
 /**
  * recシートから最新行を取得（GAS経由）
  */
-export const fetchLatestRecRow = async (userKey: string, category: 'organic' | 'inorganic'): Promise<RecRow | null> => {
+export const fetchLatestRecRow = async (userKey: string, _category: 'organic' | 'inorganic'): Promise<RecRow | null> => {
+  // 新しい実装ではfetchAllRecDataを使用するため、この関数は非推奨
+  // 互換性のため、fetchAllRecData経由で取得
+  // categoryパラメータは互換性のため残していますが使用しません
   try {
-    const gasUrl = GAS_URLS[category];
-    
-    if (!gasUrl) {
-      throw new Error(`GAS URL not configured for category: ${category}`);
-    }
-    
-    const response = await fetch(`${gasUrl}?type=rec&userKey=${encodeURIComponent(userKey)}`, {
-      method: 'GET',
-      mode: 'cors',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch rec row: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    if (data.error) {
-      throw new Error(data.error);
-    }
-    
-    if (!data.data) {
+    const allRecData = await fetchAllRecData();
+    const filtered = allRecData.filter(row => row.userKey === userKey);
+    if (filtered.length === 0) {
       return null;
     }
-    
-    return data.data as RecRow;
+    filtered.sort((a, b) => {
+      const timestampA = Number(a.recordedAt || a.timestamp || 0);
+      const timestampB = Number(b.recordedAt || b.timestamp || 0);
+      return timestampB - timestampA;
+    });
+    return filtered[0] || null;
   } catch (error) {
     console.warn('Failed to fetch latest rec row:', error);
     return null;
