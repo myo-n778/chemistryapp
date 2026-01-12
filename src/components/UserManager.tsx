@@ -83,17 +83,6 @@ export const UserManager: React.FC<UserManagerProps> = ({ onUserSelected }) => {
     onUserSelected();
   };
 
-
-  const handleClearAllData = () => {
-    if (window.confirm('すべてのユーザーデータを削除しますか？この操作は取り消せません。')) {
-      localStorage.removeItem('chem.activeUser');
-      localStorage.removeItem('chem.users');
-      localStorage.removeItem('chem.questionLogs');
-      localStorage.removeItem('chem.sessionLogs');
-      window.location.reload();
-    }
-  };
-
   return (
     <div className="user-manager">
       <h1>Chemistry Drill</h1>
@@ -174,23 +163,6 @@ export const UserManager: React.FC<UserManagerProps> = ({ onUserSelected }) => {
             className="create-new-button"
           >
             新規ユーザー作成
-          </button>
-          
-          <button
-            onClick={handleClearAllData}
-            className="clear-data-button"
-            style={{
-              marginTop: '10px',
-              background: 'rgba(255, 0, 0, 0.2)',
-              border: '1px solid #ff6666',
-              color: '#ff6666',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.85em'
-            }}
-          >
-            全データ削除（リセット）
           </button>
         </>
       )}

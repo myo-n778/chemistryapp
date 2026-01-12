@@ -11,13 +11,18 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   const [recData, setRecData] = useState<RecRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasActiveUser, setHasActiveUser] = useState(false);
 
+  // Hookは必ずトップレベルで無条件に呼ぶ
   useEffect(() => {
     const activeUser = getActiveUser();
     if (!activeUser) {
+      setHasActiveUser(false);
       setLoading(false);
       return;
     }
+
+    setHasActiveUser(true);
 
     const loadData = async () => {
       try {
@@ -36,7 +41,11 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     loadData();
   }, [mode]);
 
-  // activeUserが存在しない場合は表示しない
+  // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
+  if (!hasActiveUser) {
+    return null;
+  }
+
   const activeUser = getActiveUser();
   if (!activeUser) {
     return null;

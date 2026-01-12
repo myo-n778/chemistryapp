@@ -11,13 +11,18 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
   const [ranking, setRanking] = useState<RecRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasActiveUser, setHasActiveUser] = useState(false);
 
+  // Hookは必ずトップレベルで無条件に呼ぶ
   useEffect(() => {
     const activeUser = getActiveUser();
     if (!activeUser) {
+      setHasActiveUser(false);
       setLoading(false);
       return;
     }
+
+    setHasActiveUser(true);
 
     const loadRanking = async () => {
       try {
@@ -36,9 +41,8 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) 
     loadRanking();
   }, [mode]);
 
-  // activeUserが存在しない場合は表示しない
-  const activeUser = getActiveUser();
-  if (!activeUser) {
+  // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
+  if (!hasActiveUser) {
     return null;
   }
 
