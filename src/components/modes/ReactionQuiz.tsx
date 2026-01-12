@@ -9,7 +9,7 @@ import { playFinishSound } from '../../utils/soundManager';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import { playCorrect, playWrong } from '../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface ReactionQuizProps {
@@ -245,7 +245,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -259,7 +258,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);
@@ -305,7 +303,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -319,7 +316,6 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);

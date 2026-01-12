@@ -11,7 +11,7 @@ import { TeXRenderer } from '../../TeXRenderer';
 import { ChoiceDisplay } from '../../ChoiceDisplay';
 import { RenderMaybeTeX } from '../../RenderMaybeTeX';
 import { playCorrect, playWrong } from '../../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
 import '../../Quiz.css';
 
 /**
@@ -175,8 +175,6 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
         return;
       }
       
-        
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -232,8 +230,6 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
         return;
       }
       
-        
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];

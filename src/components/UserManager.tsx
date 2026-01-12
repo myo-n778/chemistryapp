@@ -83,10 +83,6 @@ export const UserManager: React.FC<UserManagerProps> = ({ onUserSelected }) => {
     onUserSelected();
   };
 
-  const handleLogout = () => {
-    clearActiveUser();
-    window.location.reload(); // 画面をリロードしてユーザー選択画面へ
-  };
 
   const handleClearAllData = () => {
     if (window.confirm('すべてのユーザーデータを削除しますか？この操作は取り消せません。')) {

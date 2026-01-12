@@ -6,7 +6,7 @@ import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../utils/scoreCalculator';
 import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface NameToStructureQuizProps {
@@ -172,8 +172,6 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
         return;
       }
       
-        
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -233,8 +231,6 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
         return;
       }
       
-        
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];

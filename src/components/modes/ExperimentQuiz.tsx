@@ -6,7 +6,7 @@ import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHisto
 import { playFinishSound } from '../../utils/soundManager';
 import { ExperimentCSVRow } from '../../utils/experimentParser';
 import { playCorrect, playWrong } from '../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface ExperimentQuizProps {
@@ -210,7 +210,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -224,7 +223,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);
@@ -269,7 +267,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -283,7 +280,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);

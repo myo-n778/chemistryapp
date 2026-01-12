@@ -9,7 +9,7 @@ import { playFinishSound } from '../../utils/soundManager';
 import { loadReactions } from '../../data/dataLoader';
 import { ReactionCSVRow } from '../../utils/reactionParser';
 import { playCorrect, playWrong } from '../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface SubstitutionQuizProps {
@@ -244,7 +244,6 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -258,7 +257,6 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);
@@ -304,7 +302,6 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -318,7 +315,6 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);

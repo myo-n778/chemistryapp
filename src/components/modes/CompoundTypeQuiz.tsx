@@ -6,7 +6,7 @@ import { ScoreDisplay } from '../shared/ScoreDisplay';
 import { QuizSummary } from '../shared/QuizSummary';
 import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../utils/scoreCalculator';
 import { playCorrect, playWrong, playFinishSound } from '../../utils/soundManager';
-import { getActiveUser, setActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
+import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../utils/sessionLogger';
 import '../Quiz.css';
 
 interface CompoundTypeQuizProps {
@@ -240,7 +240,6 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -254,7 +253,6 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);
@@ -299,7 +297,6 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         return;
       }
       
-      }
       const sessionId = generateUUID();
       const now = Date.now();
       const dateStr = new Date(now).toISOString().split('T')[0];
@@ -313,7 +310,6 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
         totalCount: totalAnswered,
         pointScore,
         timestamp: now,
-        isPublic: activeUser.isPublic,
         date: dateStr,
       };
       saveSessionLog(sessionLog);
