@@ -722,6 +722,8 @@ function getUserStatsSheet(spreadsheet) {
 
 /**
  * userStats シートの全データを取得
+ * 注意: この関数は問題データ用GAS（GAS_CODE.js）でも使用される（backfillUserStatsFromRec等）
+ * userStats専用GAS（GAS_CODE_USERSTATS.js）とは別の実装
  */
 function getAllUserStats() {
   try {
@@ -731,11 +733,13 @@ function getAllUserStats() {
     try {
       spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
     } catch (error) {
+      Logger.log('Failed to open spreadsheet: ' + error.toString());
       return [];
     }
     
     var sheet = spreadsheet.getSheetByName('userStats');
     if (!sheet) {
+      Logger.log('userStats sheet not found');
       return [];
     }
     
@@ -767,6 +771,7 @@ function getAllUserStats() {
     
     return result;
   } catch (error) {
+    Logger.log('Failed to get all userStats: ' + error.toString());
     return [];
   }
 }
