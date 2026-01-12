@@ -89,23 +89,64 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       throw new Error(`Failed to fetch all rec data: ${response.status} ${response.statusText}`);
     }
     
-    const data = await response.json();
+    const rawText = await response.text();
+    console.log('[recLoader] Raw response text:', rawText.substring(0, 500)); // 最初の500文字をログ
+    
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error('[recLoader] Failed to parse JSON:', parseError, 'Raw text:', rawText);
+      throw new Error('Invalid JSON response');
+    }
+    
+    console.log('[recLoader] Parsed response:', data);
+    
     if (data.error) {
       console.error('[recLoader] GAS error:', data.error);
       throw new Error(data.error);
     }
     
-    if (!data.data || !Array.isArray(data.data)) {
-      console.warn('[recLoader] Invalid response format:', data);
+    // レスポンス形式の柔軟な解釈
+    let recRows: any[] = [];
+    
+    // パターン1: { data: [...] } 形式
+    if (data.data && Array.isArray(data.data)) {
+      recRows = data.data;
+    }
+    // パターン2: { rows: [...] } 形式
+    else if (data.rows && Array.isArray(data.rows)) {
+      recRows = data.rows;
+    }
+    // パターン3: 配列が直接返されている
+    else if (Array.isArray(data)) {
+      recRows = data;
+    }
+    // パターン4: その他の形式を試す
+    else {
+      // dataオブジェクトの値の中に配列があるか探す
+      for (const key in data) {
+        if (Array.isArray(data[key])) {
+          console.log(`[recLoader] Found array in key "${key}"`);
+          recRows = data[key];
+          break;
+        }
+      }
+    }
+    
+    if (recRows.length === 0) {
+      console.warn('[recLoader] No rec rows found in response. Response structure:', Object.keys(data));
       return [];
     }
     
-    console.log(`[recLoader] Received ${data.data.length} rec rows from GAS`);
+    console.log(`[recLoader] Extracted ${recRows.length} rec rows from response`);
     
     // 全行を正規化
-    const normalized: RecRow[] = data.data
+    const normalized: RecRow[] = recRows
       .map((row: Record<string, any>) => normalizeRecRow(row))
       .filter((row: RecRow | null): row is RecRow => row !== null);
+    
+    console.log(`[recLoader] Normalized ${normalized.length} rec rows`);
     
     // キャッシュに保存
     recDataCache = normalized;
@@ -115,7 +156,7 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     
     return normalized;
   } catch (error) {
-    console.warn('Failed to fetch all rec data:', error);
+    console.warn('[recLoader] Failed to fetch all rec data:', error);
     // キャッシュがあればそれを返す
     if (recDataCache) {
       console.log('[recLoader] Using cached data due to fetch error');
