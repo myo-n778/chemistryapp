@@ -1198,8 +1198,14 @@ export const getUserStatsByUserKey = async (userKey: string, userName?: string):
  * @param userName - ユーザー名（displayName/name）
  * @returns number (0-1)
  */
-export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string): Promise<number> => {
+export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string): Promise<number | null> => {
   try {
+    // REC_BASE_URLが設定されていない場合は、tenAveを計算できない
+    if (!REC_BASE_URL || REC_BASE_URL.trim() === '') {
+      console.warn('[calculateTenAveFromRec] REC_BASE_URL is not configured. Cannot calculate tenAve.');
+      return null;
+    }
+    
     const allRecData = await fetchAllRecData();
     const targetUserId = userName ? `${String(userKey)}|${String(userName)}` : null;
     
@@ -1246,8 +1252,13 @@ export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' |
     
     return totalCorrect / totalQuestions;
   } catch (error) {
+    // REC_BASE_URL未設定エラーの場合はnullを返す（計算不可）
+    if (error instanceof Error && error.message.includes('REC_BASE_URL is not configured')) {
+      console.warn('[calculateTenAveFromRec] REC_BASE_URL is not configured. Cannot calculate tenAve.');
+      return null;
+    }
     console.warn('Failed to calculate tenAve from rec:', error);
-    return 0;
+    return null; // エラー時はnullを返す（計算不可）
   }
 };
 

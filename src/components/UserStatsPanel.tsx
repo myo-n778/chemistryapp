@@ -119,7 +119,10 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
     return String(value);
   };
 
-  const formatPercentage = (value: number): string => {
+  const formatPercentage = (value: number | null): string => {
+    if (value === null || value === undefined) {
+      return '--';
+    }
     return `${(value * 100).toFixed(1)}%`;
   };
 
