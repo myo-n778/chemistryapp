@@ -13,16 +13,24 @@ export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM ||
 /**
  * recデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=rec → JSON配列
+ * 
+ * 【修正】ログ分析により、URLの役割が逆であることが判明:
+ * - AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec は userStats専用（"Use action=userStats"エラーを返す）
+ * - AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec は rec専用
  */
 export const REC_BASE_URL = import.meta.env.VITE_GAS_URL_REC || 
-  'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
+  'https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec';
 
 /**
  * userStatsデータ取得専用GAS URL（JSON配列を返す）
  * 想定: ?action=userStats → JSON配列
+ * 
+ * 【修正】ログ分析により、URLの役割が逆であることが判明:
+ * - AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec は userStats専用（"Use action=userStats"エラーを返す）
+ * - AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec は rec専用
  */
 export const STATS_BASE_URL = import.meta.env.VITE_GAS_URL_USERSTATS || 
-  'https://script.google.com/macros/s/AKfycbzYBUA5VdUzyGu83FxL-DZ1O_DZogjV149BVaDrbLiH8t4m-IyljrfX1p4EsrIe2gZ8zw/exec';
+  'https://script.google.com/macros/s/AKfycbz3dAJzhk6TcRMwHIg-NJvpJ2xiv_utZoQt_I9m5_ZN-usWeL1kpWbLkkJ1k51jSJUK_Q/exec';
 
 /**
  * 直叩き検証用URL（コメント）
