@@ -8,6 +8,7 @@ interface PublicRankingPanelProps {
 }
 
 export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = ({ mode }) => {
+  // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
   const [ranking, setRanking] = useState<RecRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

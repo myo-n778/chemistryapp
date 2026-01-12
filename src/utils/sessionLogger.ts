@@ -106,6 +106,13 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     
     console.log('[recLoader] Parsed response:', data);
     
+    // csvが含まれている場合は問題データ用APIが呼ばれている（エラー）
+    if (data.csv) {
+      console.error('[recLoader] ERROR: Received CSV data instead of rec data. This means problem data API was called instead of rec API.');
+      console.error('[recLoader] Response contains csv field:', data.csv.substring(0, 100));
+      throw new Error('Received CSV data instead of rec data. Check that rec URL is correctly configured and action=rec parameter is used.');
+    }
+    
     if (data.error) {
       console.error('[recLoader] GAS error:', data.error);
       throw new Error(data.error);
@@ -114,7 +121,7 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     // レスポンス形式の柔軟な解釈
     let recRows: any[] = [];
     
-    // パターン1: { data: [...] } 形式
+    // パターン1: { data: [...] } 形式（GAS側の想定形式）
     if (data.data && Array.isArray(data.data)) {
       recRows = data.data;
     }
@@ -143,7 +150,7 @@ async function fetchAllRecData(): Promise<RecRow[]> {
       return [];
     }
     
-    console.log(`[recLoader] Extracted ${recRows.length} rec rows from response`);
+    console.log(`[recLoader] Loaded rec rows: ${recRows.length}`);
     
     // 全行を正規化
     const normalized: RecRow[] = recRows

@@ -8,6 +8,7 @@ interface UserStatsPanelProps {
 }
 
 export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
+  // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
   const [recData, setRecData] = useState<RecRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
