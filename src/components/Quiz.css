@@ -12,6 +12,14 @@
   margin-bottom: clamp(5px, 1vh, 10px);
   padding-bottom: clamp(5px, 1vh, 10px);
   border-bottom: 2px solid #3a2f2a;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* flex子要素の横はみ出し防止 */
+.quiz-header > * {
+  min-width: 0; /* flex子要素がテキストで押し広げられるのを防ぐ */
 }
 
 .quiz-header h1 {
