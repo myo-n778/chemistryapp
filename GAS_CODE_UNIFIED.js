@@ -435,7 +435,7 @@ function aggregateUserData(sheet, userKey, displayName, currentData) {
       // データが無い場合は現在のデータのみで初期化
       return {
         EXP: currentData.correctCount || 0,
-        LV: Math.floor((currentData.correctCount || 0) / 100) + 1,
+        LV: Math.floor((currentData.correctCount || 0) / 10) + 1,
         tenAve: currentData.accuracy || 0,
         allAve: currentData.accuracy || 0,
         sess: 1,
@@ -458,7 +458,7 @@ function aggregateUserData(sheet, userKey, displayName, currentData) {
       // 過去データが無い場合は現在のデータのみで初期化
       return {
         EXP: currentData.correctCount || 0,
-        LV: Math.floor((currentData.correctCount || 0) / 100) + 1,
+        LV: Math.floor((currentData.correctCount || 0) / 10) + 1,
         tenAve: currentData.accuracy || 0,
         allAve: currentData.accuracy || 0,
         sess: 1,
@@ -522,8 +522,8 @@ function aggregateUserData(sheet, userKey, displayName, currentData) {
     // EXPを計算（全セッションの合計正解数）
     const EXP = totalCorrectCount;
     
-    // LVを計算
-    const LV = Math.floor(EXP / 100) + 1;
+    // LVを計算（EXP10でレベル2、EXP20でレベル3）
+    const LV = Math.floor(EXP / 10) + 1;
     
     // 連続正解数の計算（セッション単位で計算）
     // 過去の行を新しい順に並べ替えて、連続正解セッションを計算

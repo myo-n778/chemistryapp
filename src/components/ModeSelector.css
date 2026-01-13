@@ -90,6 +90,22 @@
   margin-bottom: 12px;
 }
 
+/* ModeSelector内のUserStatsPanelとPublicRankingPanelをコンパクトに */
+.mode-selector .user-stats-panel,
+.mode-selector .public-ranking-panel {
+  max-width: 100%;
+  margin: 6px auto; /* 10px → 6px に縮小 */
+  padding: 8px; /* 15px → 8px に縮小 */
+}
+
+.mode-selector .public-ranking-panel {
+  max-height: 200px; /* 高さ制限を追加 */
+}
+
+.mode-selector .ranking-scroll-container {
+  max-height: 150px; /* 縦スクロールの高さ制限を縮小 */
+}
+
 /* モード一覧を包むスクロールコンテナ */
 .mode-grid-container {
   max-height: 70vh;

@@ -1,5 +1,6 @@
 .category-selector {
   max-width: 600px;
+  width: 100%; /* スマホ幅で親要素に収まる */
   margin: 0 auto;
   padding: 15px 20px;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
@@ -7,6 +8,23 @@
   text-align: center;
   position: relative; /* stacking context を作成 */
   z-index: 10; /* ボタンがクリックできるように高いz-index */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
+}
+
+/* CategorySelector内のUserStatsPanelとPublicRankingPanelをコンパクトに */
+.category-selector .user-stats-panel,
+.category-selector .public-ranking-panel {
+  max-width: 100%;
+  margin: 6px auto; /* 10px → 6px に縮小 */
+  padding: 8px; /* 15px → 8px に縮小 */
+}
+
+.category-selector .public-ranking-panel {
+  max-height: 200px; /* 高さ制限を追加 */
+}
+
+.category-selector .ranking-scroll-container {
+  max-height: 150px; /* 縦スクロールの高さ制限を縮小 */
 }
 
 .category-selector-header {
