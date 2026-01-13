@@ -15,7 +15,7 @@
  * - ?action=userStats → JSON配列（userStatsデータ）
  * - POST → recに追記＋userStatsを加算更新
  */
-const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbxDENqyRn6RhZWAB6dWPBsTIX7dhQq641m9cBzI1kJP04trYLj_JFbDqdxVN5Pbv75JMw/exec';
+const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyne6S1NTK7Fe0Y_x5bZ9MjiYI-2PgiMymVfOmn41cL28oDbjMeCE02Dk61HWxMSM_RdA/exec';
 
 /**
  * 問題データ用GAS URL（CSVを返す）
