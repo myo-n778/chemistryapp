@@ -1,5 +1,6 @@
 .mode-selector {
   max-width: 1000px;
+  width: 100%; /* スマホ幅で親要素に収まる */
   margin: 0 auto;
   padding: 10px 20px;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
@@ -7,6 +8,7 @@
   text-align: center;
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 最小限のz-index */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .mode-selector-header {
@@ -91,10 +93,13 @@
 /* モード一覧を包むスクロールコンテナ */
 .mode-grid-container {
   max-height: 70vh;
+  width: 100%; /* 親要素に収まる */
+  max-width: 100%; /* 親要素を超えない */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 最小限のz-index */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .mode-grid {
@@ -103,10 +108,12 @@
   gap: 10px;
   margin-top: 8px;
   max-width: 1000px;
+  width: 100%; /* スマホ幅で親要素に収まる */
   margin-left: auto;
   margin-right: auto;
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 最小限のz-index */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .mode-button {

@@ -1,5 +1,22 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+/* 画像・メディアのはみ出し防止 */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 長い文字列の折り返し（必要に応じて適用） */
+.breakable {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 body {

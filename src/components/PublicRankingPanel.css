@@ -5,10 +5,12 @@
   padding: 15px;
   margin: 10px auto;
   max-width: 800px;
+  width: 100%; /* スマホ幅で親要素に収まる */
   color: #ffffff;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 低いz-indexで他UIをブロックしない */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .ranking-header {
@@ -37,12 +39,14 @@
 /* 横スクロールコンテナ（ヘッダーとボディを一緒にスクロール） */
 .ranking-scroll-container {
   width: 100%;
+  max-width: 100%; /* 親要素を超えない */
   max-height: 400px; /* 縦スクロールの高さ制限 */
   overflow-x: auto; /* 横スクロール */
   overflow-y: auto; /* 縦スクロール */
   -webkit-overflow-scrolling: touch; /* iOSでスムーズなスクロール */
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 低いz-indexで他UIをブロックしない */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .ranking-table {

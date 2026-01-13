@@ -5,10 +5,12 @@
   padding: 10px; /* 15px → 10px に縮小 */
   margin: 8px auto; /* 10px → 8px に縮小 */
   max-width: 600px;
+  width: 100%; /* スマホ幅で親要素に収まる */
   color: #ffffff;
   font-family: 'Noto Serif JP', 'Noto Serif', serif;
   position: relative; /* stacking context を作成 */
   z-index: 1; /* 低いz-indexで他UIをブロックしない */
+  box-sizing: border-box; /* paddingを含めた幅計算 */
 }
 
 .stats-header {
@@ -26,9 +28,12 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* minmax(0, 1fr)で横はみ出し防止 */
   gap: 8px 12px; /* 12px 16px → 8px 12px に縮小 */
   margin-top: 6px; /* 10px → 6px に縮小 */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .stats-item {
