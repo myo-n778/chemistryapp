@@ -15,13 +15,13 @@ import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession
 import '../../Quiz.css';
 
 /**
- * 問題文表示コンポーネント（TeX表示切り替え機能付き）
+ * 問題文表示コンポーネント（化学式表示切り替え機能付き）
  */
 const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> = ({ text, tex }) => {
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
-    return <RenderMaybeTeX value={text} displayMode={true} />;
+    return <div className="inorganic-question-display"><RenderMaybeTeX value={text} displayMode={true} /></div>;
   }
 
   return (
@@ -39,14 +39,16 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> 
             cursor: 'pointer',
           }}
         >
-          {showTeX ? '通常表示' : 'TeX表示'}
+          {showTeX ? '通常表示' : '化学式表示'}
         </button>
       </div>
+      <div className="inorganic-question-display">
       {showTeX ? (
         <TeXRenderer equation={tex} displayMode={true} />
       ) : (
         <RenderMaybeTeX value={text} displayMode={true} />
       )}
+      </div>
     </div>
   );
 };

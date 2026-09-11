@@ -325,7 +325,7 @@ function App() {
         (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
         quizInorganicReactionsNew.length === 0) {
       return (
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+        <div className="status-panel">
           <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             問題データが見つかりませんでした
           </p>
@@ -333,7 +333,7 @@ function App() {
             出題セットが空です。設定を確認してください。
           </p>
           <button
-            className="back-button"
+            className="status-action"
             onClick={() => setQuizSettings(null)}
             style={{ marginTop: '20px' }}
           >
@@ -410,9 +410,9 @@ function App() {
       <div className="App">
         <GasHealthCheck />
         <SoundSelector />
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+        <div className="status-panel">
           <p className="loading-text" role="status">問題を読み込んでいます…</p>
-          <button className="back-button" onClick={() => setSelectedCategory(null)}>分野選択に戻る</button>
+          <button className="status-action" onClick={() => setSelectedCategory(null)}>分野選択に戻る</button>
         </div>
       </div>
     );
@@ -423,16 +423,17 @@ function App() {
       <div className="App">
         <GasHealthCheck />
         <SoundSelector />
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+        <div className="status-panel">
           <p role="alert" style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             データの読み込みに失敗しました
           </p>
           <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
             {currentLoadingError}
           </p>
-          <button className="back-button" onClick={() => setReloadKey(key => key + 1)}>再読み込み</button>
+          <div className="status-actions">
+          <button className="status-action" onClick={() => setReloadKey(key => key + 1)}>再読み込み</button>
           <button
-            className="back-button"
+            className="status-action"
             onClick={() => {
               setSelectedCategory(null);
               if (selectedCategory === 'inorganic') {
@@ -441,10 +442,10 @@ function App() {
                 setLoadingError(null);
               }
             }}
-            style={{ marginTop: '20px' }}
           >
             ← 分野選択に戻る
           </button>
+          </div>
         </div>
       </div>
     );
@@ -519,7 +520,7 @@ function App() {
   if (selectedCategory === 'organic' && ['structure-to-name', 'name-to-structure', 'compound-type'].includes(selectedMode) && finalCompounds.length === 0) {
     return (
       <div className="App">
-        <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
+        <div className="status-panel">
           <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             問題データが見つかりませんでした
           </p>
@@ -527,7 +528,7 @@ function App() {
             構造式が有効な化合物がありません。データを確認してください。
           </p>
           <button
-            className="back-button"
+            className="status-action"
             onClick={() => {
               setQuizSettings(null);
             }}

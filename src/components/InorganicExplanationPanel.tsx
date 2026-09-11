@@ -4,6 +4,8 @@ import { TeXRenderer } from './TeXRenderer';
 import { InorganicObservationDisplay } from './InorganicObservationDisplay';
 import { RenderMaybeTeX } from './RenderMaybeTeX';
 import './InorganicExplanationPanel.css';
+import { ColorAnnotatedText } from './ColorAnnotatedText';
+import { colorCuesFor } from '../utils/inorganicColors';
 
 interface InorganicExplanationPanelProps {
   reaction: InorganicReactionNew;
@@ -38,7 +40,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
                 className="tex-toggle-button"
                 onClick={() => setShowEquationTeX(!showEquationTeX)}
               >
-                {showEquationTeX ? '通常表示' : 'TeX表示'}
+                {showEquationTeX ? '通常表示' : '化学式表示'}
               </button>
             )}
             <div className="explanation-content-inline">
@@ -63,7 +65,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
                 <div className="summary-card summary-reactants">
                   <div className="summary-card-label">反応前</div>
                   <div className="summary-card-content">
-                    <RenderMaybeTeX value={reaction.reactants_summary} />
+                    <ColorAnnotatedText text={reaction.reactants_summary} cues={colorCuesFor(reaction, 'reactants', true)} />
                   </div>
                 </div>
               )}
@@ -71,7 +73,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
                 <div className="summary-card summary-products">
                   <div className="summary-card-label">生成</div>
                   <div className="summary-card-content">
-                    <RenderMaybeTeX value={reaction.products_summary} />
+                    <ColorAnnotatedText text={reaction.products_summary} cues={colorCuesFor(reaction, 'products', true)} />
                   </div>
                 </div>
               )}
@@ -87,7 +89,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
             <h3 className="explanation-section-title">観察事項</h3>
           </div>
           <div className="explanation-content">
-            <InorganicObservationDisplay observation={reaction.observations} />
+            <InorganicObservationDisplay observation={reaction.observations} colorCues={colorCuesFor(reaction, 'observations', true)} />
           </div>
         </div>
       )}
@@ -99,7 +101,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
             <h3 className="explanation-section-title">解説</h3>
           </div>
           <div className="explanation-content">
-            <RenderMaybeTeX value={reaction.explanation} />
+            <ColorAnnotatedText text={reaction.explanation} cues={['reactants', 'products', 'observations'].map(target => colorCuesFor(reaction, target as 'reactants' | 'products' | 'observations', true)).join(';')} />
           </div>
         </div>
       )}

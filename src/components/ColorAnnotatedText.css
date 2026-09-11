@@ -1,0 +1,15 @@
+.color-annotated-text { overflow-wrap: anywhere; }
+.color-word { display: inline; }
+.color-swatch {
+  display: inline-block;
+  width: .8em;
+  height: .8em;
+  margin-inline: .16em .2em;
+  vertical-align: -.04em;
+  border: 1px solid #aaa;
+  box-shadow: 0 0 0 1px #2a1f1a;
+  border-radius: 2px;
+}
+.color-swatch-clear {
+  background-image: repeating-linear-gradient(135deg, #fff 0 3px, #c7c7c7 3px 6px);
+}

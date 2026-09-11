@@ -33,3 +33,41 @@
 - `/private/tmp/chemistry-build.log`
 
 一時領域は永続保存ではない。再実行時はSheetsから問題データを読み直す。個人記録は試験データに含めない。
+
+## 文字サイズ変更の検証（2026-09-11 23時台）
+
+- [x] TypeScript/Vite、git diff --check。
+- [x] 全5段階の選択状態、文字サイズが順に増加、再読込後の保存。
+- [x] 1280×900 / 390×900 / 844×390の無機Bで問題・選択肢を維持して変更、回答・Next、極大のページ横はみ出しなし。
+- [x] 既存9モード開始・回答、無機B/C第2範囲、7件の実件数。
+- [x] コンソールのアプリ例外なし。模擬rec/userStatsが空の既知警告のみ。
+- [ ] 模擬403の手動再読み込み後、alert待ちが時間切れ。以前の通過結果と区別し今回未解決。
+- [ ] 今回の公開反映、実iPad/Safari、本番保存、利用者受入。
+- 証拠: /private/tmp/chemistry-font-test.cjs、chemistry-font-test.log、chemistry-font-regression.log、chemistry-font-error.log、chemistry-font-build.log。
+
+## 三段階変更の検証（2026-09-11）
+
+- [x] 小・中・大のroot文字サイズ16/20/24px、旧6種類の保存値（無効値を含む）移行、再読み込みで選択維持。
+- [x] 320/768/1280px幅×9モードで入口・モード・範囲設定・問題・化学式切替・回答後の解説の枠内表示。
+- [x] ユーザー一覧・作成、記録欄、ALL問題数設定、10問完了後の結果へ到達。本番保存は遮断し模擬POST各1回。
+- [x] ユーザー向け旧TeX表示・極小・極大ラベルを除去（履歴・内部説明は保持）。
+- [ ] 実iPad/Safari・公開反映・全問題の表示網羅。任意の端末・全データに対する無条件の保証ではない。
+- 証拠: /private/tmp/chemistry-three-test.cjs、chemistry-three-test.log、chemistry-three-extra.cjs、chemistry-three-extra.log、chemistry-three-storage.cjs、chemistry-three-summary-320.png。
+
+- [x] 最終順位行の折返し・日付改行後、結果画面3幅の自動検査と320px画像目視を通過。TypeScript/Vite・diff検査通過。
+
+- [x] 通常表示中央配置: 無機A/B/C、320/1280pxで中央位置・折返し・化学式との切替・選択肢維持・アプリ例外なしを確認。画像目視済み。切替時の微小な高さ差はあり、完全固定高さではない。証拠 /private/tmp/chemistry-center-test.log。
+
+## 2026-09-12 異常画面のボタン修正（ローカル、未公開）
+
+読込中・通信エラー・空データ画面はstatus-panel/status-actionへ分離。固定54×24pxの演習ボタンを継承せず、自動幅高さ・中央配置・狭幅縦並びにした。修正前は枠内22pxに文字43/53pxの縦はみ出しを再現。320×900・844×390・1280×900の小中大で読込中・15秒タイムアウトの文字Range四辺と枠を照合し、全9組通過。模擬再読込→モード選択、画像目視、TypeScript/Vite・diffも通過。実通信・実iPad・公開は未確認。GAS/Sheets・通信処理・採点は未変更。前段の異常画面・縦方向の確認漏れはAIFT-20260912-001へ記録。
+
+## 2026-09-12 色見本の検証
+
+- [x] TypeScript/Viteビルド、色名ホワイトリスト、未知値無視、長い色名優先、旧CSV互換。
+- [x] 正解以外の選択肢への正解色の流用なし、未記載の色名追加なし、表示時期3種。
+- [x] Chrome 320×900 / 844×390 / 1280×900、無機A/B/Cの表示と回答、文字サイズ大。枠外文字検査PASS。
+- [x] 320px幅の回答後画像を目視。長い式は従来どおり枠内横スクロール。
+- [x] Sheets I1:M91の全値、A:H保持、文字列書式・入力規則読み戻し。既存GAS GETで新列取得。
+- [ ] Sheetsネイティブ画面の目視（ブラウザ制御の起動でtrusted Node process exited unexpectedly）。
+- [ ] 公開フロント、実iPad/Safari、実物の色との照合、教材全問内容監査、独立検証、利用者受入。

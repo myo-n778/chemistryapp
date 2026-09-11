@@ -101,6 +101,11 @@ export function parseInorganicCSV(text: string): InorganicReactionNew[] {
   }
   return rows.map((row, i) => ({
     id: `inorganic-${i + 1}`,
+    reactants_visual: field(row, 'reactants_visual'),
+    products_visual: field(row, 'products_visual'),
+    observations_visual: field(row, 'observations_visual'),
+    visual_timing: field(row, 'visual_timing'),
+    visual_review: field(row, 'visual_review'),
     equation: field(row, 'equation', 'equation_tex'),
     equation_tex: field(row, 'equation_tex') || undefined,
     reactants: field(row, 'reactants', 'reaction_before_ja', 'reactants_tex'),

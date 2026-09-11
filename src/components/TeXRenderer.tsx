@@ -74,7 +74,7 @@ export const TeXRenderer: React.FC<TeXRendererProps> = ({
 };
 
 /**
- * 通常表示とTeX表示を切り替えるコンポーネント
+ * 通常表示と化学式表示を切り替えるコンポーネント
  */
 interface TeXToggleProps {
   plainText: string;
@@ -106,7 +106,7 @@ export const TeXToggle: React.FC<TeXToggleProps> = ({
           className={`tex-toggle-button ${mode === 'tex' ? 'active' : ''}`}
           onClick={() => setMode('tex')}
         >
-          TeX表示
+          化学式表示
         </button>
       </div>
       <div className="tex-toggle-content">

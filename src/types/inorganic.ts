@@ -3,6 +3,12 @@
  */
 export interface InorganicReactionNew {
   id: string;
+  reactants_visual?: string;
+  products_visual?: string;
+  observations_visual?: string;
+  visual_timing?: string; // 本文に合わせる / 解説のみ / 非表示
+  visual_review?: string; // 管理用。学習画面には表示しない。
+
   equation: string; // A列：反応式（日本語表記）
   equation_tex?: string; // A列：反応式（TeX形式、オプション）
   reactants: string; // B列：反応内容（反応前・日本語）

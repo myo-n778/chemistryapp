@@ -1,16 +1,18 @@
 import React from 'react';
 import { parseObservation } from '../utils/inorganicObservationParser';
-import { RenderMaybeTeX } from './RenderMaybeTeX';
+import { ColorAnnotatedText } from './ColorAnnotatedText';
 import './InorganicObservationDisplay.css';
 
 interface InorganicObservationDisplayProps {
   observation: string;
   className?: string;
+  colorCues?: string;
 }
 
 export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayProps> = ({
   observation,
   className = '',
+  colorCues,
 }) => {
   const visuals = parseObservation(observation);
 
@@ -21,8 +23,8 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
           return (
             <span key={index} className="observation-visual observation-precipitate">
               <span className="visual-icon precipitate-icon">⬇</span>
-              {visual.color && <span className="visual-color">（{visual.color}）</span>}
-              {visual.text && <span className="visual-text"><RenderMaybeTeX value={visual.text} /></span>}
+              {visual.color && <span className="visual-color">（<ColorAnnotatedText text={visual.color} cues={colorCues} />）</span>}
+              {visual.text && <span className="visual-text"><ColorAnnotatedText text={visual.text} cues={colorCues} /></span>}
               <span className="observation-arrow">↓</span>
             </span>
           );
@@ -30,8 +32,8 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
           return (
             <span key={index} className="observation-visual observation-gas">
               <span className="visual-icon gas-icon">⬆</span>
-              {visual.color && <span className="visual-color">（{visual.color}）</span>}
-              {visual.text && <span className="visual-text"><RenderMaybeTeX value={visual.text} /></span>}
+              {visual.color && <span className="visual-color">（<ColorAnnotatedText text={visual.color} cues={colorCues} />）</span>}
+              {visual.text && <span className="visual-text"><ColorAnnotatedText text={visual.text} cues={colorCues} /></span>}
               <span className="observation-arrow">↑</span>
             </span>
           );
@@ -39,13 +41,13 @@ export const InorganicObservationDisplay: React.FC<InorganicObservationDisplayPr
           return (
             <span key={index} className="observation-visual observation-solution">
               <span className="visual-icon solution-icon">■</span>
-              {visual.color && <span className="visual-color">（{visual.color}）</span>}
+              {visual.color && <span className="visual-color">（<ColorAnnotatedText text={visual.color} cues={colorCues} />）</span>}
             </span>
           );
         } else {
           return (
             <span key={index} className="observation-text">
-              <RenderMaybeTeX value={visual.text} />
+              <ColorAnnotatedText text={visual.text} cues={colorCues} />
             </span>
           );
         }

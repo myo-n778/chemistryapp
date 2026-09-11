@@ -8,20 +8,21 @@ import { playFinishSound } from '../../../utils/soundManager';
 import { generateDistractorsForTypeC, shuffleChoices } from '../../../utils/inorganicDistractorGeneratorNew';
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
-import { ChoiceDisplay } from '../../ChoiceDisplay';
+import { ColorAnnotatedText } from '../../ColorAnnotatedText';
+import { colorCuesFor, choiceColorCues } from '../../../utils/inorganicColors';
 import { RenderMaybeTeX } from '../../RenderMaybeTeX';
 import { playCorrect, playWrong } from '../../../utils/soundManager';
 import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
 import '../../Quiz.css';
 
 /**
- * 問題文表示コンポーネント（TeX表示切り替え機能付き）
+ * 問題文表示コンポーネント（化学式表示切り替え機能付き）
  */
 const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> = ({ text, tex }) => {
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
-    return <RenderMaybeTeX value={text} displayMode={true} />;
+    return <div className="inorganic-question-display"><RenderMaybeTeX value={text} displayMode={true} /></div>;
   }
 
   return (
@@ -39,14 +40,16 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> 
             cursor: 'pointer',
           }}
         >
-          {showTeX ? '通常表示' : 'TeX表示'}
+          {showTeX ? '通常表示' : '化学式表示'}
         </button>
       </div>
+      <div className="inorganic-question-display">
       {showTeX ? (
         <TeXRenderer equation={tex} displayMode={true} />
       ) : (
         <RenderMaybeTeX value={text} displayMode={true} />
       )}
+      </div>
     </div>
   );
 };
@@ -531,7 +534,7 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <ChoiceDisplay text={choice} />
+                  <ColorAnnotatedText text={choice} cues={choiceColorCues(choicePool, choice, 'observations', showResult)} />
                 </div>
                 {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
                 {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
@@ -543,7 +546,7 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
         {showResult && (
           <div className="result-panel">
             <div className="result-explanation">
-              <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.observations} /></p>
+              <p><strong>正解:</strong> <ColorAnnotatedText text={currentReaction.observations} cues={colorCuesFor(currentReaction, 'observations', true)} /></p>
               <InorganicExplanationPanel
                 reaction={currentReaction}
                 correctAnswer={currentReaction.observations}

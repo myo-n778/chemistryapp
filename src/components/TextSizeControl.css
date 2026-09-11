@@ -1,0 +1,180 @@
+.text-size-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10001;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  color: #f4eee5;
+  background: #2a1f1a;
+  border-bottom: 1px solid #78614b;
+}
+.text-size-label { font-size: .75rem; }
+.text-size-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.text-size-options button {
+  font: inherit;
+  font-size: .75rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid #a28a70;
+  border-radius: 8px;
+  color: #f4eee5;
+  background: #33271f;
+  cursor: pointer;
+}
+.text-size-options button[aria-pressed='true'] {
+  color: #241a13;
+  background: #edbc80;
+  border-color: #edbc80;
+  font-weight: bold;
+}
+/* 共通バーと既存の右上固定コントロールの重なりを避ける。 */
+html[data-text-size] .sound-selector-global {
+  position: relative;
+  top: auto;
+  right: auto;
+  align-self: flex-end;
+  margin: 4px 8px 12px;
+  max-width: 100%;
+  z-index: 100;
+}
+/* 全サイズで一画面固定を解除し、全文と回答操作へスクロールできる。 */
+html[data-text-size] .quiz-container,
+html[data-text-size] .quiz-content {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  flex: none;
+}
+html[data-text-size] .quiz-header,
+html[data-text-size] .quiz-header-right,
+html[data-text-size] .quiz-header-buttons {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html[data-text-size] .quiz-header-buttons button {
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  white-space: normal;
+}
+html[data-text-size] .option-button {
+  height: auto;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+html[data-text-size] .question-text {
+  overflow-x: auto;
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  html[data-text-size] .options-container {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+html[data-text-size] .explanation-section {
+  max-width: 100%;
+}
+html[data-text-size] .explanation-section-header-inline {
+  flex-wrap: wrap;
+}
+html[data-text-size] .explanation-content-inline {
+  flex-basis: 100%;
+  overflow-x: auto;
+}
+html[data-text-size] .tex-renderer {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+html[data-text-size] .explanation-content,
+html[data-text-size] .summary-card-content {
+  overflow-wrap: anywhere;
+}
+
+/* 見出し・操作・解説の長い文字を、枠の幅に合わせて折り返す。 */
+html[data-text-size] .App :is(button, h1, h2, h3, p, input, select) {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+html[data-text-size] .App :is(button, h1, h2, h3) {
+  white-space: normal;
+}
+html[data-text-size] :is(.mode-selector-header, .header-main-row,
+  .question-count-selector-header, .category-selector-header,
+  .sound-selector-expanded, .sound-selector-buttons, .tex-toggle-controls,
+  .explanation-section-header, .user-stats-header) {
+  flex-wrap: wrap;
+}
+html[data-text-size] :is(.mode-selector-header-left, .mode-selector-header-right,
+  .explanation-section, .summary-card, .question-area, .quiz-header-right,
+  .result-panel, .result-explanation, .inorganic-explanation-panel) {
+  min-width: 0;
+  max-width: 100%;
+}
+html[data-text-size] .sound-selector-expanded { justify-content: flex-end; }
+html[data-text-size] :is(.explanation-section-title, .question-count-selector h1) {
+  white-space: normal;
+}
+html[data-text-size] .katex-display { overflow-x: auto; overflow-y: hidden; }
+html[data-text-size] .App button { flex-shrink: 1; }
+html[data-text-size] .App { overflow-x: visible; }
+@media (max-width: 767px) {
+  html[data-text-size] :is(.explanation-section, .summary-card) { width: 100%; }
+}
+
+html[data-text-size] .quiz-summary-overlay {
+  top: var(--text-size-bar-height, 64px);
+  height: calc(100dvh - var(--text-size-bar-height, 64px));
+  min-height: 0;
+  max-height: calc(100dvh - var(--text-size-bar-height, 64px));
+}
+html[data-text-size] :is(.summary-buttons, .ranking-row, .form-actions) {
+  flex-wrap: wrap;
+}
+html[data-text-size] :is(.summary-score-large, .user-key, .user-name, .user-info) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+/* 結果の順位・得点・日付は固定6列にせず、カード内で折り返す。 */
+html[data-text-size] .quiz-summary-card .ranking-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+html[data-text-size] .quiz-summary-card .ranking-row > span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+html[data-text-size] .quiz-summary-card .ranking-date {
+  flex-basis: 100%;
+}
+
+/* 通常の物質名と化学式の位置・余白を共通化する。 */
+html[data-text-size] .inorganic-question-display {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 5rem;
+  padding: 1rem 0;
+  margin-bottom: .5rem;
+  overflow-wrap: anywhere;
+}
+html[data-text-size] .inorganic-question-display > * {
+  min-width: 0;
+  max-width: 100%;
+}
+html[data-text-size] .inorganic-question-display .tex-renderer { width: 100%; }
+html[data-text-size] .inorganic-question-display .katex-display { margin: 0; }
+html[data-text-size] .inorganic-question-display .tex-renderer {
+  margin: 0 !important; /* TeXRendererの表示モード用inline余白は共通枠で管理 */
+}

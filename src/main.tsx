@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { TextSizeControl } from './components/TextSizeControl'
 
 // エラーハンドリングの改善
 const rootElement = document.getElementById('root');
@@ -17,6 +18,7 @@ if (!rootElement) {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
       <React.StrictMode>
+        <TextSizeControl />
         <App />
       </React.StrictMode>
     );

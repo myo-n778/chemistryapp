@@ -8,20 +8,20 @@ import { playFinishSound } from '../../../utils/soundManager';
 import { generateDistractorsForTypeA, shuffleChoices } from '../../../utils/inorganicDistractorGeneratorNew';
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
-import { ChoiceDisplay } from '../../ChoiceDisplay';
-import { RenderMaybeTeX } from '../../RenderMaybeTeX';
+import { ColorAnnotatedText } from '../../ColorAnnotatedText';
+import { colorCuesFor, choiceColorCues } from '../../../utils/inorganicColors';
 import { playCorrect, playWrong } from '../../../utils/soundManager';
 import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
 import '../../Quiz.css';
 
 /**
- * 問題文表示コンポーネント（TeX表示切り替え機能付き）
+ * 問題文表示コンポーネント（化学式表示切り替え機能付き）
  */
-const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }) => {
+const QuestionDisplay: React.FC<{ text: string; tex?: string; cues?: string }> = ({ text, tex, cues }) => {
   const [showTeX, setShowTeX] = useState(false);
 
   if (!tex) {
-    return <RenderMaybeTeX value={text} displayMode={true} />;
+    return <div className="inorganic-question-display"><ColorAnnotatedText text={text} cues={cues} displayMode={true} /></div>;
   }
 
   return (
@@ -39,14 +39,16 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }
             cursor: 'pointer',
           }}
         >
-          {showTeX ? '通常表示' : 'TeX表示'}
+          {showTeX ? '通常表示' : '化学式表示'}
         </button>
       </div>
+      <div className="inorganic-question-display">
       {showTeX ? (
         <TeXRenderer equation={tex} displayMode={true} />
       ) : (
-        <RenderMaybeTeX value={text} displayMode={true} />
+        <ColorAnnotatedText text={text} cues={cues} displayMode={true} />
       )}
+      </div>
     </div>
   );
 };
@@ -528,6 +530,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
             <QuestionDisplay
               text={currentReaction.reactants}
               tex={currentReaction.reactants_tex}
+              cues={colorCuesFor(currentReaction, 'reactants', showResult)}
             />
           </div>
         </div>
@@ -548,7 +551,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <ChoiceDisplay text={choice} />
+                  <ColorAnnotatedText text={choice} cues={choiceColorCues(choicePool, choice, 'products', showResult)} />
                 </div>
                 {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
                 {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
@@ -560,7 +563,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
         {showResult && (
           <div className="result-panel">
             <div className="result-explanation">
-              <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.products} /></p>
+              <p><strong>正解:</strong> <ColorAnnotatedText text={currentReaction.products} cues={colorCuesFor(currentReaction, 'products', true)} /></p>
               <InorganicExplanationPanel
                 reaction={currentReaction}
                 correctAnswer={currentReaction.products}
