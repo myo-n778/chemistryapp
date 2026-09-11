@@ -71,3 +71,7 @@
 - [x] Sheets I1:M91の全値、A:H保持、文字列書式・入力規則読み戻し。既存GAS GETで新列取得。
 - [ ] Sheetsネイティブ画面の目視（ブラウザ制御の起動でtrusted Node process exited unexpectedly）。
 - [ ] 公開フロント、実iPad/Safari、実物の色との照合、教材全問内容監査、独立検証、利用者受入。
+
+## 2026-09-12 公開反映完了
+
+ユーザーの公開依頼により、色見本・三段階文字サイズ・中央配置・異常画面ボタンを5cd207bとしてmainへpush。GitHub Actions 34652838751成功。公開URL https://myo-n778.github.io/chemistryapp/ のJS/CSSがローカルdistと完全一致。公開サイトのChrome 390px幅・文字大・実GASデータで無機Aの11–20を開始し、4択・回答・色見本5個・解説・横はみ出しなしを確認し画像目視も通過。ブラウザ実行エラーなし。本番POSTは遮断し保存しなかった。Sheets追加列は先行反映済み、今回GAS/Sheetsは未変更。実iPad/Safari、全問内容、実記録保存、利用者受入は未確認。以前の未公開表記は各作業時点の履歴。
