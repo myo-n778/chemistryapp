@@ -32,3 +32,11 @@ Sheetsは読取可能。教材の観察欄には内容確認が必要な例を�
 - TypeScript/Vite再ビルド通過。ブラウザのpageerrorなし、POSTは送信していない。
 - 公開フロントへの反映、実記録保存、実iPadは未確認。
 - WI-20260911-200424-d0cb2d。
+
+## 2026-09-11 — GitHub Pagesへ公開
+
+- ユーザー承認後に `4e739e4` をmainへpush。
+- Actions `34592684414` はbuild/deployともsuccess。
+- 公開JS `index-pKMSPVnB.js` はローカル生成物と完全一致。
+- 公開サイトで有機問題の4択表示を確認。無機の初回確認は時間切れ。ユーザー承認後の再確認でタイプB・11–20の4択表示、回答、Next表示を確認。通信・pageerrorなし。
+- 本番POSTは行っていない。GAS/Sheetsは変更していない。
