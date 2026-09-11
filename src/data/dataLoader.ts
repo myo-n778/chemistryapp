@@ -103,6 +103,7 @@ const fetchWithRetry = async <T>(
 };
 
 export const loadCompounds = async (category: Category): Promise<Compound[]> => {
+  if (DATA_SOURCE === 'gas') return loadCompoundsFromGAS(category);
   // メモリキャッシュが有効な場合はそれを返す（ただし、空配列はキャッシュしない）
   if (isCacheValid(compoundCache[category])) {
     const cachedData = compoundCache[category]!.data;
@@ -120,27 +121,6 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
     // メモリキャッシュにも反映
     compoundCache[category] = localStorageCache;
     return localStorageCache.data;
-  }
-
-  // データソースに応じて読み込み方法を切り替え
-  if (DATA_SOURCE === 'gas') {
-    console.log(`[${category}] Attempting to load compounds from GAS...`);
-    try {
-      const compounds = await fetchWithRetry(() => loadCompoundsFromGAS(category), 2, 1000);
-      if (compounds && Array.isArray(compounds) && compounds.length > 0) {
-        console.log(`[${category}] Successfully loaded ${compounds.length} compounds from GAS`);
-        const cacheEntry = { data: compounds, timestamp: Date.now() };
-        compoundCache[category] = cacheEntry;
-        saveToLocalStorage(category, 'compounds', compounds);
-        return compounds;
-      }
-      console.warn(`[${category}] GAS returned empty array, falling back to CSV`);
-    } catch (error) {
-      console.warn(`[${category}] Failed to load compounds from GAS, falling back to CSV:`, error);
-      // GASが失敗した場合はCSVにフォールバック
-    }
-  } else {
-    console.log(`[${category}] DATA_SOURCE is '${DATA_SOURCE}', loading from CSV`);
   }
 
   // CSVファイルを読み込む（カテゴリごと）
@@ -185,6 +165,7 @@ export const loadCompounds = async (category: Category): Promise<Compound[]> => 
 };
 
 export const loadReactions = async (category: Category): Promise<ReactionCSVRow[]> => {
+  if (DATA_SOURCE === 'gas') return loadReactionsFromGAS(category);
   // メモリキャッシュが有効な場合はそれを返す
   if (isCacheValid(reactionCache[category])) {
     return reactionCache[category]!.data;
@@ -200,23 +181,6 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
   
   // キャッシュをクリア
   reactionCache[category] = null;
-
-  // データソースに応じて読み込み方法を切り替え
-  if (DATA_SOURCE === 'gas') {
-    try {
-      const reactions = await fetchWithRetry(() => loadReactionsFromGAS(category), 2, 1000);
-      if (reactions && Array.isArray(reactions) && reactions.length > 0) {
-        const cacheEntry = { data: reactions, timestamp: Date.now() };
-        reactionCache[category] = cacheEntry;
-        saveToLocalStorage(category, 'reactions', reactions);
-        return reactions;
-      }
-      console.warn(`GAS returned empty array for reactions ${category}, falling back to CSV`);
-    } catch (error) {
-      console.warn(`Failed to load reactions from GAS for ${category}, falling back to CSV:`, error);
-      // GASが失敗した場合はCSVにフォールバック
-    }
-  }
 
   // CSVファイルを読み込む
   try {
@@ -252,6 +216,7 @@ export const loadReactions = async (category: Category): Promise<ReactionCSVRow[
 };
 
 export const loadExperiments = async (category: Category): Promise<ExperimentCSVRow[]> => {
+  if (DATA_SOURCE === 'gas') return loadExperimentsFromGAS(category);
   // メモリキャッシュが有効な場合はそれを返す
   if (isCacheValid(experimentCache[category])) {
     return experimentCache[category]!.data;
@@ -267,23 +232,6 @@ export const loadExperiments = async (category: Category): Promise<ExperimentCSV
   
   // キャッシュをクリア
   experimentCache[category] = null;
-
-  // データソースに応じて読み込み方法を切り替え
-  if (DATA_SOURCE === 'gas') {
-    try {
-      const experiments = await fetchWithRetry(() => loadExperimentsFromGAS(category), 2, 1000);
-      if (experiments && Array.isArray(experiments) && experiments.length > 0) {
-        const cacheEntry = { data: experiments, timestamp: Date.now() };
-        experimentCache[category] = cacheEntry;
-        saveToLocalStorage(category, 'experiments', experiments);
-        return experiments;
-      }
-      console.warn(`GAS returned empty array for experiments ${category}, falling back to CSV`);
-    } catch (error) {
-      console.warn(`Failed to load experiments from GAS for ${category}, falling back to CSV:`, error);
-      // GASが失敗した場合はCSVにフォールバック
-    }
-  }
 
   // CSVファイルを読み込む
   try {

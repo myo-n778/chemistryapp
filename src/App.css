@@ -134,3 +134,12 @@ body {
     opacity: 1;
   }
 }
+
+/* キーボード操作時の位置を明確にする。 */
+button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #f4c687;
+  outline-offset: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -15,13 +15,13 @@
  * - ?action=userStats → JSON配列（userStatsデータ）
  * - POST → recに追記＋userStatsを加算更新
  */
-const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbyne6S1NTK7Fe0Y_x5bZ9MjiYI-2PgiMymVfOmn41cL28oDbjMeCE02Dk61HWxMSM_RdA/exec';
+const UNIFIED_GAS_URL = 'https://script.google.com/macros/s/AKfycbzrE_jL_GT0Iqia4nLclzOMg0HHdQFUKDKUfR7uCFAdJ0h62hEGt5sD0MFqSuEjPqRDRA/exec';
 
 /**
  * 問題データ用GAS URL（CSVを返す）
  * 想定: ?type=compounds|reactions|experiment|inorganic-new → CSVまたは {csv:"..."}
  * 
- * 【統合GAS使用】統合GASのURLを使用（action判定よりtype判定が優先される）
+ * 【統合GAS使用】統合GASのURLを使用（action未指定時にtypeで問題データを取得）
  */
 export const PROBLEM_BASE_URL = import.meta.env.VITE_GAS_URL_PROBLEM || UNIFIED_GAS_URL;
 

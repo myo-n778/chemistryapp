@@ -15,6 +15,7 @@ export const GasHealthCheck = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('diagnostics')) return;
     const checkEndpoints = async () => {
       const checks: HealthCheckResult[] = [];
 

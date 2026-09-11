@@ -53,6 +53,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string; label?: string }> 
 
 interface TypeCQuizProps {
   reactions: InorganicReactionNew[];
+  choicePool?: InorganicReactionNew[];
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
@@ -68,6 +69,7 @@ interface TypeCQuizProps {
  */
 export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
   reactions,
+  choicePool = reactions,
   category,
   onBack,
   isShuffleMode = false,
@@ -88,81 +90,8 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
   const isProcessingRef = useRef(false);
   const questionLogsRef = useRef<QuestionLog[]>([]); // セッション内の問題ログ
 
-  const filteredReactions = useMemo(() => {
-    console.log('[TypeCQuiz] filteredReactions useMemo start', {
-      reactionsLength: reactions.length,
-      quizSettings,
-      isShuffleMode
-    });
-
-    // 1) startIndexは1始まりなので、sliceで使う前に正規化
-    // 2) batchSizeの決定を先に行う
-    let batchSize: number | undefined;
-    if (quizSettings?.questionCountMode === 'batch-10') {
-      batchSize = 10;
-    } else if (quizSettings?.questionCountMode === 'batch-20') {
-      batchSize = 20;
-    } else if (quizSettings?.questionCountMode === 'batch-40') {
-      batchSize = 40;
-    }
-
-    // 3) shuffleはsliceの前に適用
-    const base = (isShuffleMode || quizSettings?.orderMode === 'shuffle') 
-      ? (() => {
-          const shuffled = [...reactions];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          return shuffled;
-        })()
-      : [...reactions];
-
-    let filtered: typeof reactions = [];
-
-    if (quizSettings?.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined && batchSize !== undefined) {
-      // batch-10/20/40モード
-      const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
-      const end = start + batchSize;
-      
-      console.log('[TypeCQuiz] batch mode', {
-        questionCountMode: quizSettings.questionCountMode,
-        startIndex: quizSettings.startIndex,
-        start,
-        end,
-        batchSize,
-        baseLength: base.length,
-        totalCount: reactions.length
-      });
-
-      filtered = base.slice(start, end);
-    } else if (quizSettings?.questionCountMode === 'all') {
-      // ALLモード
-      if (quizSettings.allQuestionCount !== undefined && quizSettings.allQuestionCount !== null) {
-        filtered = base.slice(0, quizSettings.allQuestionCount);
-      } else {
-        filtered = base; // 全件
-      }
-      
-      console.log('[TypeCQuiz] all mode', {
-        allQuestionCount: quizSettings.allQuestionCount,
-        baseLength: base.length,
-        filteredLength: filtered.length
-      });
-    } else {
-      // 設定がない場合は全件
-      filtered = base;
-    }
-
-    // 4) selected.length === 0をエラーにする前に、値を確認
-    console.log('[TypeCQuiz] filteredReactions result', {
-      filteredLength: filtered.length,
-      reactionsLength: reactions.length,
-      quizSettings
-    });
-
-    return filtered;
-  }, [reactions, quizSettings, isShuffleMode]);
+  // 出題範囲と並び順はAppで確定済み。二重sliceをしない。
+  const filteredReactions = reactions;
 
   const actualAvailableQuestions = filteredReactions.length;
   const expectedQuestions = useMemo(() => {
@@ -186,9 +115,9 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
     if (!currentReaction) return { choices: [], correctIndex: 0 };
 
     const correctAnswer = currentReaction.observations;
-    const distractors = generateDistractorsForTypeC(currentReaction, reactions, 3);
+    const distractors = generateDistractorsForTypeC(currentReaction, choicePool, 3);
     return shuffleChoices(correctAnswer, distractors);
-  }, [currentReaction, reactions]);
+  }, [currentReaction, choicePool]);
 
   useEffect(() => {
     if (quizSettings?.startIndex !== undefined) {

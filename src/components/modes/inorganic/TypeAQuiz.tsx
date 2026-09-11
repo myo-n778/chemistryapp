@@ -53,6 +53,7 @@ const QuestionDisplay: React.FC<{ text: string; tex?: string }> = ({ text, tex }
 
 interface TypeAQuizProps {
   reactions: InorganicReactionNew[];
+  choicePool?: InorganicReactionNew[];
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
@@ -68,6 +69,7 @@ interface TypeAQuizProps {
  */
 export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   reactions,
+  choicePool = reactions,
   category,
   onBack,
   isShuffleMode = false,
@@ -131,9 +133,9 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     if (!currentReaction) return { choices: [], correctIndex: 0 };
 
     const correctAnswer = currentReaction.products;
-    const distractors = generateDistractorsForTypeA(currentReaction, reactions, 3);
+    const distractors = generateDistractorsForTypeA(currentReaction, choicePool, 3);
     return shuffleChoices(correctAnswer, distractors);
-  }, [currentReaction, reactions]);
+  }, [currentReaction, choicePool]);
 
   useEffect(() => {
     if (quizSettings?.startIndex !== undefined) {

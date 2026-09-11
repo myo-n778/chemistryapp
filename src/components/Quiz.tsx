@@ -23,6 +23,7 @@ interface QuizProps {
   experiments: ExperimentCSVRow[];
   inorganicReactions?: InorganicReaction[];
   inorganicReactionsNew?: InorganicReactionNew[];
+  inorganicChoicePool?: InorganicReactionNew[];
   mode: QuizMode;
   category: Category;
   onBack: () => void;
@@ -30,7 +31,7 @@ interface QuizProps {
   onNextRange?: () => void;
 }
 
-export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], mode, category, onBack, quizSettings, onNextRange }) => {
+export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], inorganicChoicePool, mode, category, onBack, quizSettings, onNextRange }) => {
   switch (mode) {
     case 'structure-to-name':
       return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
@@ -46,11 +47,11 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
       return <ExperimentQuiz experiments={experiments} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={experiments.length} onNextRange={onNextRange} />;
     // 新しい無機化学モード
     case 'inorganic-type-a':
-      return <TypeAQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+      return <TypeAQuiz reactions={inorganicReactionsNew} choicePool={inorganicChoicePool} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
     case 'inorganic-type-b':
-      return <TypeBQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+      return <TypeBQuiz reactions={inorganicReactionsNew} choicePool={inorganicChoicePool} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
     case 'inorganic-type-c':
-      return <TypeCQuiz reactions={inorganicReactionsNew} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
+      return <TypeCQuiz reactions={inorganicReactionsNew} choicePool={inorganicChoicePool} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactionsNew.length} onNextRange={onNextRange} />;
     // 旧無機化学モード（後で削除予定）
     case 'inorganic-mode-a':
       return <ModeAQuiz reactions={inorganicReactions} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={inorganicReactions.length} onNextRange={onNextRange} />;

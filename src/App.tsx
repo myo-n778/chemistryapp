@@ -6,7 +6,7 @@ import { QuestionCountSelector } from './components/QuestionCountSelector';
 import { AllQuestionCountSelector } from './components/AllQuestionCountSelector';
 import { SoundSelector } from './components/SoundSelector';
 import { UserManager } from './components/UserManager';
-import { loadCompounds, loadReactions, loadExperiments, loadInorganicReactionsData } from './data/dataLoader';
+import { loadCompounds, loadReactions, loadExperiments } from './data/dataLoader';
 import { loadInorganicReactionsNew } from './data/inorganicNewLoader';
 import { Compound, InorganicReaction } from './types';
 import { InorganicReactionNew } from './types/inorganic';
@@ -31,9 +31,6 @@ export interface QuizSettings {
 function App() {
   const [activeUser, setActiveUser] = useState(() => {
     const user = getActiveUser();
-    console.log('[App] Initial activeUser:', user);
-    console.log('[App] localStorage chem.activeUser:', localStorage.getItem('chem.activeUser'));
-    console.log('[App] localStorage chem.users:', localStorage.getItem('chem.users'));
     return user;
   });
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -51,195 +48,74 @@ function App() {
 
   // 初回レンダリング時のデバッグログ
   useEffect(() => {
-    console.log('[App] App component mounted, activeUser:', activeUser);
   }, []);
 
-  // activeUserが存在しない場合はユーザー選択画面を表示
-  if (!activeUser) {
-    console.log('[App] No activeUser, showing UserManager');
-    return (
-      <div className="App">
-        <GasHealthCheck />
-        <UserManager
-          onUserSelected={() => {
-            const user = getActiveUser();
-            console.log('[App] User selected, new user:', user);
-            setActiveUser(user);
-          }}
-        />
-      </div>
-    );
-  }
+  const [reloadKey, setReloadKey] = useState(0);
 
-  console.log('[App] activeUser exists, showing main app:', activeUser);
-
-  // 有機化学データの読み込み
+  // 画面を離れた後の応答を破棄し、失敗を空データや旧CSVで隠さない。
   useEffect(() => {
-    // 無機化学の場合はスキップ
-    if (selectedCategory === 'inorganic') {
-      // 無機化学の場合は何もしない（別のuseEffectで処理）
-    } else if (selectedCategory) {
-      setLoading(true);
-      setLoadingError(null);
-      loadCompounds(selectedCategory)
-        .then(data => {
-          // null/undefinedチェック
-          if (!data || !Array.isArray(data)) {
-            throw new Error('Invalid data format received');
-          }
-
-          // 全化合物データを保持（ReactionQuiz用に構造式がなくても名前で使う）
-          console.log(`App.tsx: Loaded ${data.length} total compounds`);
-
-          // 構造式が有効な化合物をフィルタリング（既存のクイズモード用）
-          const valid = data.filter(c =>
-            c &&
-            c.structure &&
-            c.structure.atoms &&
-            Array.isArray(c.structure.atoms) &&
-            c.structure.atoms.length > 0 &&
-            c.structure.bonds &&
-            Array.isArray(c.structure.bonds) &&
-            c.structure.bonds.length > 0
-          );
-          console.log(`App.tsx: ${valid.length} compounds have valid structures`);
-
-          // setCompoundsには全データを渡す（構造式がなくても名前検索に使うため）
-          setCompounds(data);
-          
-          // モード④⑤⑥用にreactionsとexperimentsデータを並列で読み込む（高速化）
-          Promise.all([
-            loadReactions(selectedCategory).catch(error => {
-              console.error('Failed to load reactions:', error);
-              return [];
-            }),
-            loadExperiments(selectedCategory).catch(error => {
-              console.error('Failed to load experiments:', error);
-              return [];
-            })
-          ]).then(([reactionsData, experimentsData]) => {
-            console.log(`App.tsx: Loaded ${reactionsData.length} reactions and ${experimentsData.length} experiments`);
-            setReactions(reactionsData.length);
-            setExperiments(experimentsData);
-            setLoading(false);
-            setLoadingError(null);
-          }).catch(error => {
-            console.error('Failed to load reactions or experiments:', error);
-            setReactions(0);
-            setExperiments([]);
-            setLoading(false);
-            setLoadingError(null);
-          });
+    let cancelled = false;
+    setCompounds([]);
+    setReactions(0);
+    setExperiments([]);
+    setLoadingError(null);
+    setLoading(selectedCategory === 'organic');
+    if (selectedCategory === 'organic') {
+      Promise.all([loadCompounds('organic'), loadReactions('organic'), loadExperiments('organic')])
+        .then(([nextCompounds, nextReactions, nextExperiments]) => {
+          if (cancelled) return;
+          if (!nextCompounds.length) throw new Error('化合物データが空です。問題シートを確認してください。');
+          setCompounds(nextCompounds);
+          setReactions(nextReactions.length);
+          setExperiments(nextExperiments);
         })
         .catch(error => {
-          console.error('Failed to load compounds:', error);
-          setCompounds([]);
-          setReactions(0);
-          setExperiments([]);
-          setLoading(false);
-          const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-          setLoadingError(errorMessage);
-        });
-    } else {
-      // カテゴリが未選択の場合は状態をリセット
-      setCompounds([]);
-      setReactions(0);
-      setExperiments([]);
-      setLoading(false);
-      setLoadingError(null);
+          if (!cancelled) setLoadingError(error instanceof Error ? error.message : '問題データを取得できませんでした。');
+        })
+        .finally(() => { if (!cancelled) setLoading(false); });
     }
-  }, [selectedCategory]);
+    return () => { cancelled = true; };
+  }, [selectedCategory, reloadKey]);
 
-  // 無機化学データの読み込み
   useEffect(() => {
-    let isMounted = true;
-    let newLoaderSucceeded = false; // 新しいローダーが成功したかどうかのフラグ
-
-    if (selectedCategory !== 'inorganic') {
-      setInorganicReactions([]);
-      setInorganicReactionsNew([]);
-      setInorganicLoading(false);
-      setInorganicLoadingError(null);
-      return;
-    }
-
-    setInorganicLoading(true);
-    setInorganicLoadingError(null);
-    // 初期状態をリセット
+    let cancelled = false;
     setInorganicReactions([]);
     setInorganicReactionsNew([]);
-
-    // 新しい無機化学データを読み込み
-    loadInorganicReactionsNew()
-      .then(data => {
-        if (!isMounted) return;
-        if (data && Array.isArray(data) && data.length > 0) {
-          console.log(`[App] Loaded ${data.length} new inorganic reactions`, {
-            dataLength: data.length,
-            firstFew: data.slice(0, 3),
-            selectedCategory,
-            selectedMode
-          });
-          newLoaderSucceeded = true; // 成功フラグを立てる
+    setInorganicLoadingError(null);
+    setInorganicLoading(selectedCategory === 'inorganic');
+    if (selectedCategory === 'inorganic') {
+      loadInorganicReactionsNew()
+        .then(data => {
+          if (cancelled) return;
+          if (!data.length) throw new Error('無機化学の問題データが空です。問題シートを確認してください。');
           setInorganicReactionsNew(data);
-          setInorganicReactions([]); // 旧データは空にする
-          setInorganicLoading(false);
-          setInorganicLoadingError(null);
-        } else {
-          // データが空の場合はフォールバックへ
-          console.error('[App] New inorganic reactions data is empty', {
-            data,
-            dataIsArray: Array.isArray(data),
-            dataLength: data?.length
-          });
-          throw new Error('New inorganic reactions data is empty');
-        }
-      })
-      .catch(error => {
-        if (!isMounted) return;
-        if (newLoaderSucceeded) {
-          // 新しいローダーが既に成功している場合はフォールバックを発動させない
-          return;
-        }
-        console.error('Failed to load new inorganic reactions:', error);
-        // フォールバック: 旧データを読み込む（新しいローダーが成功していない場合のみ）
-        loadInorganicReactionsData()
-          .then(data => {
-            if (!isMounted || newLoaderSucceeded) return; // 新しいローダーが成功していたら無視
-            console.log(`App.tsx: Loaded ${data.length} old inorganic reactions (fallback)`);
-            setInorganicReactions(data);
-            setInorganicReactionsNew([]); // 新データは空にする
-            setInorganicLoading(false);
-            setInorganicLoadingError(null);
-          })
-          .catch(oldError => {
-            if (!isMounted || newLoaderSucceeded) return; // 新しいローダーが成功していたら無視
-            console.error('Failed to load old inorganic reactions:', oldError);
-            setInorganicReactions([]);
-            setInorganicReactionsNew([]);
-            setInorganicLoading(false);
-            const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
-            setInorganicLoadingError(errorMessage);
-          });
-      });
-
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
+        })
+        .catch(error => {
+          if (!cancelled) setInorganicLoadingError(error instanceof Error ? error.message : '問題データを取得できませんでした。');
+        })
+        .finally(() => { if (!cancelled) setInorganicLoading(false); });
+    }
+    return () => { cancelled = true; };
+  }, [selectedCategory, reloadKey]);
 
   // すべてのHooksを先に宣言（固定順序）
+  // 回答が空の行は出題せず、件数・範囲・実出題で同じ集合を使う。
+  const eligibleInorganicReactions = useMemo(() => {
+    const answerKey = selectedMode === 'inorganic-type-b' ? 'conditions'
+      : selectedMode === 'inorganic-type-c' ? 'observations' : 'products';
+    return inorganicReactionsNew.filter(reaction => reaction[answerKey].trim().length > 0);
+  }, [inorganicReactionsNew, selectedMode]);
+
   // 無機化学データの選択（new/oldの切り替えをuseMemo内で行う）
   const activeInorganicReactions = useMemo(() => {
     if (selectedCategory !== 'inorganic') {
       return null;
     }
     if (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') {
-      return { type: 'new' as const, data: inorganicReactionsNew };
+      return { type: 'new' as const, data: eligibleInorganicReactions };
     }
     return { type: 'old' as const, data: inorganicReactions };
-  }, [selectedCategory, selectedMode, inorganicReactionsNew, inorganicReactions]);
+  }, [selectedCategory, selectedMode, eligibleInorganicReactions, inorganicReactions]);
 
   // ローディング状態のチェック（有機化学または無機化学）
   const isLoading = useMemo(() => {
@@ -252,42 +128,22 @@ function App() {
 
   // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
   const totalQuestionCount = useMemo(() => {
-    console.log('[App] totalQuestionCount useMemo recalculating', {
-      selectedCategory,
-      selectedMode,
-      inorganicReactionsNewLength: inorganicReactionsNew.length,
-      inorganicReactionsLength: inorganicReactions.length
-    });
     if (selectedCategory === 'inorganic') {
-      // Inorganicの場合、新しいモード（type-a/b/c）の場合はinorganicReactionsNewの全件数を使用
-      // 問題数選択時点では、フィルタリング前の全件数を表示する
+      // 回答欄のある出題可能な行の件数を表示する
       if (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') {
-        const count = inorganicReactionsNew.length;
-        console.log('[App] totalQuestionCount calculation (inorganic new)', {
-          selectedCategory,
-          selectedMode,
-          inorganicReactionsNewLength: inorganicReactionsNew.length,
-          inorganicReactionsNew: inorganicReactionsNew,
-          count
-        });
+        const count = eligibleInorganicReactions.length;
         return count;
       }
       // 旧モードの場合はinorganicReactionsの全件数を使用
       const count = inorganicReactions.length;
-      console.log('[App] totalQuestionCount calculation (inorganic old)', {
-        selectedCategory,
-        selectedMode,
-        inorganicReactionsLength: inorganicReactions.length,
-        count
-      });
       return count;
     } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
       return reactions;
     } else if (selectedMode === 'experiment') {
       return experiments.length;
     }
-    return compounds.length;
-  }, [selectedCategory, selectedMode, inorganicReactionsNew, inorganicReactions, reactions, experiments.length, compounds.length]);
+    return compounds.filter(c => c.structure?.atoms?.length > 0 && c.structure?.bonds?.length > 0).length;
+  }, [selectedCategory, selectedMode, eligibleInorganicReactions, inorganicReactions, reactions, experiments.length, compounds]);
 
 
   // 最大問題数（handleNextRange/hasNextRange用）
@@ -299,8 +155,8 @@ function App() {
     } else if (selectedMode === 'experiment') {
       return experiments.length;
     }
-    return compounds.length;
-  }, [selectedCategory, selectedMode, activeInorganicReactions, reactions, experiments.length, compounds.length]);
+    return compounds.filter(c => c.structure?.atoms?.length > 0 && c.structure?.bonds?.length > 0).length;
+  }, [selectedCategory, selectedMode, activeInorganicReactions, reactions, experiments.length, compounds]);
 
   const finalCompounds = useMemo(() => {
     if (!quizSettings) {
@@ -385,19 +241,8 @@ function App() {
 
   // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
   const quizInorganicReactionsNew = useMemo(() => {
-    console.log('[App] quizInorganicReactionsNew: useMemo start', {
-      selectedCategory,
-      selectedMode,
-      hasQuizSettings: !!quizSettings,
-      inorganicReactionsNewLength: inorganicReactionsNew.length,
-      inorganicReactionsNew: inorganicReactionsNew
-    });
 
     if (selectedCategory !== 'inorganic' || !quizSettings) {
-      console.log('[App] quizInorganicReactionsNew: early return - category or settings check', {
-        selectedCategory,
-        hasQuizSettings: !!quizSettings
-      });
       return [];
     }
 
@@ -405,26 +250,10 @@ function App() {
     const newInorganicModes: QuizMode[] = ['inorganic-type-a', 'inorganic-type-b', 'inorganic-type-c'];
     const isNewInorganicMode = selectedMode !== null && newInorganicModes.includes(selectedMode);
     if (!selectedMode || !isNewInorganicMode) {
-      console.log('[App] quizInorganicReactionsNew: early return - mode check', {
-        selectedMode,
-        isNewInorganicMode,
-        expectedModes: newInorganicModes,
-        modeMatch: {
-          'inorganic-type-a': selectedMode === 'inorganic-type-a',
-          'inorganic-type-b': selectedMode === 'inorganic-type-b',
-          'inorganic-type-c': selectedMode === 'inorganic-type-c'
-        }
-      });
       return [];
     }
 
-    const sourceReactions = inorganicReactionsNew;
-    console.log('[App] quizInorganicReactionsNew: sourceReactions assignment', {
-      sourceReactionsLength: sourceReactions.length,
-      inorganicReactionsNewLength: inorganicReactionsNew.length,
-      sourceReactionsIsSame: sourceReactions === inorganicReactionsNew,
-      sourceReactionsFirstFew: sourceReactions.slice(0, 3)
-    });
+    const sourceReactions = eligibleInorganicReactions;
 
     if (sourceReactions.length === 0) {
       console.error('[App] quizInorganicReactionsNew: sourceReactions is empty', {
@@ -465,16 +294,6 @@ function App() {
       // batch-10/20/40モード
       const start = quizSettings.startIndex - 1; // 1始まりを0始まりに変換
       const end = start + batchSize;
-      
-      console.log('[App] quizInorganicReactionsNew: batch mode', {
-        questionCountMode: quizSettings.questionCountMode,
-        startIndex: quizSettings.startIndex,
-        start,
-        end,
-        batchSize,
-        baseLength: base.length,
-        totalCount: sourceReactions.length
-      });
 
       filtered = base.slice(start, end);
     } else if (quizSettings.questionCountMode === 'all') {
@@ -484,25 +303,13 @@ function App() {
       } else {
         filtered = base; // 全件
       }
-      
-      console.log('[App] quizInorganicReactionsNew: all mode', {
-        allQuestionCount: quizSettings.allQuestionCount,
-        baseLength: base.length,
-        filteredLength: filtered.length
-      });
     } else {
       // 設定がない場合は全件
       filtered = base;
     }
 
-    console.log('[App] quizInorganicReactionsNew: result', {
-      filteredLength: filtered.length,
-      sourceReactionsLength: sourceReactions.length,
-      quizSettings
-    });
-
     return filtered;
-  }, [selectedCategory, selectedMode, inorganicReactionsNew, quizSettings]);
+  }, [selectedCategory, selectedMode, eligibleInorganicReactions, quizSettings]);
 
   const quizInorganicReactions = activeInorganicReactions?.type === 'old' ? activeInorganicReactions.data : [];
 
@@ -561,6 +368,7 @@ function App() {
         experiments={experiments}
         inorganicReactions={quizInorganicReactions}
         inorganicReactionsNew={quizInorganicReactionsNew}
+        inorganicChoicePool={inorganicReactionsNew}
         mode={selectedMode}
         category={selectedCategory}
         onBack={() => setQuizSettings(null)}
@@ -568,9 +376,25 @@ function App() {
         onNextRange={hasNext ? handleNextRange : undefined}
       />
     );
-  }, [selectedMode, selectedCategory, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
+  }, [selectedMode, selectedCategory, inorganicReactionsNew, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
 
   // Early returns（すべてのhooks宣言の後）
+  // activeUserが存在しない場合はユーザー選択画面を表示
+  if (!activeUser) {
+    return (
+      <div className="App">
+        <GasHealthCheck />
+        <UserManager
+          onUserSelected={() => {
+            const user = getActiveUser();
+            setActiveUser(user);
+          }}
+        />
+      </div>
+    );
+  }
+
+
   if (!selectedCategory) {
     return (
       <div className="App">
@@ -587,7 +411,8 @@ function App() {
         <GasHealthCheck />
         <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p className="loading-text">loading…</p>
+          <p className="loading-text" role="status">問題を読み込んでいます…</p>
+          <button className="back-button" onClick={() => setSelectedCategory(null)}>分野選択に戻る</button>
         </div>
       </div>
     );
@@ -599,12 +424,13 @@ function App() {
         <GasHealthCheck />
         <SoundSelector />
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
-          <p style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
+          <p role="alert" style={{ color: '#ffa500', marginBottom: '20px', fontSize: '1.1rem' }}>
             データの読み込みに失敗しました
           </p>
           <p style={{ color: '#aaaaaa', marginBottom: '20px', fontSize: '0.9rem' }}>
             {currentLoadingError}
           </p>
+          <button className="back-button" onClick={() => setReloadKey(key => key + 1)}>再読み込み</button>
           <button
             className="back-button"
             onClick={() => {
@@ -617,7 +443,7 @@ function App() {
             }}
             style={{ marginTop: '20px' }}
           >
-            ← return
+            ← 分野選択に戻る
           </button>
         </div>
       </div>
@@ -639,55 +465,23 @@ function App() {
   }
 
   if (!quizSettings) {
-    // 【切り分けテスト3】inorganicReactionsNewの状態を確認
-    console.log('[App] 【切り分けテスト】QuestionCountSelector表示前の状態確認', {
-      selectedCategory,
-      selectedMode,
-      inorganicReactionsNew: {
-        isArray: Array.isArray(inorganicReactionsNew),
-        length: inorganicReactionsNew.length,
-        firstFew: inorganicReactionsNew.slice(0, 3),
-        fullArray: inorganicReactionsNew
-      },
-      inorganicReactions: {
-        isArray: Array.isArray(inorganicReactions),
-        length: inorganicReactions.length
-      },
-      stateVariables: {
-        inorganicReactionsNewState: inorganicReactionsNew,
-        inorganicReactionsState: inorganicReactions
-      }
-    });
     
     // Inorganicの場合、直接inorganicReactionsNew.lengthを計算して渡す
     // selectedModeが設定されていない場合でも、全件数を表示する
     const actualTotalCount = selectedCategory === 'inorganic' 
       ? (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c'
-          ? inorganicReactionsNew.length
+          ? eligibleInorganicReactions.length
           : inorganicReactions.length)
       : totalQuestionCount;
     
-    // 【切り分けテスト1】一時的にハードコードして動作確認
-    const testTotalCount = selectedCategory === 'inorganic' ? 90 : actualTotalCount;
-    
-    console.log('[App] Rendering QuestionCountSelector', {
-      totalQuestionCount,
-      actualTotalCount,
-      testTotalCount,
-      selectedMode,
-      selectedCategory,
-      inorganicReactionsNewLength: inorganicReactionsNew.length,
-      inorganicReactionsLength: inorganicReactions.length,
-      inorganicReactionsNew: inorganicReactionsNew,
-      activeInorganicReactions: activeInorganicReactions?.data.length ?? 0
-    });
+    // シートから取得した実件数を使用する
+
     return (
       <div className="App">
         <SoundSelector />
         <QuestionCountSelector
-          totalCount={testTotalCount}
+          totalCount={actualTotalCount}
           onSelectSettings={(settings) => {
-            console.log('[App] onSelectSettings called', settings);
             setQuizSettings(settings);
           }}
           onBack={() => setSelectedMode(null)}
@@ -722,7 +516,7 @@ function App() {
   }
 
   // フィルタリング後の化合物が空の場合はエラーメッセージを表示
-  if (finalCompounds.length === 0 && compounds.length > 0) {
+  if (selectedCategory === 'organic' && ['structure-to-name', 'name-to-structure', 'compound-type'].includes(selectedMode) && finalCompounds.length === 0) {
     return (
       <div className="App">
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>

@@ -6,625 +6,116 @@ import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
 import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
 import { InorganicReactionNew } from '../types/inorganic';
 
-/**
- * GASから化合物データを取得
- * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
- */
-export const loadCompoundsFromGAS = async (category: Category): Promise<Compound[]> => {
-  // PROBLEM_BASE_URLが設定されていない場合のエラー
-  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
-    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
-    console.error('[problemLoader]', errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  const requestId = `problemLoader#compounds#${Date.now()}`;
-  const url = `${PROBLEM_BASE_URL}?type=compounds&category=${category}`;
-  
-  console.log(`[${requestId}] Fetching compounds from:`, url);
-
-  try {
-    // GASエンドポイントからデータを取得（タイムアウト付き）
+// StrictModeや同時マウントによる同一GETを共有。失敗後の自動再試行はしない。
+const pending = new Map<string, Promise<Record<string, unknown>>>();
+function requestProblem(type: string, category: Category): Promise<Record<string, unknown>> {
+  const url = new URL(PROBLEM_BASE_URL);
+  url.searchParams.set('type', type);
+  url.searchParams.set('category', category);
+  const key = url.toString();
+  const existing = pending.get(key);
+  if (existing) return existing;
+  const request = (async () => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
-
-    let response: Response;
+    const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors', // CORS対応が必要
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timeout: GAS took too long to respond');
+      const response = await fetch(key, { signal: controller.signal });
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('問題データへのアクセスが拒否されました。管理者にGASの公開設定を確認してください。');
       }
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, url);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
-      throw fetchError;
-    }
-
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to load compounds from GAS: ${response.status} ${response.statusText}`);
-    }
-
-    const rawText = await response.text();
-    const rawPreview = rawText.substring(0, 200);
-    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
-
-    // HTMLが返ってきた場合（ログイン画面など）を検知
-    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
-      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON. This may be a login page or error page.`;
-      console.error(errorMsg);
-      console.error(`[${requestId}] Used URL:`, url);
-      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
-      console.error(`[${requestId}] Raw text (first 500 chars):`, rawText.substring(0, 500));
-      throw new Error('Failed to parse JSON response from GAS');
-    }
-
-    if (!data || (typeof data !== 'object')) {
-      throw new Error('Invalid response format from GAS');
-    }
-
-    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
-
-    // userStats専用GASが設定されている場合のエラー検知
-    if (data.error) {
-      const errorStr = String(data.error);
-      if (errorStr.includes('userStats') || errorStr.includes('Use action=userStats')) {
-        const errorMsg = `[${requestId}] ERROR: PROBLEM_BASE_URL is pointing to a userStats-only GAS. This URL should be a problem data GAS.`;
-        console.error(errorMsg);
-        console.error(`[${requestId}] Current PROBLEM_BASE_URL:`, PROBLEM_BASE_URL);
-        console.error(`[${requestId}] GAS error:`, data.error);
-        throw new Error('PROBLEM_BASE_URL is incorrectly configured. It points to a userStats-only GAS, but it should point to a problem data GAS. Please check your GAS deployment and update PROBLEM_BASE_URL in src/config/gasUrls.ts');
-      }
-      if (errorStr.includes('rec') || errorStr.includes('Use action=rec')) {
-        const errorMsg = `[${requestId}] ERROR: PROBLEM_BASE_URL is pointing to a rec-only GAS. This URL should be a problem data GAS.`;
-        console.error(errorMsg);
-        console.error(`[${requestId}] Current PROBLEM_BASE_URL:`, PROBLEM_BASE_URL);
-        console.error(`[${requestId}] GAS error:`, data.error);
-        throw new Error('PROBLEM_BASE_URL is incorrectly configured. It points to a rec-only GAS, but it should point to a problem data GAS. Please check your GAS deployment and update PROBLEM_BASE_URL in src/config/gasUrls.ts');
-      }
-    }
-    
-    // 問題データ取得なのにJSON配列が直接返されている場合を検知（rec/userStats APIの可能性）
-    if (Array.isArray(data) && data.length > 0) {
-      const firstItem = data[0];
-      // recデータには name, userKey, mode などのフィールドがある
-      // userStatsデータには userKey, name, exp などのフィールドがある
-      if (firstItem.userKey || firstItem.name === '表示名（displayName）') {
-        const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
-        console.error(errorMsg);
-        console.error(`[${requestId}] First item keys:`, Object.keys(firstItem));
-        console.error(`[${requestId}] Used URL:`, url);
-        throw new Error('Received rec/userStats data instead of problem data. Check that problem URL (PROBLEM_BASE_URL) is correctly configured.');
-      }
-    }
-
-    // GASから返されるデータ形式に応じて処理
-    if (data.csv) {
-      // CSV形式で返される場合
-      const csvRows = parseCSV(data.csv);
-      console.log(`[${requestId}] Parsed ${csvRows.length} CSV rows from GAS`);
-
-      // デフォルトデータ（defaultOrganicCompounds）は使用せず、GASからのデータのみを使用する
-      // これにより、スプレッドシートのデータが確実に優先される
-      const compounds = csvToCompounds(csvRows, []);
-      console.log(`[${requestId}] Converted to ${compounds.length} compounds from GAS`);
-
-      // デバッグ: 全化合物名を出力（最初の10件のみ）
-      if (compounds.length > 0) {
-        console.log(`[${requestId}] First 10 compound names:`, compounds.slice(0, 10).map(c => c.name));
-      }
-
-      if (compounds.length === 0) {
-        // GASデータが空の場合のみ警告を出すが、デフォルトフォールバックはしない
-        console.warn(`[${requestId}] No compounds found in GAS data.`);
-        return [];
-      }
-
-      return compounds;
-    } else if (data.compounds) {
-      // 既にパース済みの化合物データが返される場合
-      console.log(`[${requestId}] Received pre-parsed compounds array:`, data.compounds.length);
-      return data.compounds as Compound[];
-    } else if (data.error) {
-      const errorMsg = `[${requestId}] GAS error: ${data.error}`;
-      console.error(errorMsg);
-      throw new Error(`GAS error: ${data.error}`);
-    } else {
-      // 予期しない形式の場合、詳細をログ出力
-      const errorMsg = `[${requestId}] Invalid data format from GAS. Expected "csv" or "compounds" field.`;
-      console.error(errorMsg);
-      console.error(`[${requestId}] Response keys:`, Object.keys(data));
-      console.error(`[${requestId}] Response preview:`, JSON.stringify(data).substring(0, 500));
-      throw new Error('Invalid data format from GAS. Expected "csv" or "compounds" field.');
-    }
-  } catch (error) {
-    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
-    if (!(error instanceof Error && error.name === 'AbortError')) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[problemLoader] Failed to load compounds from GAS for ${category}:`, error);
-      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=compounds&category=${category}`);
-      console.error(`[problemLoader] Origin:`, origin);
-      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
-      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
-      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=compounds&category=${category}`);
-    }
-    // フォールバック: 有機化学の場合でもデフォルトデータを返さない（スプレッドシート優先）
-    // 必要なら空配列を返してエラー表示させる
-    if (category === 'organic') {
-      console.warn('Failed to load GAS data. Returning empty array to avoid stale data.');
-      return [];
-    }
-    throw error;
-  }
-};
-
-/**
- * GASから反応データを取得
- * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
- */
-export const loadReactionsFromGAS = async (category: Category): Promise<ReactionCSVRow[]> => {
-  // PROBLEM_BASE_URLが設定されていない場合のエラー
-  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
-    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
-    console.error('[problemLoader]', errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  const requestId = `problemLoader#reactions#${Date.now()}`;
-  const url = `${PROBLEM_BASE_URL}?type=reactions&category=${category}`;
-  
-  console.log(`[${requestId}] Fetching reactions from:`, url);
-
-  try {
-    // GASエンドポイントからデータを取得（タイムアウト付き）
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timeout: GAS took too long to respond');
-      }
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, url);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
-      throw fetchError;
-    }
-
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to load reactions from GAS: ${response.status} ${response.statusText}`);
-    }
-
-    const rawText = await response.text();
-    const rawPreview = rawText.substring(0, 200);
-    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
-
-    // HTMLが返ってきた場合を検知
-    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
-      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
-      console.error(errorMsg);
-      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
-      throw new Error('Failed to parse JSON response from GAS');
-    }
-
-    if (!data || (typeof data !== 'object')) {
-      throw new Error('Invalid response format from GAS');
-    }
-
-    // 問題データ取得なのにJSON配列が直接返されている場合を検知
-    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
-      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
-      console.error(errorMsg);
-      throw new Error('Received rec/userStats data instead of problem data.');
-    }
-
-    if (data.csv) {
-      // CSV形式で返される場合
-      return parseReactionCSV(data.csv);
-    } else if (data.reactions) {
-      // 既にパース済みの反応データが返される場合
-      return data.reactions as ReactionCSVRow[];
-    } else {
-      throw new Error('Invalid data format from GAS');
-    }
-  } catch (error) {
-    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
-    if (!(error instanceof Error && error.name === 'AbortError')) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[problemLoader] Failed to load reactions from GAS for ${category}:`, error);
-      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=reactions&category=${category}`);
-      console.error(`[problemLoader] Origin:`, origin);
-      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
-      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
-      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=reactions&category=${category}`);
-    }
-    return [];
-  }
-};
-
-/**
- * GASからexperimentシートのデータを取得
- * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
- */
-export const loadExperimentsFromGAS = async (category: Category): Promise<ExperimentCSVRow[]> => {
-  // PROBLEM_BASE_URLが設定されていない場合のエラー
-  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
-    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
-    console.error('[problemLoader]', errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  const requestId = `problemLoader#experiments#${Date.now()}`;
-  const url = `${PROBLEM_BASE_URL}?type=experiment&category=${category}`;
-  
-  console.log(`[${requestId}] Fetching experiments from:`, url);
-
-  try {
-    // GASエンドポイントからデータを取得（タイムアウト付き）
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timeout: GAS took too long to respond');
-      }
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, url);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
-      throw fetchError;
-    }
-
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to load experiments from GAS: ${response.status} ${response.statusText}`);
-    }
-
-    const rawText = await response.text();
-    const rawPreview = rawText.substring(0, 200);
-    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
-
-    // HTMLが返ってきた場合を検知
-    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
-      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
-      console.error(errorMsg);
-      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
-      throw new Error('Failed to parse JSON response from GAS');
-    }
-
-    if (!data || (typeof data !== 'object')) {
-      throw new Error('Invalid response format from GAS');
-    }
-
-    // 問題データ取得なのにJSON配列が直接返されている場合を検知
-    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
-      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
-      console.error(errorMsg);
-      throw new Error('Received rec/userStats data instead of problem data.');
-    }
-
-    if (data.csv) {
-      // CSV形式で返される場合
-      return parseExperimentCSV(data.csv);
-    } else if (data.experiments) {
-      // 既にパース済みのexperimentデータが返される場合
-      return data.experiments as ExperimentCSVRow[];
-    } else {
-      throw new Error('Invalid data format from GAS');
-    }
-  } catch (error) {
-    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
-    if (!(error instanceof Error && error.name === 'AbortError')) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[problemLoader] Failed to load experiments from GAS for ${category}:`, error);
-      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=experiment&category=${category}`);
-      console.error(`[problemLoader] Origin:`, origin);
-      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
-      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
-      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=experiment&category=${category}`);
-    }
-    return [];
-  }
-};
-
-/**
- * GASから新しい無機化学反応データを取得
- * 問題データ用URL（PROBLEM_BASE_URL）のみを使用
- */
-export const loadInorganicReactionsNewFromGAS = async (): Promise<InorganicReactionNew[]> => {
-  // PROBLEM_BASE_URLが設定されていない場合のエラー
-  if (!PROBLEM_BASE_URL || PROBLEM_BASE_URL.trim() === '') {
-    const errorMsg = 'PROBLEM_BASE_URL is not configured. Please set the problem data GAS URL in src/config/gasUrls.ts or set the VITE_GAS_URL_PROBLEM environment variable.';
-    console.error('[problemLoader]', errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  const requestId = `problemLoader#inorganic-new#${Date.now()}`;
-  const url = `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`;
-  
-  console.log(`[${requestId}] Fetching inorganic-new from:`, url);
-
-  try {
-    // GASエンドポイントからデータを取得（タイムアウト付き）
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒タイムアウト
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Request timeout: GAS took too long to respond');
-      }
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, url);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, url);
-      throw fetchError;
-    }
-
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to load inorganic reactions new from GAS: ${response.status} ${response.statusText}`);
-    }
-
-    const rawText = await response.text();
-    const rawPreview = rawText.substring(0, 200);
-    console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
-
-    // HTMLが返ってきた場合を検知
-    if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
-      const errorMsg = `[${requestId}] ERROR: Received HTML instead of JSON.`;
-      console.error(errorMsg);
-      throw new Error('Received HTML instead of JSON. Check GAS deployment and access permissions.');
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error(`[${requestId}] Failed to parse JSON:`, jsonError);
-      throw new Error('Failed to parse JSON response from GAS');
-    }
-
-    if (!data || (typeof data !== 'object')) {
-      throw new Error('Invalid response format from GAS');
-    }
-
-    console.log(`[${requestId}] Parsed response structure:`, Object.keys(data));
-
-    // 問題データ取得なのにJSON配列が直接返されている場合を検知
-    if (Array.isArray(data) && data.length > 0 && data[0].userKey) {
-      const errorMsg = `[${requestId}] ERROR: Received rec/userStats data instead of problem data.`;
-      console.error(errorMsg);
-      throw new Error('Received rec/userStats data instead of problem data.');
-    }
-
-    if (data.csv) {
-      // CSV形式で返される場合
-      const csvText = data.csv;
-      const lines = csvText.split('\n').filter((line: string) => line.trim().length > 0);
-
-      if (lines.length < 2) {
-        throw new Error('Spreadsheet has no data rows');
-      }
-
-      // ヘッダー行をスキップ（1行目）
-      const dataRows = lines.slice(1);
-      const reactions: InorganicReactionNew[] = [];
-
-      for (let i = 0; i < dataRows.length; i++) {
-        const row = dataRows[i];
-        // CSV行を解析（カンマ区切り、引用符で囲まれた値に対応）
-        const columns = parseCSVRow(row);
-
-        if (columns.length < 8) {
-          console.warn(`[gasLoader] Skipping row ${i + 2}: insufficient columns (${columns.length})`);
-          continue;
-        }
-
-        const equation = columns[0]?.trim() || '';
-        const reactants = columns[1]?.trim() || '';
-        const products = columns[2]?.trim() || '';
-        const conditions = columns[3]?.trim() || '';
-        const observations = columns[4]?.trim() || '';
-        const explanation = columns[5]?.trim() || '';
-        const reactants_summary = columns[6]?.trim() || '';
-        const products_summary = columns[7]?.trim() || '';
-
-        // TeX形式データ（オプション、列が追加された場合に対応）
-        // I列: equation_tex, J列: reactants_tex, K列: products_tex
-        let equation_tex = columns.length > 8 ? columns[8]?.trim() || undefined : undefined;
-        let reactants_tex = columns.length > 9 ? columns[9]?.trim() || undefined : undefined;
-        let products_tex = columns.length > 10 ? columns[10]?.trim() || undefined : undefined;
-
-        // バックスラッシュの処理
-        // CSVパース時、引用符内の\\は\として解釈される
-        // しかし、GAS側でCSV生成時に\\が\\として保存されている場合、\\のままになる
-        // 実際のデータを確認してから調整
-        if (equation_tex) {
-          // デバッグ用ログ（最初の1件のみ）
-          if (i === 0) {
-            console.log('[gasLoader] Raw equation_tex (first 100 chars):', equation_tex.substring(0, 100));
-            console.log('[gasLoader] equation_tex contains \\ce:', equation_tex.includes('\\ce'));
-          }
-        }
-
-        // 必須フィールドのチェック
-        if (!equation || !reactants || !products) {
-          console.warn(`[gasLoader] Skipping row ${i + 2}: missing required fields`);
-          continue;
-        }
-
-        const reaction: InorganicReactionNew = {
-          id: `inorganic-${i + 1}`,
-          equation,
-          equation_tex: equation_tex || undefined,
-          reactants,
-          reactants_tex: reactants_tex || undefined,
-          products,
-          products_tex: products_tex || undefined,
-          conditions,
-          observations,
-          explanation,
-          reactants_summary,
-          products_summary,
-        };
-
-        reactions.push(reaction);
-      }
-
-      console.log(`[gasLoader] Successfully loaded ${reactions.length} inorganic reactions new from GAS`);
-      return reactions;
-    } else if (data.reactions) {
-      // 既にパース済みの反応データが返される場合
-      return data.reactions as InorganicReactionNew[];
-    } else if (data.error) {
-      throw new Error(`GAS error: ${data.error}`);
-    } else {
-      throw new Error('Invalid data format from GAS. Expected "csv" or "reactions" field.');
-    }
-  } catch (error) {
-    // エラー時の診断情報を出力（fetch失敗時は既に出力済み）
-    if (!(error instanceof Error && error.name === 'AbortError')) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[problemLoader] Failed to load inorganic reactions new from GAS:`, error);
-      console.error(`[problemLoader] Used URL:`, `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`);
-      console.error(`[problemLoader] Origin:`, origin);
-      console.error(`[problemLoader] Error name:`, error instanceof Error ? error.name : 'Unknown');
-      console.error(`[problemLoader] Error message:`, error instanceof Error ? error.message : String(error));
-      console.error(`[problemLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[problemLoader] Direct test URL (copy to browser):`, `${PROBLEM_BASE_URL}?type=inorganic-new&category=inorganic`);
-    }
-    throw error;
-  }
-};
-
-/**
- * CSV行を解析（引用符で囲まれた値に対応）
- */
-function parseCSVRow(row: string): string[] {
-  const columns: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < row.length; i++) {
-    const char = row[i];
-    
-    if (char === '"') {
-      if (inQuotes && row[i + 1] === '"') {
-        // エスケープされた引用符
-        current += '"';
-        i++; // 次の文字をスキップ
-      } else {
-        // 引用符の開始/終了
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      // カンマで区切る（引用符の外のみ）
-      columns.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  
-  // 最後の列を追加
-  columns.push(current.trim());
-  
-  return columns;
+      if (!response.ok) throw new Error(`問題データを取得できませんでした（HTTP ${response.status}）。`);
+      const raw = await response.text();
+      if (/^\s*</.test(raw)) throw new Error('問題データの代わりに認証画面が返されました。管理者にGASの公開設定を確認してください。');
+      let data: unknown;
+      try { data = JSON.parse(raw); }
+      catch { throw new Error('問題データの形式が正しくありません。GASの応答を確認してください。'); }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('問題データと異なる応答が返されました。接続先を確認してください。');
+      const result = data as Record<string, unknown>;
+      if (result.error) throw new Error(`問題データを取得できませんでした: ${String(result.error)}`);
+      return result;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw new Error('読み込みが15秒以内に完了しませんでした。通信状態を確認して再読み込みしてください。');
+      if (error instanceof TypeError) throw new Error('問題データに接続できません。通信状態とGASの公開設定を確認してください。');
+      throw error;
+    } finally { clearTimeout(timer); }
+  })();
+  pending.set(key, request);
+  void request.finally(() => pending.delete(key)).catch(() => {});
+  return request;
 }
 
+export async function loadCompoundsFromGAS(category: Category): Promise<Compound[]> {
+  const data = await requestProblem('compounds', category);
+  if (typeof data.csv === 'string') return csvToCompounds(parseCSV(data.csv), []);
+  if (Array.isArray(data.compounds)) return data.compounds as Compound[];
+  throw new Error('化合物データの形式が正しくありません。');
+}
+export async function loadReactionsFromGAS(category: Category): Promise<ReactionCSVRow[]> {
+  const data = await requestProblem('reactions', category);
+  if (typeof data.csv === 'string') return parseReactionCSV(data.csv);
+  if (Array.isArray(data.reactions)) return data.reactions as ReactionCSVRow[];
+  throw new Error('反応データの形式が正しくありません。');
+}
+export async function loadExperimentsFromGAS(category: Category): Promise<ExperimentCSVRow[]> {
+  const data = await requestProblem('experiment', category);
+  if (typeof data.csv === 'string') return parseExperimentCSV(data.csv);
+  if (Array.isArray(data.experiments)) return data.experiments as ExperimentCSVRow[];
+  throw new Error('実験データの形式が正しくありません。');
+}
+
+/** 引用符内の改行・カンマ・二重引用符を保ったCSVレコード。 */
+function csvRecords(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
+      else quoted = !quoted;
+    } else if (c === ',' && !quoted) { row.push(cell.trim()); cell = ''; }
+    else if ((c === '\n' || c === '\r') && !quoted) {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = []; cell = '';
+    } else cell += c;
+  }
+  if (quoted) throw new Error('無機化学CSVの引用符が閉じられていません。');
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+export function parseInorganicCSV(text: string): InorganicReactionNew[] {
+  const [header, ...rows] = csvRecords(text.replace(/^\uFEFF/, ''));
+  if (!header) return [];
+  const field = (row: string[], ...names: string[]) => {
+    for (const name of names) {
+      const index = header.indexOf(name);
+      if (index >= 0 && row[index]) return row[index];
+    }
+    return '';
+  };
+  for (const names of [['equation', 'equation_tex'], ['reactants', 'reactants_tex'], ['products', 'products_tex']]) {
+    if (!names.some(name => header.includes(name))) throw new Error(`無機化学シートに必要な列がありません: ${names.join(' / ')}`);
+  }
+  return rows.map((row, i) => ({
+    id: `inorganic-${i + 1}`,
+    equation: field(row, 'equation', 'equation_tex'),
+    equation_tex: field(row, 'equation_tex') || undefined,
+    reactants: field(row, 'reactants', 'reaction_before_ja', 'reactants_tex'),
+    reactants_tex: field(row, 'reactants_tex') || undefined,
+    products: field(row, 'products', 'reaction_after_ja', 'products_tex'),
+    products_tex: field(row, 'products_tex') || undefined,
+    conditions: field(row, 'conditions'), observations: field(row, 'observations'),
+    explanation: field(row, 'explanation', 'reaction_ja'),
+    reactants_summary: field(row, 'reactants_summary', 'reaction_before_ja', 'reactants'),
+    products_summary: field(row, 'products_summary', 'reaction_after_ja', 'products'),
+  })).filter(row => row.equation && row.reactants && row.products);
+}
+export async function loadInorganicReactionsNewFromGAS(): Promise<InorganicReactionNew[]> {
+  const data = await requestProblem('inorganic-new', 'inorganic');
+  if (typeof data.csv === 'string') return parseInorganicCSV(data.csv);
+  if (Array.isArray(data.reactions)) return data.reactions as InorganicReactionNew[];
+  throw new Error('無機化学データの形式が正しくありません。');
+}
