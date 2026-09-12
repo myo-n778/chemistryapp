@@ -107,3 +107,6 @@
 - [ ] 実iPad/Safari、実保存先への記録、利用者受入、別担当による独立検証。
 
 再現：npm run dev 起動後、PLAYWRIGHT_MODULEを設定して node scripts/validate-inorganic-units.cjs。記録の実送信は遮断する。証拠は /private/tmp/chemistry-units-validation.log、chemistry-units-organic.log、chemistry-units-build.log。公開結果は後続追記。
+
+
+公開確認：9b7119aを同じGitHub Pagesへ反映。Actions 34673977769成功。公開JS/CSSがローカルdistと一致し、公開Chrome・実GASでA/B/C×3モードの開始・回答・覚えるポイントを確認。単元順Aの先頭は炭酸カルシウム＋塩酸。390px・文字大の公開画像を目視。本番POSTは遮断。Sheets/GASは今回変更せず、実iPad/Safari・実保存・独立検証・利用者受入は未確認。
