@@ -1,3 +1,4 @@
+import { ChemicalText } from '../../ChemicalText';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Category } from '../../CategorySelector';
 import { InorganicReactionNew } from '../../../types/inorganic';
@@ -327,6 +328,10 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
     const questionLog: QuestionLog = {
       questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
       isCorrect,
+      sourceQuestionId: currentReaction.id,
+      selectedChoice: choices.choices[selectedOption],
+      correctChoice: choices.choices[choices.correctIndex],
+      presentedChoices: choices.choices,
       timestamp: Date.now(),
       mode,
       category: 'inorganic',
@@ -506,7 +511,7 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
 
       <div className="quiz-content">
         <div className="question-area">
-          <h2 className="question-title">この反応の条件は？</h2>
+          <h2 className="question-title" style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.5rem)', lineHeight: 1.5 }}><ChemicalText text={currentReaction.b_prompt || 'この反応の条件は？'} /></h2>
           <div className="question-text">
             <QuestionDisplay
               text={currentReaction.equation}
@@ -547,6 +552,8 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
               <p><strong>正解:</strong> <ChoiceDisplay text={currentReaction.conditions} /></p>
               <InorganicExplanationPanel
                 reaction={currentReaction}
+                mode="b"
+                selectedAnswer={selectedAnswer === null ? undefined : choices.choices[selectedAnswer]}
                 correctAnswer={currentReaction.conditions}
               />
             </div>

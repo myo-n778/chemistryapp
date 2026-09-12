@@ -1,3 +1,6 @@
+import { shuffleLearning } from '../../utils/learningChoices';
+import { LearningPoint } from '../LearningPoint';
+import { ChemicalText } from '../ChemicalText';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Category } from '../CategorySelector';
 import { ScoreDisplay } from '../shared/ScoreDisplay';
@@ -88,6 +91,9 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   const maxQuestions = Math.min(expectedQuestions, actualAvailableQuestions);
 
   const currentExperiment = filteredExperiments[currentIndex];
+  const options = useMemo(() => currentExperiment ? shuffleLearning([
+    currentExperiment.option1, currentExperiment.option2, currentExperiment.option3, currentExperiment.option4,
+  ].map((text, index) => ({ text, id: index + 1 })).filter(option => option.text)) : [], [currentExperiment]);
 
   if (!currentExperiment && !isFinished) {
     return (
@@ -170,6 +176,10 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     const questionLog: QuestionLog = {
       questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
       isCorrect,
+      sourceQuestionId: currentExperiment.questionId,
+      selectedChoice: options.find(option => option.id === selectedOption)?.text,
+      correctChoice: options.find(option => option.id === currentExperiment.correctAnswer)?.text,
+      presentedChoices: options.map(option => option.text),
       timestamp: Date.now(),
       mode,
       category: 'organic',
@@ -474,12 +484,6 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     );
   }
 
-  const options = [
-    currentExperiment.option1,
-    currentExperiment.option2,
-    currentExperiment.option3,
-    currentExperiment.option4,
-  ];
 
   const handleReset = () => {
     setCurrentIndex(0);
@@ -552,7 +556,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
       <div className="quiz-content" onClick={handleContentClick} onTouchEnd={handleTouchEnd} style={{ cursor: showResult ? 'pointer' : 'default' }}>
         <div className="question-section">
           <div className="reaction-question-line">
-            <span className="question-text-inline">{currentExperiment.question}</span>
+            <span className="question-text-inline"><ChemicalText text={currentExperiment.question} /></span>
             {showResult && (
               <div className="result-action-inline">
                 <span className={selectedAnswer === currentExperiment.correctAnswer ? "result-correct" : "result-incorrect"}>
@@ -564,8 +568,8 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         </div>
 
         <div className="options-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(8px, 1.5vw, 12px)' }}>
-          {options.map((option, index) => {
-            const optionNumber = index + 1;
+          {options.map((option) => {
+            const optionNumber = option.id;
             const isSelected = selectedAnswer === optionNumber;
             const isCorrect = optionNumber === currentExperiment.correctAnswer;
             const showCorrect = showResult && isCorrect;
@@ -573,7 +577,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
             return (
               <button
-                key={index}
+                key={option.id}
                 className={`option-button ${
                   showCorrect ? 'correct' : ''
                 } ${
@@ -585,7 +589,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
                 }}
                 disabled={showResult}
               >
-                {option}
+                <ChemicalText text={option.text} />
                 {showCorrect && <span className="result-icon">✓</span>}
                 {showIncorrect && <span className="result-icon">✗</span>}
               </button>
@@ -593,12 +597,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
           })}
         </div>
 
-        {showResult && currentExperiment.explanation && (
-          <div className="explanation-section">
-            <div className="explanation-label">Explanation:</div>
-            <div className="explanation-text">{currentExperiment.explanation}</div>
-          </div>
-        )}
+        {showResult && <LearningPoint point={currentExperiment.explanation} />}
       </div>
     </div>
   );

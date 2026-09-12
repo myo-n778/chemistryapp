@@ -34,9 +34,9 @@ interface QuizProps {
 export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], inorganicChoicePool, mode, category, onBack, quizSettings, onNextRange }) => {
   switch (mode) {
     case 'structure-to-name':
-      return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
+      return <StructureToNameQuiz choicePool={allCompounds} compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'name-to-structure':
-      return <NameToStructureQuiz compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
+      return <NameToStructureQuiz choicePool={allCompounds} compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'compound-type':
       return <CompoundTypeQuiz compounds={compounds} allCompounds={allCompounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
     case 'reaction':
@@ -63,7 +63,7 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
       // ModeFQuizは削除されました
       return <div className="quiz-container"><p>このモードは利用できません</p><button className="back-button" onClick={onBack}>戻る</button></div>;
     default:
-      return <StructureToNameQuiz compounds={compounds} category={category} onBack={onBack} />;
+      return <StructureToNameQuiz choicePool={allCompounds} compounds={compounds} category={category} onBack={onBack} />;
   }
 };
 

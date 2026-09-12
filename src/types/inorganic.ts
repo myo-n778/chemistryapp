@@ -1,8 +1,17 @@
+import type { LearningChoice } from '../utils/learningChoices';
 /**
  * 新しい無機化学反応データ型（Googleスプレッドシート用）
  */
 export interface InorganicReactionNew {
   id: string;
+  learning_point?: string;
+  learning_status?: string;
+  a_context?: string;
+  b_prompt?: string;
+  c_prompt?: string;
+  a_distractors?: LearningChoice[];
+  b_distractors?: LearningChoice[];
+  c_distractors?: LearningChoice[];
   reactants_visual?: string;
   products_visual?: string;
   observations_visual?: string;

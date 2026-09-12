@@ -1,3 +1,5 @@
+import { shuffleLearning } from '../../utils/learningChoices';
+import { LearningPoint } from '../LearningPoint';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
@@ -20,61 +22,37 @@ interface CompoundTypeQuizProps {
   onNextRange?: () => void;
 }
 
-// 種類の表記をインテリジェントに集約・正規化する関数
-const normalizeType = (type: string | undefined): string => {
-  if (!type) return 'アルカン';
-  const t = type.trim();
-
-  // 【最優先】特定性の高いカテゴリから判定
-
-  // 1. 芳香族（ベンゼン環を持つもの）
-  if (t.includes('芳香族') || t.includes('ベンゼン') || t.includes('フェノール') ||
-    t.includes('アニリン') || t.includes('トルエン') || t.includes('キシレン') ||
-    t.includes('サリチル') || t.includes('フタル')) {
-    return '芳香族化合物';
-  }
-
-  // 2. 高分子・生体分子
-  if (t.includes('糖') || t.includes('分子') || t.includes('アミノ酸') || t.includes('ペプチド') ||
-    t.includes('タンパク') || t.includes('繊維') || t.includes('ゴム') || t.includes('樹脂') ||
-    t.includes('縮合') || t.includes('付加')) {
-    return '高分子化合物';
-  }
-
-  // 3. 油脂・エステル関連
-  if (t.includes('油脂') || t.includes('脂肪') || t.includes('石鹸') || t.includes('セッケン') ||
-    t.includes('グリセリン') || t.includes('エステル')) {
-    return '油脂';
-  }
-
-  // 4. 基本的な官能基系
-  if (t.includes('カルボン酸')) return 'カルボン酸';
-  if (t.includes('アルデヒド') || t.includes('ホルミル')) return 'アルデヒド';
-  if (t.includes('ケトン') || t.includes('カルボニル')) return 'ケトン';
-  if (t.includes('アルコール') || t.includes('ヒドロキシ')) return 'アルコール';
-  if (t.includes('エーテル')) return 'エーテル';
-
-  // 5. 炭化水素（ここで初めてアルカン等を確認）
-  if (t.includes('アルキン')) return 'アルキン';
-  if (t.includes('アルケン') || t.includes('ジエン')) return 'アルケン';
-  if (t.includes('アルカン') || t.includes('シクロ')) return 'アルカン';
-
-  // 6. その他メジャーな分類
-  if (t.includes('ハロゲン')) return 'ハロゲン化物';
-  if (t.includes('ニトロ')) return 'ニトロ化合物';
-
-  return t; // これでもヒットしない場合はそのまま表示
+// 分類の階層を勝手に統合しない。糖・アミノ酸は高分子、エステルは油脂とは限らない。
+export const normalizeType = (type: string | undefined): string => type === '芳香族（キノン）' ? 'キノン' : (type || '').trim();
+export const typeDistractors = (type: string): string[] => {
+  if (/キノン/.test(type)) return ['芳香族炭化水素', 'フェノール類', '芳香族カルボン酸'];
+  if (/糖/.test(type) && !/由来/.test(type)) return ['単糖', '二糖', '多糖'].filter(x => x !== type);
+  if (/高分子/.test(type)) return ['合成高分子', '天然高分子', '単糖', '二糖'].filter(x => x !== type);
+  if (/アミノ酸/.test(type)) return ['アミン（カルボキシ基なし）', 'カルボン酸（アミノ基なし）', 'エステル'];
+  if (/フェノールの塩/.test(type)) return ['フェノール類（遊離形）', '芳香族アミン', '芳香族炭化水素'];
+  if (/フェノール/.test(type)) return ['芳香族アルコール（環に直接OHは結合しない）', '芳香族アミン', '芳香族エーテル'];
+  if (/カルボン酸|脂肪酸/.test(type)) return ['アルデヒド', 'ケトン', 'エステル'];
+  if (/アルデヒド/.test(type)) return ['ケトン', 'カルボン酸', 'アルコール'];
+  if (/アルコール/.test(type)) return ['エーテル', 'ケトン', 'エステル'];
+  if (/ハロゲン/.test(type)) return ['アルコール', 'アミン', 'ニトリル'];
+  if (/ニトロ/.test(type)) return ['芳香族アミン', '芳香族アルデヒド', 'ハロゲン化芳香族'];
+  if (/アミン/.test(type)) return ['アミド', 'ニトリル', 'ニトロ化合物'];
+  if (/芳香族/.test(type)) return ['飽和鎖式炭化水素', '脂肪族アルコール', '脂肪族ケトン'];
+  const alternatives: Record<string, string[]> = {
+    'アルカン': ['アルケン', 'アルキン', '芳香族炭化水素'],
+    'アルケン': ['アルカン', 'アルキン', '芳香族炭化水素'],
+    'アルキン': ['アルカン', 'アルケン', '芳香族炭化水素'],
+    'ケトン': ['アルデヒド', 'カルボン酸', 'アルコール'],
+    'エーテル': ['アルコール', 'エステル', 'ケトン'],
+    'エステル': ['エーテル', 'カルボン酸', 'アミド'],
+    'アミド': ['アミン', 'ニトリル', 'エステル'],
+    'ニトリル': ['アミン', 'アミド', 'アルキン'],
+  };
+  if (!alternatives[type]) throw new Error(`分類「${type}」の選択肢が未設定です。`);
+  return alternatives[type];
 };
 
-// 優先的に表示する順序の定義（ご提示の順序に基づく）
-const PREFERRED_TYPE_ORDER = [
-  'アルカン', 'アルケン', 'アルキン', // 1行目
-  'アルコール', 'アルデヒド',
-  'ケトン', 'カルボン酸', 'エーテル',
-  '芳香族化合物', '油脂', '高分子化合物' // 集約されたカテゴリ
-];
-
-export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, allCompounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
+export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -108,34 +86,10 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
     );
   }
 
-  // データからすべての種類を動的に抽出し、集約してソート
-  const sortedTypes = useMemo(() => {
-    const uniqueTypes = new Set<string>();
-
-    // 優先リストの項目をベースに追加
-    PREFERRED_TYPE_ORDER.forEach(t => uniqueTypes.add(t));
-
-    // 全データから種類を抽出して集約
-    allCompounds.forEach(c => {
-      const normalized = normalizeType(c.type);
-      uniqueTypes.add(normalized);
-    });
-
-    // ソートロジック
-    return Array.from(uniqueTypes).sort((a, b) => {
-      const indexA = PREFERRED_TYPE_ORDER.indexOf(a);
-      const indexB = PREFERRED_TYPE_ORDER.indexOf(b);
-
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      return a.localeCompare(b);
-    });
-  }, [allCompounds]);
-
   const correctType = isFinished ? '' : normalizeType(currentCompound?.type);
+  const sortedTypes = useMemo(() => currentCompound
+    ? shuffleLearning([normalizeType(currentCompound.type), ...typeDistractors(normalizeType(currentCompound.type))])
+    : [], [currentCompound]);
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
@@ -552,6 +506,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, a
               <div className="structure-viewer-wrapper">
                 <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />
               </div>
+              {showResult && <LearningPoint point={currentCompound.learningPoint} />}
               <div className="options-grid-compact">
                 {sortedTypes.map((option) => {
                   const isSelected = selectedAnswer === option;

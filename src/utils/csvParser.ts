@@ -1,3 +1,4 @@
+import { parseChoiceIds, compoundOptions } from './learningChoices';
 import { Compound } from '../types';
 
 export interface CompoundCSVRow {
@@ -6,6 +7,8 @@ export interface CompoundCSVRow {
   type: string;
   formula: string;
   atoms?: string; // JSON形式の原子データ
+  choice_ids_json?: string;
+  learning_point?: string;
   bonds?: string; // JSON形式の結合データ
 }
 
@@ -22,6 +25,7 @@ export const parseCSV = (csvText: string): CompoundCSVRow[] => {
   // ヘッダー行があっても無視して、インデックスベースでデータを取得する
   // ユーザー仕様: B列(1)=名前, E列(4)=原子データ, F列(5)=結合データ
   const rows: CompoundCSVRow[] = [];
+  const header = parseCSVLine(lines[0]);
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -35,7 +39,9 @@ export const parseCSV = (csvText: string): CompoundCSVRow[] => {
       type: values[2] || '',           // C列: タイプ（想定）
       formula: values[3] || '',        // D列: 化学式（想定）
       atoms: values[4] || '',          // E列: 原子データ
-      bonds: values[5] || '',          // F列: 結合データ
+      bonds: values[5] || '',
+      choice_ids_json: values[header.indexOf('choice_ids_json')] || '',
+      learning_point: values[header.indexOf('learning_point')] || '',          // F列: 結合データ
     };
 
     // 名前がある場合のみ有効な行とする
@@ -90,7 +96,9 @@ export const csvToCompounds = (csvRows: CompoundCSVRow[], existingCompounds: Com
       return {
         ...existing,
         id: row.id,
-        name: row.name, // CSVの名前を使用
+        name: row.name,
+        choiceIds: parseChoiceIds(row.choice_ids_json),
+        learningPoint: row.learning_point, // CSVの名前を使用
         type: row.type || existing.type,
       };
     }
@@ -134,6 +142,8 @@ export const csvToCompounds = (csvRows: CompoundCSVRow[], existingCompounds: Com
           return {
             id: row.id,
             name: row.name,
+        choiceIds: parseChoiceIds(row.choice_ids_json),
+        learningPoint: row.learning_point,
             type: row.type || 'organic', // タイプがない場合はorganicとする
             structure: {
               atoms,
@@ -156,10 +166,17 @@ export const csvToCompounds = (csvRows: CompoundCSVRow[], existingCompounds: Com
     return {
       id: row.id,
       name: row.name,
+        choiceIds: parseChoiceIds(row.choice_ids_json),
+        learningPoint: row.learning_point,
       type: row.type || 'unknown',
       structure: { atoms: [], bonds: [] } // 空の構造式
     };
   });
 
-  return result.filter((c): c is Compound => c !== null);
+  const valid = result.filter((c): c is Compound => c !== null);
+  for (const compound of valid) {
+    if (!compound.learningPoint) throw new Error(`${compound.name}の覚えるポイントが未設定です。`);
+    compoundOptions(compound, valid);
+  }
+  return valid;
 };

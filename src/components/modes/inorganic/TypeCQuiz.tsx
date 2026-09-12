@@ -1,3 +1,5 @@
+import { ChemicalText } from '../../ChemicalText';
+import { learningChoiceVisuals } from '../../../utils/learningChoices';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Category } from '../../CategorySelector';
 import { InorganicReactionNew } from '../../../types/inorganic';
@@ -9,7 +11,7 @@ import { generateDistractorsForTypeC, shuffleChoices } from '../../../utils/inor
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
 import { TeXRenderer } from '../../TeXRenderer';
 import { ColorAnnotatedText } from '../../ColorAnnotatedText';
-import { colorCuesFor, choiceColorCues } from '../../../utils/inorganicColors';
+import { colorCuesFor } from '../../../utils/inorganicColors';
 import { RenderMaybeTeX } from '../../RenderMaybeTeX';
 import { playCorrect, playWrong } from '../../../utils/soundManager';
 import { getActiveUser, generateUUID, saveSessionLog, saveQuestionLogsForSession, pushRecRowToSheetRec, QuestionLog, SessionLog, RecRow } from '../../../utils/sessionLogger';
@@ -328,6 +330,10 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
     const questionLog: QuestionLog = {
       questionId: `${mode}|${rangeKey}|${questionLogsRef.current.length}`,
       isCorrect,
+      sourceQuestionId: currentReaction.id,
+      selectedChoice: choices.choices[selectedOption],
+      correctChoice: choices.choices[choices.correctIndex],
+      presentedChoices: choices.choices,
       timestamp: Date.now(),
       mode,
       category: 'inorganic',
@@ -508,11 +514,12 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
 
       <div className="quiz-content">
         <div className="question-area">
-          <h2 className="question-title">この反応で観察される現象は？</h2>
+          <h2 className="question-title" style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.5rem)', lineHeight: 1.5 }}><ChemicalText text={currentReaction.c_prompt || 'この反応で観察される現象は？'} /></h2>
           <div className="question-text">
+            {currentReaction.a_context && <p className="question-context"><ChemicalText text={currentReaction.a_context} /></p>}
             <QuestionDisplay
-              text={currentReaction.equation}
-              tex={currentReaction.equation_tex}
+              text={currentReaction.reactants}
+              tex={currentReaction.reactants_tex}
               label="反応式"
             />
           </div>
@@ -534,7 +541,7 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <ColorAnnotatedText text={choice} cues={choiceColorCues(choicePool, choice, 'observations', showResult)} />
+                  <ColorAnnotatedText text={choice} cues={learningChoiceVisuals(choice, currentReaction.visual_timing, showResult)} />
                 </div>
                 {showCorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✓</span>}
                 {showIncorrect && <span className="result-icon" style={{ marginLeft: '8px' }}>✗</span>}
@@ -549,6 +556,8 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
               <p><strong>正解:</strong> <ColorAnnotatedText text={currentReaction.observations} cues={colorCuesFor(currentReaction, 'observations', true)} /></p>
               <InorganicExplanationPanel
                 reaction={currentReaction}
+                mode="c"
+                selectedAnswer={selectedAnswer === null ? undefined : choices.choices[selectedAnswer]}
                 correctAnswer={currentReaction.observations}
               />
             </div>

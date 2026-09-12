@@ -1,3 +1,6 @@
+import { learningOptions } from '../../utils/learningChoices';
+import { LearningPoint } from '../LearningPoint';
+import { ChemicalText } from '../ChemicalText';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
@@ -105,17 +108,9 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
 
   // 選択肢の生成（常にtoを答える）
   const options = useMemo(() => {
-    if (loading || reactions.length === 0 || !currentReaction || isFinished) return [];
-
-    // 物質toを答える
-    const correctName = currentReaction.to;
-    const allNames = Array.from(new Set(compounds.map(c => c.name)));
-    const wrongNames = allNames
-      .filter(name => name !== correctName)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    return [correctName, ...wrongNames].sort(() => Math.random() - 0.5);
-  }, [currentIndex, reactions, compounds, isFinished, loading, currentReaction]);
+    if (loading || !currentReaction || isFinished) return [];
+    return learningOptions(currentReaction.to, currentReaction.productDistractors || [], '有機反応');
+  }, [currentReaction, isFinished, loading]);
 
   // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
   const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
@@ -558,7 +553,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
           {/* 説明文を最初から表示 */}
           <div className="reaction-description-area">
             {currentReaction.description ? (
-              <p>{currentReaction.description}</p>
+              <p><ChemicalText text={currentReaction.description} /></p>
             ) : (
               <p className="description-placeholder">&nbsp;</p>
             )}
@@ -601,6 +596,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
             </div>
           </div>
 
+          {showResult && <LearningPoint point={currentReaction.learningPoint} />}
           <div className="options-container reaction-options-grid">
             {options.map((option) => {
               const isSelected = selectedAnswer === option;
@@ -615,7 +611,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
                   onClick={(e) => { e.stopPropagation(); handleAnswer(option); }}
                   disabled={showResult}
                 >
-                  {option}
+                  <ChemicalText text={option} />
                   {showCorrect && <span className="result-icon">✓</span>}
                   {showIncorrect && <span className="result-icon">✗</span>}
                 </button>

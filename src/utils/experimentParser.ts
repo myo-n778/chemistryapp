@@ -1,4 +1,5 @@
 export interface ExperimentCSVRow {
+  questionId?: string;
   question: string; // A列：問題文
   option1: string; // B列：選択肢1
   option2: string; // C列：選択肢2
@@ -47,6 +48,7 @@ export const parseExperimentCSV = (csvText: string): ExperimentCSVRow[] => {
   if (lines.length < 2) return [];
 
   const rows: ExperimentCSVRow[] = [];
+  const header = parseCSVLine(lines[0]);
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -63,17 +65,18 @@ export const parseExperimentCSV = (csvText: string): ExperimentCSVRow[] => {
     const explanation = values[6] || '';
 
     // 問題文と選択肢が空の場合はスキップ
-    if (!question || !option1 || !option2 || !option3 || !option4) {
+    if (!question || [option1, option2, option3, option4].filter(Boolean).length < 2) {
       continue;
     }
 
     // 答え番号を数値に変換（1〜4）
     const correctAnswer = parseInt(correctAnswerStr, 10);
-    if (isNaN(correctAnswer) || correctAnswer < 1 || correctAnswer > 4) {
+    if (isNaN(correctAnswer) || correctAnswer < 1 || correctAnswer > 4 || ![option1, option2, option3, option4][correctAnswer - 1]) {
       continue; // 無効な答え番号はスキップ
     }
 
     rows.push({
+      questionId: values[header.indexOf('question_id')] || `experiment-${i}`,
       question,
       option1,
       option2,

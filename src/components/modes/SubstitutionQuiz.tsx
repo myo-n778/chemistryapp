@@ -1,3 +1,6 @@
+import { learningOptions } from '../../utils/learningChoices';
+import { LearningPoint } from '../LearningPoint';
+import { ChemicalText } from '../ChemicalText';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
@@ -104,17 +107,9 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
 
   // 選択肢の生成（常にreagentを答える）
   const options = useMemo(() => {
-    if (loading || reactions.length === 0 || !currentReaction || isFinished) return [];
-
-    // 試薬reagentを答える
-    const correctReagent = currentReaction.reagent;
-    const allReagents = Array.from(new Set(reactions.map(r => r.reagent))).filter(r => r !== '');
-    const wrongReagents = allReagents
-      .filter(r => r !== correctReagent)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    return [correctReagent, ...wrongReagents].sort(() => Math.random() - 0.5);
-  }, [currentIndex, reactions, isFinished, loading, currentReaction]);
+    if (loading || !currentReaction || isFinished) return [];
+    return learningOptions(currentReaction.reagent, currentReaction.reagentDistractors || [], '有機反応');
+  }, [currentReaction, isFinished, loading]);
 
   // 名前の比較をトリミング考慮で行う（全角スペースなどにも対応）
   const cleanString = (s: string | undefined) => s ? s.replace(/[\s\u3000]+/g, '').trim() : '';
@@ -604,6 +599,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
             </div>
           </div>
 
+          {showResult && <LearningPoint point={currentReaction.learningPoint} />}
           <div className="options-container reaction-options-grid">
             {options.map((option) => {
               const isSelected = selectedAnswer === option;
@@ -618,7 +614,7 @@ export const SubstitutionQuiz: React.FC<SubstitutionQuizProps> = ({ compounds, c
                   onClick={(e) => { e.stopPropagation(); handleAnswer(option); }}
                   disabled={showResult}
                 >
-                  {option}
+                  <ChemicalText text={option} />
                   {showCorrect && <span className="result-icon">✓</span>}
                   {showIncorrect && <span className="result-icon">✗</span>}
                 </button>

@@ -536,6 +536,10 @@ export interface ActiveUser {
  * 問題ログ（1問ごとの記録）
  */
 export interface QuestionLog {
+  sourceQuestionId?: string;
+  selectedChoice?: string;
+  correctChoice?: string;
+  presentedChoices?: string[];
   questionId: string; // `${mode}|${unit}|${range}|${index}`
   isCorrect: boolean;
   timestamp: number; // Date.now()

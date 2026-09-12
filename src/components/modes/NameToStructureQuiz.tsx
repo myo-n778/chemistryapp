@@ -1,3 +1,5 @@
+import { compoundOptions } from '../../utils/learningChoices';
+import { LearningPoint } from '../LearningPoint';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Compound } from '../../types';
 import { Category } from '../CategorySelector';
@@ -11,6 +13,7 @@ import '../Quiz.css';
 
 interface NameToStructureQuizProps {
   compounds: Compound[];
+  choicePool?: Compound[];
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
@@ -19,7 +22,7 @@ interface NameToStructureQuizProps {
   onNextRange?: () => void;
 }
 
-export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
+export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compounds, choicePool = compounds, category, onBack, isShuffleMode = false, quizSettings, totalCount: _totalCount = 0, onNextRange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -37,6 +40,12 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   const questionLogsRef = useRef<QuestionLog[]>([]); // セッション内の問題ログ
 
   // 化合物が空の場合はエラーメッセージを表示
+  const options = useMemo(() => {
+    const current = compounds[currentIndex];
+    if (isFinished || !current) return [];
+    return compoundOptions(current, choicePool);
+  }, [currentIndex, compounds, choicePool, isFinished]);
+
   if (compounds.length === 0) {
     return (
       <div className="quiz-container">
@@ -57,17 +66,6 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   if (!currentCompound && !isFinished) return null;
 
   // 選択肢として構造式を表示（正解を含む4つの構造式）
-  const options = useMemo(() => {
-    if (isFinished) return [];
-    const current = compounds[currentIndex];
-    if (!current) return [];
-
-    const wrongCompounds = compounds
-      .filter(c => c.id !== current.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    return [current, ...wrongCompounds].sort(() => Math.random() - 0.5);
-  }, [currentIndex, compounds, isFinished]);
 
   const handleAnswer = (answerId: string) => {
     if (showResult) return;
@@ -502,6 +500,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
               </div>
             </div>
 
+            {showResult && <LearningPoint point={currentCompound.learningPoint} />}
             <div className="options-container-structure">
               {options.map((compound) => {
                 const isSelected = selectedAnswer === compound.id;

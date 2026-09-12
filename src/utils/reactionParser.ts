@@ -1,4 +1,9 @@
+import { parseLearningChoices, validateLearningChoices, type LearningChoice } from './learningChoices';
 export interface ReactionCSVRow {
+  questionId?: string;
+  learningPoint?: string;
+  productDistractors?: LearningChoice[];
+  reagentDistractors?: LearningChoice[];
   type: 'substitution' | 'synthesis';
   from: string;
   reagent: string;
@@ -44,6 +49,7 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
   if (lines.length < 2) return [];
 
   const rows: ReactionCSVRow[] = [];
+  const header = parseCSVLine(lines[0]);
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -75,7 +81,15 @@ export const parseReactionCSV = (csvText: string): ReactionCSVRow[] => {
       continue;
     }
 
+    const field = (name: string) => values[header.indexOf(name)] || '';
+    if (field('learning_status') === '保留') continue;
+    const productDistractors = parseLearningChoices(field('product_distractors_json'), `有機反応${i + 1}行`);
+    const reagentDistractors = parseLearningChoices(field('reagent_distractors_json'), `有機反応${i + 1}行`);
+    validateLearningChoices(to, productDistractors, `有機反応${i + 1}行 生成物`);
+    validateLearningChoices(reagent, reagentDistractors, `有機反応${i + 1}行 試薬`);
+    if (!field('learning_point')) throw new Error(`有機反応${i + 1}行のポイントが未設定です。`);
     const row: ReactionCSVRow = {
+      questionId: field('question_id'), learningPoint: field('learning_point'), productDistractors, reagentDistractors,
       type: (clean(values[0]) as 'substitution' | 'synthesis') || 'substitution',
       from: clean(values[1]),
       reagent: reagent,

@@ -1,3 +1,4 @@
+import { parseLearningChoices, validateLearningChoices } from '../utils/learningChoices';
 import { Compound } from '../types';
 import { Category } from '../components/CategorySelector';
 import { PROBLEM_BASE_URL } from '../config/gasUrls';
@@ -100,7 +101,13 @@ export function parseInorganicCSV(text: string): InorganicReactionNew[] {
     if (!names.some(name => header.includes(name))) throw new Error(`無機化学シートに必要な列がありません: ${names.join(' / ')}`);
   }
   return rows.map((row, i) => ({
-    id: `inorganic-${i + 1}`,
+    id: field(row, 'question_id') || `inorganic-${i + 1}`,
+    learning_point: field(row, 'learning_point'),
+    learning_status: field(row, 'learning_status'),
+    a_context: field(row, 'a_context'), b_prompt: field(row, 'b_prompt'), c_prompt: field(row, 'c_prompt'),
+    a_distractors: parseLearningChoices(field(row, 'a_distractors_json'), `無機${i + 2}行 A`),
+    b_distractors: parseLearningChoices(field(row, 'b_distractors_json'), `無機${i + 2}行 B`),
+    c_distractors: parseLearningChoices(field(row, 'c_distractors_json'), `無機${i + 2}行 C`),
     reactants_visual: field(row, 'reactants_visual'),
     products_visual: field(row, 'products_visual'),
     observations_visual: field(row, 'observations_visual'),
@@ -112,11 +119,17 @@ export function parseInorganicCSV(text: string): InorganicReactionNew[] {
     reactants_tex: field(row, 'reactants_tex') || undefined,
     products: field(row, 'products', 'reaction_after_ja', 'products_tex'),
     products_tex: field(row, 'products_tex') || undefined,
-    conditions: field(row, 'conditions'), observations: field(row, 'observations'),
+    conditions: field(row, 'b_answer', 'conditions'), observations: field(row, 'observations'),
     explanation: field(row, 'explanation', 'reaction_ja'),
     reactants_summary: field(row, 'reactants_summary', 'reaction_before_ja', 'reactants'),
     products_summary: field(row, 'products_summary', 'reaction_after_ja', 'products'),
-  })).filter(row => row.equation && row.reactants && row.products);
+  })).filter(row => row.equation && row.reactants && row.products && row.learning_status !== '保留').map(row => {
+    if (!row.learning_point) throw new Error(`${row.id}の覚えるポイントが未設定です。`);
+    validateLearningChoices(row.products, row.a_distractors, `${row.id} A`);
+    if (row.conditions) validateLearningChoices(row.conditions, row.b_distractors, `${row.id} B`);
+    if (row.observations) validateLearningChoices(row.observations, row.c_distractors, `${row.id} C`);
+    return row;
+  });
 }
 export async function loadInorganicReactionsNewFromGAS(): Promise<InorganicReactionNew[]> {
   const data = await requestProblem('inorganic-new', 'inorganic');

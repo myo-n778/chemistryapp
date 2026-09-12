@@ -1,6 +1,8 @@
 export interface Compound {
   id: string;
   name: string;
+  choiceIds?: string[];
+  learningPoint?: string;
   type?: string; // 化合物の種類（アルカン、アルケン等）
   structure: StructureData;
 }

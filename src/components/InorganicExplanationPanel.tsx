@@ -1,3 +1,4 @@
+import { LearningPoint } from './LearningPoint';
 import React from 'react';
 import { InorganicReactionNew } from '../types/inorganic';
 import { TeXRenderer } from './TeXRenderer';
@@ -11,6 +12,8 @@ interface InorganicExplanationPanelProps {
   reaction: InorganicReactionNew;
   correctAnswer?: string; // 未使用だが将来の拡張のため残す
   className?: string;
+  selectedAnswer?: string;
+  mode?: 'a' | 'b' | 'c';
 }
 
 /**
@@ -23,12 +26,13 @@ interface InorganicExplanationPanelProps {
 export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps> = ({
   reaction,
   correctAnswer: _correctAnswer,
-  className = '',
+  className = '', selectedAnswer, mode = 'a',
 }) => {
   const [showEquationTeX, setShowEquationTeX] = React.useState(false);
 
   return (
     <div className={`inorganic-explanation-panel ${className}`}>
+      <LearningPoint point={reaction.learning_point} reason={reaction[`${mode}_distractors`]?.find(choice => choice.text === selectedAnswer)?.reason} />
       {/* 1. 反応式と要点を横並び */}
       <div className="explanation-row">
         {/* 反応式（A列） */}
@@ -95,7 +99,7 @@ export const InorganicExplanationPanel: React.FC<InorganicExplanationPanelProps>
       )}
 
       {/* 4. 解説本文（F列） */}
-      {reaction.explanation && (
+      {reaction.explanation && reaction.explanation !== reaction.learning_point && (
         <div className="explanation-section explanation-text">
           <div className="explanation-section-header">
             <h3 className="explanation-section-title">解説</h3>
