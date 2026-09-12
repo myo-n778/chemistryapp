@@ -1,3 +1,4 @@
+import { ChemicalText } from './ChemicalText';
 import { RenderMaybeTeX } from './RenderMaybeTeX';
 import { CHEMICAL_COLORS, parseColorCues, splitColorText } from '../utils/inorganicColors';
 import './ColorAnnotatedText.css';
@@ -17,6 +18,6 @@ export function ColorAnnotatedText({ text, cues, displayMode = false, className 
           title={`${part.cue.color}${part.cue.state !== '未指定' ? `（${part.cue.state}）` : ''}の見本`} />
         {part.text}
       </span>
-    ) : <span key={index}>{part.text}</span>)}
+    ) : <span key={index}><ChemicalText text={part.text} /></span>)}
   </span>;
 }

@@ -1,3 +1,4 @@
+import { ChemicalText } from './ChemicalText';
 import React from 'react';
 import { TeXRenderer } from './TeXRenderer';
 
@@ -43,6 +44,6 @@ export const RenderMaybeTeX: React.FC<RenderMaybeTeXProps> = ({
   }
 
   // 通常のテキストとして表示
-  return <span className={className}>{value}</span>;
+  return <span className={className}><ChemicalText text={value} /></span>;
 };
 
