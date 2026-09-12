@@ -42,7 +42,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
 
     // 範囲フィルタリング
     if (quizSettings?.questionCountMode && quizSettings.questionCountMode !== 'all' && quizSettings.startIndex !== undefined) {
-      const start = quizSettings.startIndex;
+      const start = quizSettings.startIndex - 1; // 画面の範囲は1始まり
       let end: number;
       if (quizSettings.questionCountMode === 'batch-10') {
         end = start + 10;
