@@ -15,6 +15,8 @@ import { TeXTest } from './components/TeXTest';
 import { getActiveUser } from './utils/sessionLogger';
 import { GasHealthCheck } from './components/GasHealthCheck';
 import './App.css';
+import { InorganicLearningSelector } from './components/InorganicLearningSelector';
+import { InorganicLearningMode, buildInorganicSession, getInorganicUnits, nextInorganicUnit, learningModeLabels } from './utils/inorganicUnits';
 
 // 一時的にTeXTestを表示するためのフラグ（開発用）
 const SHOW_TEX_TEST = false;
@@ -22,6 +24,8 @@ const SHOW_TEX_TEST = false;
 export type QuestionCountMode = 'all' | 'batch-10' | 'batch-20' | 'batch-40';
 export type OrderMode = 'sequential' | 'shuffle';
 export interface QuizSettings {
+  learningMode?: InorganicLearningMode;
+  unitId?: string;
   questionCountMode: QuestionCountMode;
   orderMode?: OrderMode; // Allモードの場合のみ
   startIndex?: number; // 10ずつモードの場合のみ（1-indexed）
@@ -36,6 +40,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedMode, setSelectedMode] = useState<QuizMode | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
+  useEffect(() => { if (quizSettings?.learningMode) window.scrollTo(0, 0); }, [quizSettings]);
   const [compounds, setCompounds] = useState<Compound[]>([]);
   const [reactions, setReactions] = useState<number>(0); // モード④⑤用のreactions数
   const [experiments, setExperiments] = useState<ExperimentCSVRow[]>([]); // モード⑥用のexperiments
@@ -214,6 +219,11 @@ function App() {
   const handleNextRange = useCallback(() => {
     if (!quizSettings) return;
     
+    if (quizSettings.learningMode) {
+      const next = nextInorganicUnit(eligibleInorganicReactions, quizSettings);
+      if (next) setQuizSettings({ ...quizSettings, unitId: next.id, allQuestionCount: next.reactions.length });
+      return;
+    }
     // batch-10/20/40モードの場合のみ次の範囲へ進む
     if (quizSettings.questionCountMode === 'batch-10' || 
         quizSettings.questionCountMode === 'batch-20' || 
@@ -237,7 +247,7 @@ function App() {
         startIndex: nextStartIndex
       });
     }
-  }, [quizSettings, maxQuestionCount]);
+  }, [quizSettings, maxQuestionCount, eligibleInorganicReactions]);
 
   // Quizコンポーネントに渡す無機化学データを決定（クイズ開始時に出題セットを確定）
   const quizInorganicReactionsNew = useMemo(() => {
@@ -254,6 +264,7 @@ function App() {
     }
 
     const sourceReactions = eligibleInorganicReactions;
+    if (quizSettings.learningMode) return buildInorganicSession(sourceReactions, quizSettings);
 
     if (sourceReactions.length === 0) {
       console.error('[App] quizInorganicReactionsNew: sourceReactions is empty', {
@@ -344,7 +355,7 @@ function App() {
     }
 
     // hasNextRangeをuseMemo内で直接計算
-    const hasNext = quizSettings && (
+    const hasNext = quizSettings?.learningMode ? Boolean(nextInorganicUnit(eligibleInorganicReactions, quizSettings)) : quizSettings && (
       (quizSettings.questionCountMode === 'batch-10' || 
        quizSettings.questionCountMode === 'batch-20' || 
        quizSettings.questionCountMode === 'batch-40') &&
@@ -362,7 +373,12 @@ function App() {
 
     // 通常のクイズ表示
     return (
+      <>
+      {quizSettings?.learningMode && <div className="learning-session-label" role="status">
+        {learningModeLabels[quizSettings.learningMode]} · {quizSettings.learningMode === 'global-shuffle' ? '全単元' : getInorganicUnits(eligibleInorganicReactions).find(u => u.id === quizSettings.unitId)?.title} · {quizInorganicReactionsNew.length}問
+      </div>}
       <Quiz
+        key={quizSettings?.learningMode ? `${selectedMode}-${quizSettings.learningMode}-${quizSettings.unitId ?? 'all'}` : 'legacy'}
         compounds={finalCompounds}
         allCompounds={compounds}
         experiments={experiments}
@@ -375,8 +391,9 @@ function App() {
         quizSettings={quizSettings ?? undefined}
         onNextRange={hasNext ? handleNextRange : undefined}
       />
+      </>
     );
-  }, [selectedMode, selectedCategory, inorganicReactionsNew, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange]);
+  }, [selectedMode, selectedCategory, inorganicReactionsNew, quizInorganicReactionsNew, finalCompounds, compounds, experiments, quizInorganicReactions, quizSettings, maxQuestionCount, handleNextRange, eligibleInorganicReactions]);
 
   // Early returns（すべてのhooks宣言の後）
   // activeUserが存在しない場合はユーザー選択画面を表示
@@ -466,6 +483,9 @@ function App() {
   }
 
   if (!quizSettings) {
+    if (selectedCategory === 'inorganic' && ['inorganic-type-a', 'inorganic-type-b', 'inorganic-type-c'].includes(selectedMode)) {
+      return <div className="App"><SoundSelector /><InorganicLearningSelector reactions={eligibleInorganicReactions} onSelectSettings={setQuizSettings} onBack={() => setSelectedMode(null)} /></div>;
+    }
     
     // Inorganicの場合、直接inorganicReactionsNew.lengthを計算して渡す
     // selectedModeが設定されていない場合でも、全件数を表示する

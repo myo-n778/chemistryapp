@@ -1,0 +1,14 @@
+.inorganic-learning-selector { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; color: #eee; }
+.inorganic-learning-selector h1 { font-size: 1.6rem; }
+.inorganic-learning-selector h2 { font-size: 1.25rem; margin-top: 1.5rem; }
+.inorganic-learning-selector p { line-height: 1.6; color: #c5c8d5; }
+.inorganic-learning-selector button { height: auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font: inherit; line-height: 1.5; color: #eee; background: #252937; border: 1px solid #596075; border-radius: 12px; padding: .8rem; cursor: pointer; }
+.inorganic-learning-selector button:focus-visible { outline: 3px solid #9fbbff; outline-offset: 3px; }
+.inorganic-learning-selector button[aria-pressed="true"] { border: 2px solid #9fbbff; background: #293f66; }
+.inorganic-learning-selector button:disabled { opacity: .5; cursor: not-allowed; }
+.learning-mode-list, .learning-unit-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: .7rem; }
+.learning-mode-list button, .learning-unit-list button { display: flex; flex-direction: column; text-align: left; gap: .4rem; }
+.learning-mode-list span, .learning-unit-list span { font-size: .85rem; }
+.learning-count { margin-top: 1.5rem; border: 1px solid #596075; display: flex; flex-wrap: wrap; gap: .7rem; padding: 1rem; }
+.inorganic-learning-selector .learning-start { width: 100%; background: #315c91; font-weight: bold; }
+.learning-session-label { max-width: 900px; margin: .8rem auto; padding: .7rem 1rem; line-height: 1.5; overflow-wrap: anywhere; text-align: center; color: #c7dcff; }

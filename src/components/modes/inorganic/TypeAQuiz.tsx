@@ -1,3 +1,4 @@
+import { inorganicRangeKey, InorganicLearningSettings } from '../../../utils/inorganicUnits';
 import { ChemicalText } from '../../ChemicalText';
 import { learningChoiceVisuals } from '../../../utils/learningChoices';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -5,7 +6,7 @@ import { Category } from '../../CategorySelector';
 import { InorganicReactionNew } from '../../../types/inorganic';
 import { ScoreDisplay } from '../../shared/ScoreDisplay';
 import { QuizSummary } from '../../shared/QuizSummary';
-import { calculateScore, saveHighScore, getRangeKey, getScoreHistory, ScoreHistoryEntry } from '../../../utils/scoreCalculator';
+import { calculateScore, saveHighScore, getScoreHistory, ScoreHistoryEntry } from '../../../utils/scoreCalculator';
 import { playFinishSound } from '../../../utils/soundManager';
 import { generateDistractorsForTypeA, shuffleChoices } from '../../../utils/inorganicDistractorGeneratorNew';
 import { InorganicExplanationPanel } from '../../InorganicExplanationPanel';
@@ -61,7 +62,7 @@ interface TypeAQuizProps {
   category: Category;
   onBack: () => void;
   isShuffleMode?: boolean;
-  quizSettings?: { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
+  quizSettings?: InorganicLearningSettings & { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
   totalCount?: number;
   onNextRange?: () => void;
 }
@@ -161,13 +162,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     isProcessingRef.current = true;
     const getModeAndRangeKey = () => {
       const mode = `inorganic-type-a-${category}`;
-      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-        ? getRangeKey('batch-10', quizSettings.startIndex)
-        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-        ? getRangeKey('batch-20', quizSettings.startIndex)
-        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-        ? getRangeKey('batch-40', quizSettings.startIndex)
-        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      const rangeKey = inorganicRangeKey(quizSettings);
       return { mode, rangeKey };
     };
     if (totalAnswered >= maxQuestions) {
@@ -283,13 +278,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
       console.log('[TypeAQuiz] isFinished changed to true, playing finish sound');
       const getModeAndRangeKey = () => {
         const mode = `inorganic-type-a-${category}`;
-        const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10' 
-          ? getRangeKey('batch-10', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-          ? getRangeKey('batch-20', quizSettings.startIndex)
-          : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-          ? getRangeKey('batch-40', quizSettings.startIndex)
-          : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+        const rangeKey = inorganicRangeKey(quizSettings);
         return { mode, rangeKey };
       };
       
@@ -387,13 +376,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     // 問題ログを追加
     const getModeAndRangeKey = () => {
       const mode = `inorganic-type-a-${category}`;
-      const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-        ? getRangeKey('batch-10', quizSettings.startIndex)
-        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-        ? getRangeKey('batch-20', quizSettings.startIndex)
-        : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-        ? getRangeKey('batch-40', quizSettings.startIndex)
-        : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+      const rangeKey = inorganicRangeKey(quizSettings);
       return { mode, rangeKey };
     };
     const { mode, rangeKey } = getModeAndRangeKey();
@@ -432,13 +415,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
 
   if (isFinished) {
     const mode = `inorganic-type-a-${category}`;
-    const rangeKey = quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-      ? getRangeKey('batch-10', quizSettings.startIndex)
-      : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-      ? getRangeKey('batch-20', quizSettings.startIndex)
-      : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-      ? getRangeKey('batch-40', quizSettings.startIndex)
-      : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount);
+    const rangeKey = inorganicRangeKey(quizSettings);
 
     return (
       <div className="quiz-container">
@@ -461,6 +438,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
           }}
           onBack={onBack}
           onNext={onNextRange}
+          nextLabel={quizSettings?.learningMode ? "次の単元へ" : undefined}
           mode={mode}
           rangeKey={rangeKey}
         />
@@ -483,13 +461,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
               pointScore={pointScore}
               showPoints={true}
               mode={`inorganic-type-a-${category}`}
-              rangeKey={quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-10'
-                ? getRangeKey('batch-10', quizSettings.startIndex)
-                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-20'
-                ? getRangeKey('batch-20', quizSettings.startIndex)
-                : quizSettings?.questionCountMode && quizSettings.questionCountMode === 'batch-40'
-                ? getRangeKey('batch-40', quizSettings.startIndex)
-                : getRangeKey(quizSettings?.questionCountMode || 'all', undefined, quizSettings?.allQuestionCount)}
+              rangeKey={inorganicRangeKey(quizSettings)}
             />
           </span>
           <div className="quiz-header-buttons">

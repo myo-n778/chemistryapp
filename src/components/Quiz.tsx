@@ -1,4 +1,5 @@
 import React from 'react';
+import type { InorganicLearningSettings } from '../utils/inorganicUnits';
 import { Compound, InorganicReaction } from '../types';
 import { InorganicReactionNew } from '../types/inorganic';
 import { QuizMode } from './ModeSelector';
@@ -27,7 +28,7 @@ interface QuizProps {
   mode: QuizMode;
   category: Category;
   onBack: () => void;
-  quizSettings?: { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
+  quizSettings?: InorganicLearningSettings & { orderMode?: 'sequential' | 'shuffle'; questionCountMode?: 'all' | 'batch-10' | 'batch-20' | 'batch-40'; startIndex?: number; allQuestionCount?: number | null };
   onNextRange?: () => void;
 }
 

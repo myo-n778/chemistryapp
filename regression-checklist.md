@@ -94,3 +94,16 @@
 
 - [x] 分類実験の1–10/11–18は指定どおりの先頭、最後の範囲8問。
 - [x] 最終公開6b679ce、Actions成功、JS/CSS一致、実GASの正解・ポイント・分類・4番目採点・サイズ変更で配置保持。
+
+
+## 2026-09-12 無機単元3モードの検証
+
+- [x] TypeScript/Vite、git diff --check。
+- [x] 90既存IDが重複なく分類。保留除外A88/B40/C66、シート行順変更後も単元定義順。
+- [x] 単元内ランダムは選択単元だけ、全体ランダムは全適格問題から重複なし。反復で全IDの抽出を確認。未分類追加IDの表示、単元別rangeKey分離。
+- [x] Chrome 320×900 / 844×390 / 1280×900、A/B/C×3モード開始・回答・ポイント・選択肢位置保持。文字大、設定ボタンの横はみ出しなし、320px画像目視。
+- [x] A/B/Cの最初の出題可能単元を完了し、結果→次の単元→1問目→回答を確認。本番POSTは遮断、模擬保存各1回。
+- [x] 有機6モードの320px・文字大で開始・3問回答・次問・ポイントと枠を回帰確認。
+- [ ] 実iPad/Safari、実保存先への記録、利用者受入、別担当による独立検証。
+
+再現：npm run dev 起動後、PLAYWRIGHT_MODULEを設定して node scripts/validate-inorganic-units.cjs。記録の実送信は遮断する。証拠は /private/tmp/chemistry-units-validation.log、chemistry-units-organic.log、chemistry-units-build.log。公開結果は後続追記。

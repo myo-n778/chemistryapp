@@ -10,11 +10,12 @@ interface QuizSummaryProps {
     onRestart: () => void;
     onBack: () => void;
     onNext?: () => void; // 次の範囲へ進む
+    nextLabel?: string;
     mode?: string;
     rangeKey?: string;
 }
 
-export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore = 0, onRestart, onBack, onNext, mode, rangeKey }) => {
+export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointScore = 0, onRestart, onBack, onNext, nextLabel = 'Next', mode, rangeKey }) => {
     const percentage = Math.round((score / total) * 100);
     // モード×範囲ごとに分離されたランキングを取得
     const history = mode && rangeKey ? getScoreHistory(mode, rangeKey) : getScoreHistory();
@@ -244,7 +245,7 @@ export const QuizSummary: React.FC<QuizSummaryProps> = ({ score, total, pointSco
                     </button>
                     {onNext && (
                         <button className="summary-button next" onClick={onNext}>
-                            Next
+                            {nextLabel}
                         </button>
                     )}
                     <button className="summary-button back" onClick={onBack}>
