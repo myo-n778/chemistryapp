@@ -14,7 +14,7 @@ await p.addInitScript(()=>{localStorage.setItem('chem.users',JSON.stringify([{us
 await p.route('https://script.google.com/**',r=>{if(r.request().method()!=='GET')return r.fulfill({status:200,body:'{}'});let type=new URL(r.request().url()).searchParams.get('type');type=type==='experiment'?'experiments':type==='inorganic-new'?'inorganic':type;return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(fixtures[type]||[])});});
 await p.goto(base);await p.getByRole('group',{name:'文字の大きさ'}).getByRole('button',{name:'大',exact:true}).click();await p.getByRole('button',{name:/01 \/ ORGANIC/}).click();
 for(const title of modes){
- await p.getByRole('button',{name:new RegExp('^'+title[0])}).click();const label=p.getByLabel('選択中の出題タイプ',{exact:true});await label.waitFor();assert.equal(await label.innerText(),'有機化学 · '+title);assert.equal(await label.count(),1);
+ await p.getByRole('button',{name:new RegExp('^'+title[0])}).click();await p.getByRole('button',{name:'1-10',exact:true}).waitFor();const label=p.getByLabel('選択中の出題タイプ',{exact:true});await label.waitFor();assert.equal(await label.innerText(),'有機化学 · '+title);assert.equal(await label.count(),1);
  for(const name of ['20ずつ','All Questions','10ずつ']){await p.getByRole('button',{name,exact:true}).click();assert.equal(await label.innerText(),'有機化学 · '+title);assert.equal(await label.count(),1);}
  const box=await label.boundingBox();assert(box.x>=0 && box.x+box.width<=width+1);assert(await label.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
  if(title===modes[0]){await p.waitForTimeout(400);await p.screenshot({path:`/private/tmp/chemistry-selected-mode-${width}.png`,fullPage:true});}
