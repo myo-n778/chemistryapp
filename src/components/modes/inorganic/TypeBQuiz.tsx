@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../../ai/AiTutorPanel';
 import { inorganicRangeKey, InorganicLearningSettings } from '../../../utils/inorganicUnits';
 import { ChemicalText } from '../../ChemicalText';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -528,6 +529,7 @@ export const TypeBQuiz: React.FC<TypeBQuizProps> = ({
                 selectedAnswer={selectedAnswer === null ? undefined : choices.choices[selectedAnswer]}
                 correctAnswer={currentReaction.conditions}
               />
+              <AiTutorPanel question={{ id: currentReaction.id, mode: "inorganic-type-b", category, prompt: `${currentReaction.equation} ${currentReaction.b_prompt || '条件は？'}`, correct: currentReaction.conditions, selected: selectedAnswer === null ? "" : choices.choices[selectedAnswer], explanation: currentReaction.learning_point || currentReaction.explanation }} />
             </div>
           </div>
         )}

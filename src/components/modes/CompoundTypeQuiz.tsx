@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { shuffleLearning } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -507,6 +508,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
                 <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />
               </div>
               {showResult && <LearningPoint point={currentCompound.learningPoint} />}
+          {showResult && <AiTutorPanel question={{ id: currentCompound.id, mode: 'compound-type', category, prompt: `${currentCompound.name}の化合物の種類は？`, correct: correctType, selected: selectedAnswer || '', explanation: currentCompound.learningPoint,  }} />}
               <div className="options-grid-compact">
                 {sortedTypes.map((option) => {
                   const isSelected = selectedAnswer === option;

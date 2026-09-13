@@ -199,3 +199,86 @@ GASのtype=experimentの既存CSV応答をカテゴリ別に絞る。無機も�
 証拠：/private/tmp/chemistry-expansion-learning.log、chemistry-expansion-ui.log、chemistry-expansion-mode.log、chemistry-expansion-unit.log、chemistry-expansion-added.log、chemistry-expansion-public.log、chemistry-expansion-build.log。scripts/validate-record-category.cjsでも模擬成績のカテゴリ別平均を検証。
 
 未確認：実GASへの再接続は従前の確認回答待ち。実iPad/Safari、本番保存、独立内容審査、利用者受入。APIモードは未着手で増補の後続工程。
+
+## 2026-09-13 AI質問欄の操作プレビュー（ローカル、未公開）
+
+解答後のAI質問欄を全10タイプ（有機6・無機A〜D）へ接続。開閉だけでは処理せず、ボタンで模擬応答を表示。実AIの説明・言い換えではないことを常時明示する。DEVかつlocalhost/127.0.0.1/IPv6 loopbackでaiMock=1のときだけ表示し、通常設定と配布ビルドでは非表示。
+
+1問3回・マウント中の学習20回、自由質問300文字、同時要求1件、待機上限30秒。失敗も利用回数へ算入する。折りたたみでは履歴・回数を保持し、次問で質問欄を破棄して古い応答を無視する。同じ問題IDの利用回数は同一学習内で保持。戻ることでクイズを離れると模擬学習の回数をリセットする。これはローカルUI上の制限で、本番の認証・課金保護にはならない。
+
+AI欄のクリック・タッチ・キーイベントは既存の次問ショートカットへ伝播させない。外側のNext・戻る・採点・記録方式は維持。問題ID・分野・モードと現在の正解／選択した答えを共通部品に渡す。サーバー・Responses呼出し・資格情報・教材版照合は未実装。模擬応答は既存解説と定型文だけで、ネットワークを使わない。
+
+ローカル表示: npm run dev -- --host 127.0.0.1 で起動後、/?aiMock=1。既存Viteのbaseがある環境では /chemistryapp/?aiMock=1。問題取得は既存GAS方式のまま。試験ではGASと本番POSTをブラウザ内の模擬応答へ置換した。
+
+検証: TS/Vite PASS（既存の500kB超バンドル警告は継続）。Chrome320/844/1280px・文字大の全10タイプで、開閉・質問・3回上限・Next・成績不変・AI操作の外部要求ゼロ・コンソール実行エラーなしを確認。320pxの文字小中、空白入力・300文字上限、20回上限、30秒タイムアウト、遅延後の次問、連打、失敗と手動再試行を確認。配布ビルドではaiMock=1でも非表示。320/1280px画像目視済み。
+
+証拠: /private/tmp/chemistry-ai-ui.cjs・chemistry-ai-ui.log、chemistry-ai-edge.cjs・chemistry-ai-edge.log、chemistry-ai-production.cjs、chemistry-ai-preview-320.png・chemistry-ai-preview-1280.png、chemistry-ai-build.log。Browser plugin未提供のため既存Playwright/Chromeを使用。テストは模擬通信のみ。実API、サーバー側の制限と認証、費用、説明品質、公開、実iPad/Safari、独立検証、利用者受入は未確認。
+
+## 2026-09-13 AI質問欄の実API接続（このMacのみ・未公開）
+
+承認済みのキーchemappを、ユーザー確認済みのMac内専用ファイルへ安全に保存。キー本文はソース・配布物・会話へ出力しない。ローカル専用Nodeサーバー（127.0.0.1:8787）とViteプロキシを追加。npm run ai:server と npm run dev で起動し、http://127.0.0.1:5173/?ai=1 で利用する。aiMock=1は模擬のまま、クエリなしと配布ビルドはAI無効。
+
+モデルgpt-5.6-luna、Responses構造化出力、store:false、推論なし、出力上限1000トークン。自由質問は既存の300文字。同じ問題の直近2往復をサーバーメモリで保持し追加質問へ渡す。Origin・不透明な期限付きセッション・既知選択肢・正本教材のSHA-256を照合。1問3回・学習20回・日本時間で日次30回をサーバーでも制限し、受付時に予約する。日次回数はMac内に永続化して再起動後も保持。自動再試行なし、重複requestIdは実行を重ねない。提供元25秒・画面30秒で待機を制限。失敗時も通常演習を続けられる。
+
+確認済み: サーバー10試験、全10タイプ先頭問題の実クライアントとサーバー教材照合、TypeScript/Vite、キー不混入・600権限、配布ビルドでai=1も無効。実API接続確認1回（28トークン）と、実画面で有機の説明・追加質問、無機の説明、指示改善後の有機再確認の4回が成功。代表問題の初回応答は約3.7〜4.9秒。説明を逆向きに一般化しない指示を追加し、改善後は冒頭で設問条件が明示された。全回答の内容保証とはしない。
+
+今回のUI試験では問題GASと保存POSTを模擬化。実GASの問題読込・本番保存の新たな確認ではない。サーバーの本人確認は当該Mac内の接続用途であり、公開時の生徒認証を満たさない。公開、実iPad/Safari、全問の回答品質、独立セキュリティ監査、利用者受入は未確認。起動・制限・秘密情報の境界はserver/README.md。
+
+証拠: /private/tmp/chemistry-ai-server-tests.log、chemistry-ai-bank-ui.log、chemistry-ai-live-ui.log、chemistry-ai-live-responses.json、chemistry-ai-live-responses-v2.json、chemistry-ai-live-v2-organic.png、chemistry-ai-live-build.log。Company WI-20260913-134840-358a43。
+
+
+## 2026-09-13 公開AIのGAS移植（ローカル準備済み・公開未実施）
+
+公開先をGASへ変更し、利用者はユーザー指定により誰でも利用可能とする。既存の問題・成績用GASは変更せず、AI専用の独立GASプロジェクトにgas-ai/Code.gsを配置する。OpenAIキーはScript PropertiesのOPENAI_API_KEY、稼働設定はCHEM_AI_ENABLED=true。クライアントはsrc/config/aiTutor.tsまたはVITE_GAS_URL_AIの /exec URLを使用する。現時点でURLは未設定のため公開ビルドのAIは非表示。
+
+教材618件は正本JSONから生成し署名照合する。1問3回・匿名セッション20回・日本時間の全利用者合計1日30回をScript PropertiesとScriptLockで予約管理。新セッションでも日次上限は維持。同一requestIdの重複を防止し、失敗も利用回数に計上。匿名であり個人単位の認証・制限ではない。氏名・学習者ID・成績をOpenAIへ送信しない。直近2往復はCacheServiceで保持するが消失時は履歴なし。
+
+ブラウザの30秒待機終了はGASのUrlFetchを停止しない。ローカルNodeの25秒Abortとは異なる。GASの異常終了時は7分のグローバル処理予約を維持して重複課金を抑える。CHEM_AI_ENABLED=falseで新規AI受付を停止できる。
+
+確認済み：GAS模擬サービス11テスト、一括版と教材618件の一致、ローカルNode10テスト、構文・TypeScript/Vite・差分検査。公開用ビルドにダミーAI URLを指定したChrome320/844/1280px全10タイプで、text/plain POST、メモリ内セッション、問題署名、説明、日次上限エラー、成績ログ不変、Nextを確認。狭幅のAI欄を目視。問題・AIの通信は全て模擬で、実Google/OpenAIへの要求は行わない。
+
+公開先未設定の通常ビルドへ復帰し、検証用URLとAPIキーの不混入を検査。非表示の初回検査は誤って開発サーバーへ向けたため失敗し、正しい配布プレビューで再確認。コード変更でテストを通す対応はしていない。
+
+未確認：GASへの配置・APIキー設定・認可・実GAS実行・ブラウザのリダイレクトとCORS・公開AI・実iPad/Safari・独立セキュリティ検証・利用者受入。GAS認証済みCLIは未設定、CUAは作業ルートのsymlinkエラー、ChromeのApple Events JavaScriptは無効で設定操作できない。既存公開サイト・既存GAS・Sheetsは未変更。自己検証を独立検証とは扱わない。
+
+次：gas-ai/README.mdの手順でAI専用GASへ配置し、/exec URLを取得。そのURLをアプリへ設定して独立確認・公開反映・実ブラウザ確認を行う。証拠：/private/tmp/chemistry-gas-ai-tests.log、chemistry-gas-ai-ui.log、chemistry-gas-ai-node-regression.log、chemistry-gas-ai-build.log、chemistry-gas-ai-disabled.log。Company WI-20260913-140909-3f3175。
+
+
+## 2026-09-13 GAS教材を可読JSONへ変更
+
+ユーザー指定により教材のgzip/Base64を廃止し、Code.gs冒頭に日本語を保持したインデント付きJSONとして記載。prompt=問題文、correct=正解、explanation=解説、choices=選択肢の説明コメントを追加。生成元build.mjsとtutor.template.jsを更新して一括版を再生成。教材内容・618件・署名・教材版・利用上限・API処理は変更なし。ファイルは約1.72MB。
+
+確認：再生成一致、元教材618件との完全一致、Nodeによる構文検査、GAS模擬サービス11件、diffチェックがPASS。gas-ai内の圧縮・復元コードは撤去。証拠 /private/tmp/chemistry-gas-readable-tests.log。GASへの反映・実GAS実行・公開は引き続き未確認。
+
+
+## 2026-09-13 GASを既存教材シート参照へ修正（現行）
+
+全教材のGAS埋込みを廃止。Code.gsは1,715,783バイトから17,230バイトへ縮小。教材は既存chemistryのcompounds/reactions/experiment/inorganicを正本とし、AI問い合わせ時に該当する1表を読んで問題ID・分野・タイプから対象を選ぶ。新規シート・列・データ複製なし、教材・rec/userStatsへの書込みなし。
+
+sheets-source.jsが表選択・列・5万セル上限を検査し、Nodeサーバーと共通の変換関数で問題を作る。問題文・正解・解説・構造式のSHA-256を画面と照合。不一致ではAIを呼ばない。教材キャッシュとローカル教材へのフォールバックはなし。既存列の内容更新は次の要求で反映し、GAS再生成不要。履歴も問題署名で分離する。bankVersion=sheets-v1はAPI形式識別子で、教材一致は問題別署名を使う。利用上限・OpenAI設定・成績処理は変更なし。
+
+実4シートを読取確認：ヘッダー込みcompounds75行、reactions35行、experiment139行、inorganic91行。この読戻し値で全618出題の問題・正解・解説・選択肢・署名が従来正本と一致。GAS模擬14テスト（更新反映、旧署名拒否、欠損、列異常、重複ID、不正JSON、上限、再実行防止等）とNode10テストがPASS。公開用アプリ画面とシート参照GASの模擬実行を接続し、3幅全10タイプも確認。
+
+未確認：実GASへの配置・Google認可・実行・公開URL通信・実iPad/Safari・独立検証・利用者受入。実行アカウントには既存シートの読取権限が必要。GAS設定の操作環境制約は継続。旧巨大Code.gsは使わず今回の小型版を使う。公開未実施。
+
+証拠：/private/tmp/chemistry-gas-sheets-tests.log、chemistry-gas-sheets-live-data-tests.log、chemistry-gas-sheets-node-tests.log、chemistry-gas-sheets-ui.log、chemistry-gas-live-sheets.json。修正WI-20260913-150618-1c4664。
+
+
+## 2026-09-13 AI用GAS URL受領・設定待ち
+
+ユーザー提示のAI専用 /exec URLをsrc/config/aiTutor.tsへ設定。GETはHTTP200でservice=chemistry-ai、version=gas-sheets-v1を確認。公開用のローカルプレビュー画面から実GASのセッション開始を1回試行し、通信は成立したがnot_configured（画面「AIは準備中です」）となった。回答要求には進んでおらず、OpenAI呼出しは0件。再試行は行わない。OPENAI_API_KEYとCHEM_AI_ENABLED=trueのScript Properties設定が必要。キー本文は確認・出力していない。設定完了後に実AI接続と公開を継続する。GitHub Pagesへは未push。証拠 /private/tmp/chemistry-ai-gas-health.json、chemistry-real-gas-ui-result.json。
+
+
+## 2026-09-13 外部接続権限の復旧・公開準備
+
+ユーザーがAI専用GASの外部接続権限（script.external_request）を承認。診断後、新しい /exec URLで実セッション開始とOpenAI解説応答（reply.status=ok）を確認。以前の失敗はUrlFetchApp.fetchの権限不足で、API送信前に停止していた。新URLをsrc/config/aiTutor.tsへ設定し、公開用ビルドを更新。既存の問題配信・成績保存GASとSheetsの内容は変更なし。独立セキュリティ検証・実iPad/Safari・全問の説明品質は未確認。GitHub Pagesへの反映と公開画面確認は後続工程。
+
+
+### 公開前ブラウザ確認の結果
+
+新URLの配布プレビューから実GASへ接続したが、セッション開始の1要求だけで待機時間超過となった。AI回答要求には到達していない。画面エラー表示とJavaScript例外なしを確認。直前の直接通信ではセッション・AI回答とも成功したが、ブラウザ通信の安定性は未確認。ネットワーク再試行禁止の指示に従い自動再試行せず、GitHub Pagesへのpushも保留。証拠 /private/tmp/chemistry-real-gas-ui-result.json。
+
+
+### ブラウザ再確認成功・公開反映対象
+
+ユーザー許可後の1回の再確認で、公開相当ビルドの画面から実GASのセッション開始とAI解説表示に成功（2要求、約20秒、画面例外なし）。Googleリダイレクト後の応答と有機実験org-e-001の結論・区別点・確認の問いを確認。問題配信と成績保存の通信は模擬化し、成績シートへ書き込まない。前回のタイムアウトも記録として維持し、通信が常に安定するという保証はしない。対象はAIパネル・AI専用接続・GAS/ローカルサーバー実装と関連文書。従来の出題・採点・問題/成績GASは変更なし。公開後の確認は別途記録する。

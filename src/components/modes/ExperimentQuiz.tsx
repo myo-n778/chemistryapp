@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { shuffleLearning } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
 import { ChemicalText } from '../ChemicalText';
@@ -598,6 +599,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         </div>
 
         {showResult && <LearningPoint point={currentExperiment.explanation} />}
+          {showResult && <AiTutorPanel question={{ id: currentExperiment.questionId || currentExperiment.question, mode: 'experiment', category, prompt: currentExperiment.question, correct: options.find(o => o.id === currentExperiment.correctAnswer)?.text || '', selected: options.find(o => o.id === selectedAnswer)?.text || '', explanation: currentExperiment.explanation, correctId: String(currentExperiment.correctAnswer), selectedId: String(selectedAnswer), }} />}
       </div>
     </div>
   );

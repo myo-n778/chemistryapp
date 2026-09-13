@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { learningOptions } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
 import { ChemicalText } from '../ChemicalText';
@@ -597,6 +598,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
           </div>
 
           {showResult && <LearningPoint point={currentReaction.learningPoint} />}
+          {showResult && <AiTutorPanel question={{ id: currentReaction.questionId || `${currentReaction.from}-${currentReaction.to}-${currentReaction.reagent}`, mode: 'reaction', category, prompt: `${currentReaction.from}に${currentReaction.reagent}：何ができる？`, correct: currentReaction.to, selected: selectedAnswer || '', explanation: currentReaction.learningPoint,  }} />}
           <div className="options-container reaction-options-grid">
             {options.map((option) => {
               const isSelected = selectedAnswer === option;

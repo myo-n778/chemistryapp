@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../../ai/AiTutorPanel';
 import { inorganicRangeKey, InorganicLearningSettings } from '../../../utils/inorganicUnits';
 import { ChemicalText } from '../../ChemicalText';
 import { learningChoiceVisuals } from '../../../utils/learningChoices';
@@ -549,6 +550,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
                 selectedAnswer={selectedAnswer === null ? undefined : choices.choices[selectedAnswer]}
                 correctAnswer={currentReaction.products}
               />
+              <AiTutorPanel question={{ id: currentReaction.id, mode: "inorganic-type-a", category, prompt: `${currentReaction.a_context || ''} ${currentReaction.reactants}：生成物は？`, correct: currentReaction.products, selected: selectedAnswer === null ? "" : choices.choices[selectedAnswer], explanation: currentReaction.learning_point || currentReaction.explanation }} />
             </div>
           </div>
         )}

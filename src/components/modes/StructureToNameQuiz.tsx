@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { compoundOptions } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -488,6 +489,7 @@ export const StructureToNameQuiz: React.FC<StructureToNameQuizProps> = ({ compou
           </div>
           <StructureViewer structure={currentCompound.structure} compoundName={currentCompound.name} />
           {showResult && <LearningPoint point={currentCompound.learningPoint} />}
+          {showResult && <AiTutorPanel question={{ id: currentCompound.id, mode: 'structure-to-name', category, prompt: `構造式に対応する名称は？（${currentCompound.name}）`, correct: currentCompound.name, selected: selectedAnswer || '', explanation: currentCompound.learningPoint, structure: currentCompound.structure, }} />}
             <div className="options-container">
             {options.map((option) => {
               const isSelected = selectedAnswer === option;

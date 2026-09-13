@@ -1,0 +1,20 @@
+.ai-tutor { width:100%; min-width:0; margin:1rem 0; border:1px solid #5d948f; border-radius:12px; background:#172c2e; color:#f2f8f7; text-align:left; overflow-wrap:anywhere; cursor:default; }
+.ai-tutor *, .ai-tutor *::before, .ai-tutor *::after { box-sizing:border-box; }
+.ai-tutor button { position:static; width:auto; height:auto; min-height:44px; max-width:100%; padding:.65rem .85rem; font:inherit; line-height:1.5; white-space:normal; overflow-wrap:anywhere; border:1px solid #6aa7a0; border-radius:8px; background:#24464a; color:#f6fffd; cursor:pointer; transform:none; }
+.ai-tutor button:hover:not(:disabled) { background:#315c60; transform:none; }
+.ai-tutor button:focus-visible, .ai-tutor textarea:focus-visible { outline:3px solid #a3e8d3; outline-offset:3px; }
+.ai-tutor button:disabled { opacity:.5; cursor:default; }
+.ai-tutor .ai-tutor-toggle { width:100%; display:flex; align-items:center; justify-content:space-between; gap:1rem; border:0; background:transparent; font-weight:700; text-align:left; }
+.ai-tutor-body { padding:0 .9rem .9rem; min-width:0; line-height:1.7; }
+.ai-tutor p { font-size:1rem; line-height:1.7; margin:.55rem 0; }
+.ai-tutor .ai-tutor-preview { color:#b8eedb; font-weight:700; }
+.ai-tutor-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin:.8rem 0; }
+.ai-tutor-actions button { flex:1 1 220px; text-align:left; }
+.ai-tutor label { display:block; margin:.8rem 0 .35rem; font-weight:700; }
+.ai-tutor textarea { display:block; width:100%; max-width:100%; min-height:110px; resize:vertical; padding:.7rem; border:1px solid #80aaa5; border-radius:7px; background:#102326; color:#fff; font:inherit; line-height:1.6; }
+.ai-tutor textarea::placeholder { color:#b7c7c7; }
+.ai-tutor .ai-tutor-hint, .ai-tutor .ai-tutor-count { font-size:.9rem; color:#c2d8d5; }
+.ai-tutor-reply { border-top:1px solid #53726e; margin-top:1rem; padding-top:.6rem; }
+.ai-tutor .ai-tutor-request { color:#b8eedb; }
+.ai-tutor-error { border-left:3px solid #f1b89a; padding-left:.6rem; }
+@media (max-width:480px) { .ai-tutor-body { padding:0 .6rem .7rem; } .ai-tutor-actions { display:grid; grid-template-columns:minmax(0,1fr); } }

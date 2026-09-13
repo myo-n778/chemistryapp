@@ -1,3 +1,4 @@
+import { AiTutorSession } from './ai/AiTutorSession';
 import React from 'react';
 import type { InorganicLearningSettings } from '../utils/inorganicUnits';
 import { Compound, InorganicReaction } from '../types';
@@ -32,7 +33,7 @@ interface QuizProps {
   onNextRange?: () => void;
 }
 
-export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], inorganicChoicePool, mode, category, onBack, quizSettings, onNextRange }) => {
+const QuizContent: React.FC<QuizProps> = ({ compounds, allCompounds, experiments, inorganicReactions = [], inorganicReactionsNew = [], inorganicChoicePool, mode, category, onBack, quizSettings, onNextRange }) => {
   switch (mode) {
     case 'structure-to-name':
       return <StructureToNameQuiz choicePool={allCompounds} compounds={compounds} category={category} onBack={onBack} isShuffleMode={quizSettings?.orderMode === 'shuffle'} quizSettings={quizSettings} totalCount={allCompounds.length} onNextRange={onNextRange} />;
@@ -68,3 +69,5 @@ export const Quiz: React.FC<QuizProps> = ({ compounds, allCompounds, experiments
   }
 };
 
+
+export const Quiz: React.FC<QuizProps> = props => <AiTutorSession><QuizContent {...props} /></AiTutorSession>;

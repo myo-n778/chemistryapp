@@ -1,3 +1,4 @@
+import { AiTutorPanel } from '../../ai/AiTutorPanel';
 import { inorganicRangeKey, InorganicLearningSettings } from '../../../utils/inorganicUnits';
 import { ChemicalText } from '../../ChemicalText';
 import { learningChoiceVisuals } from '../../../utils/learningChoices';
@@ -532,6 +533,7 @@ export const TypeCQuiz: React.FC<TypeCQuizProps> = ({
                 selectedAnswer={selectedAnswer === null ? undefined : choices.choices[selectedAnswer]}
                 correctAnswer={currentReaction.observations}
               />
+              <AiTutorPanel question={{ id: currentReaction.id, mode: "inorganic-type-c", category, prompt: `${currentReaction.reactants} ${currentReaction.conditions} ${currentReaction.c_prompt || '観察される現象は？'}`, correct: currentReaction.observations, selected: selectedAnswer === null ? "" : choices.choices[selectedAnswer], explanation: currentReaction.learning_point || currentReaction.explanation }} />
             </div>
           </div>
         )}
