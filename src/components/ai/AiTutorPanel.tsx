@@ -63,20 +63,23 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
     </button>
     {open && <div id={id} className="ai-tutor-body">
       <p className="ai-tutor-preview">{live ? 'AIによる学習サポート' : '操作プレビュー · AI未接続'}</p>
-      <p>{live ? 'この問題と入力した質問をOpenAIへ送信します。AIの説明は、上の解説と照らし合わせて確認してください。' : '既存の解説を使った見本です。AIによる説明や言い換えはまだ行いません。'}</p>
+      <p className="ai-tutor-notice">{live ? '問題と質問をOpenAIへ送信します。回答は上の解説と照合してください。' : '既存の解説を使った見本です。AIによる説明や言い換えはまだ行いません。'}</p>
       <p className="ai-tutor-count" role="status">この問題 {count}/3回 · この学習 {total}/20回</p>
       <div className="ai-tutor-actions">
-        <button type="button" disabled={busy || exhausted} onClick={() => void send('difference')}>{question.correct === question.selected ? '正解の理由を確認する' : '選んだ答えとの違いを教えて'}</button>
-        <button type="button" disabled={busy || exhausted} onClick={() => void send('simple')}>もっとやさしく説明して</button>
+        <button type="button" disabled={busy || exhausted} onClick={() => void send('difference')}>{question.correct === question.selected ? '正解の理由' : '選んだ答えとの違い'}</button>
+        <button type="button" disabled={busy || exhausted} onClick={() => void send('simple')}>やさしく説明</button>
       </div>
+      <details className="ai-tutor-question">
+        <summary>自分の言葉で質問する</summary>
       <form onSubmit={e => { e.preventDefault(); void send('question', input); }}>
         <label htmlFor={`${id}-question`}>この問題について質問する</label>
-        <textarea id={`${id}-question`} value={input} maxLength={300} rows={3}
+        <textarea id={`${id}-question`} value={input} maxLength={300} rows={2}
           placeholder="この問題について、分からないところを書いてください" aria-describedby={`${id}-hint`}
           onChange={e => setInput(e.target.value)} disabled={busy || exhausted} />
         <p id={`${id}-hint`} className="ai-tutor-hint">氏名などの個人情報は入力しないでください。{input.length}/300文字</p>
         <button type="submit" disabled={busy || exhausted || !input.trim()}>質問を送る</button>
       </form>
+      </details>
       <div role="status" aria-live="polite">{busy ? '説明を準備しています。待たずに次の問題へ進めます。' : ''}</div>
       {error && <div className="ai-tutor-error" role="alert"><p>{error}</p>{last && !exhausted && <button type="button" disabled={busy} onClick={() => void send(last.action, last.text)}>再試行する</button>}</div>}
       {exhausted && <p role="status">{total >= 20 ? 'この学習の利用上限に達しました。' : 'この問題の利用上限に達しました。'}通常の演習は続けられます。</p>}
