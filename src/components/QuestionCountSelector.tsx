@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './QuestionCountSelector.css';
+import { AllQuestionCountSelector } from './AllQuestionCountSelector';
 import { QuizMode } from './ModeSelector';
 import { Category } from './CategorySelector';
 import { getScoreHistory, getRangeKey } from '../utils/scoreCalculator';
@@ -10,7 +11,7 @@ export interface QuizSettings {
   questionCountMode: QuestionCountMode;
   orderMode?: OrderMode;
   startIndex?: number;
-  allQuestionCount?: number; // ALLモードの場合の解く問題数（undefined = 全部）
+  allQuestionCount?: number | null; // ALLモードの場合の解く問題数（null = 全部）
 }
 
 interface QuestionCountSelectorProps {
@@ -31,23 +32,10 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
     typeofTotalCount: typeof totalCount
   });
   const [orderMode, setOrderMode] = useState<'sequential' | 'shuffle'>('shuffle');
-  const [expandedMode, setExpandedMode] = useState<QuestionCountMode | null>(null);
+  const [expandedMode, setExpandedMode] = useState<QuestionCountMode>('batch-10');
 
   const handleModeSelect = (mode: QuestionCountMode) => {
-    console.log('[QuestionCountSelector] handleModeSelect called', mode, 'totalCount:', totalCount);
-    if (mode === 'all') {
-      // ALLモードは問題数選択が必要なため、特別な値を設定
-      console.log('[QuestionCountSelector] Setting all mode');
-      onSelectSettings({
-        questionCountMode: 'all',
-        orderMode: orderMode,
-        allQuestionCount: undefined // 問題数選択が必要
-      });
-    } else {
-      // その他のモードは範囲選択を展開
-      console.log('[QuestionCountSelector] Expanding mode:', mode, 'current expandedMode:', expandedMode);
-      setExpandedMode(expandedMode === mode ? null : mode);
-    }
+    setExpandedMode(mode);
   };
 
   const handleRangeSelect = (mode: QuestionCountMode, startIndex: number) => {
@@ -186,6 +174,22 @@ export const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ to
           </button>
         )}
       </div>
+
+      {expandedMode === 'all' && (
+        <AllQuestionCountSelector
+          embedded
+          totalCount={totalCount}
+          orderMode={orderMode}
+          onBack={onBack}
+          mode={mode}
+          category={category}
+          onSelectCount={(count) => onSelectSettings({
+            questionCountMode: 'all',
+            orderMode,
+            allQuestionCount: count === undefined ? null : count
+          })}
+        />
+      )}
 
       {/* 範囲選択の展開表示 */}
       {expandedMode === 'batch-10' && (

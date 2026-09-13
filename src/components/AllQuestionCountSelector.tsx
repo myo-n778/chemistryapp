@@ -6,6 +6,7 @@ import { getScoreHistory, getRangeKey } from '../utils/scoreCalculator';
 
 interface AllQuestionCountSelectorProps {
   totalCount: number;
+  embedded?: boolean;
   onSelectCount: (count: number | undefined) => void; // undefined = 全部
   onBack: () => void;
   orderMode: 'sequential' | 'shuffle';
@@ -15,6 +16,7 @@ interface AllQuestionCountSelectorProps {
 
 export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> = ({ 
   totalCount, 
+  embedded = false,
   onSelectCount, 
   onBack,
   orderMode,
@@ -70,8 +72,8 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
   };
 
   return (
-    <div className="question-count-selector">
-      <div className="question-count-selector-header">
+    <div className={embedded ? "range-selection-container" : "question-count-selector"}>
+      {!embedded && <div className="question-count-selector-header">
         <div className="header-main-row">
           <button className="back-button" onClick={onBack}>
             return
@@ -93,6 +95,7 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
           </div>
         </div>
       </div>
+      }
       <p className="question-count-description">何問解きますか？</p>
 
       <div className="start-index-grid">
