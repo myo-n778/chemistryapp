@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { ChemicalText } from '../ChemicalText';
 import { mockTutorReply, type TutorAction, type TutorQuestion, type TutorReply } from '../../utils/aiTutorMock';
 import { useTutorBudget } from './AiTutorSession';
+import { getActiveUserKey } from '../../utils/sessionLogger';
+import { readTutorUsage, recordTutorDisplay } from '../../utils/aiTutorUsage';
 import './AiTutorPanel.css';
 
 export function AiTutorPanel({ question }: { question: TutorQuestion }) {
@@ -13,6 +15,9 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
   const budget = useTutorBudget();
   const live = isTutorLive();
   const id = useId();
+  const usageCategory = question.category === 'inorganic' ? 'inorganic' : 'organic';
+  const [usageOwner] = useState(getActiveUserKey);
+  const [usage, setUsage] = useState(() => readTutorUsage(usageOwner));
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,6 +48,7 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
         reply = result.reply;
       } else reply = await mockTutorReply(question, action, text.trim(), controller.signal);
       if (active.current !== controller || controller.signal.aborted) return;
+      if (live) setUsage(recordTutorDisplay(usageOwner, usageCategory));
       setHistory(h => [...h, {label: action === 'question' ? text.trim() : action === 'simple' ? 'もっとやさしく説明して' : '答えの理由を確認', reply}]);
       if (action === 'question') setInput('');
     } catch (failure) {
@@ -63,8 +69,7 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
     </button>
     {open && <div id={id} className="ai-tutor-body">
       <p className="ai-tutor-preview">{live ? 'AIによる学習サポート' : '操作プレビュー · AI未接続'}</p>
-      <p className="ai-tutor-notice">{live ? '問題と質問をOpenAIへ送信します。回答は上の解説と照合してください。' : '既存の解説を使った見本です。AIによる説明や言い換えはまだ行いません。'}</p>
-      <p className="ai-tutor-count" role="status">この問題 {count}/3回 · この学習 {total}/20回</p>
+      <p className="ai-tutor-count" role="status">{question.category === 'organic' ? '有機' : '無機'} {usage[usageCategory]}回 · 通算 {usage.organic + usage.inorganic}回</p>
       <div className="ai-tutor-actions">
         <button type="button" disabled={busy || exhausted} onClick={() => void send('difference')}>{question.correct === question.selected ? '正解の理由' : '選んだ答えとの違い'}</button>
         <button type="button" disabled={busy || exhausted} onClick={() => void send('simple')}>やさしく説明</button>

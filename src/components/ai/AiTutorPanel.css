@@ -8,7 +8,7 @@
 .ai-tutor-body { padding:0 12px 12px; min-width:0; }
 .ai-tutor p { font-size:inherit; line-height:1.55; margin:8px 0; }
 .ai-tutor .ai-tutor-preview { margin:4px 0; font-size:.8em; color:#b8eedb; }
-.ai-tutor .ai-tutor-notice, .ai-tutor .ai-tutor-count, .ai-tutor .ai-tutor-hint { font-size:.85em; color:#c2d8d5; }
+.ai-tutor .ai-tutor-count, .ai-tutor .ai-tutor-hint { font-size:.85em; color:#c2d8d5; }
 .ai-tutor-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0; }
 .ai-tutor-actions button { text-align:center; }
 .ai-tutor-question { margin:8px 0 0; }
