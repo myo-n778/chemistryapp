@@ -176,3 +176,6 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 
 
 検証：TypeScript/Viteとdiff検査、Chrome320/844/1280pxおよびCSS zoom .8の4条件・文字大でABC×3学習モードの選択・出題・回答・戻るを確認。3切替は最上部の横一列、広い画面は単元4列。画像目視済み。実GASの再試行と保存POSTは行わず模擬応答を使用。実iPad/Safari・利用者受入は未確認。
+
+
+公開確認：2d02a8c、Actions 34732101095成功。公開JS/CSSとdistが一致し、公開Chromeの4画面条件×ABC×3モードで配置・単元選択・開始・回答・戻るを確認。公開試験も模擬GASで実通信と本番保存を遮断。証拠 /private/tmp/chemistry-unit-compact-public.log。実iPad/Safari・利用者受入は未確認。
