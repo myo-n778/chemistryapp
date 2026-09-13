@@ -1,3 +1,4 @@
+import { readGasText } from './gasRead';
 /**
  * セッション記録ユーティリティ
  * ローカルに1問ごとの正誤ログを保存し、セッション完了時にスプレッドシートに記録する
@@ -124,35 +125,7 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     const requestId = `recLoader#${Date.now()}`;
     console.log(`[${requestId}] Fetching rec data from:`, GAS_REC_URL);
     
-    let response: Response;
-    try {
-      response = await fetch(GAS_REC_URL, {
-        method: 'GET',
-        mode: 'cors',
-      });
-    } catch (fetchError) {
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, GAS_REC_URL);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, GAS_REC_URL);
-      throw fetchError;
-    }
-    
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch all rec data: ${response.status} ${response.statusText}`);
-    }
-    
-    const rawText = await response.text();
+    const rawText = await readGasText(GAS_REC_URL, '学習記録');
     const rawPreview = rawText.substring(0, 200);
     console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
     
@@ -325,12 +298,7 @@ async function fetchAllRecData(): Promise<RecRow[]> {
     console.error('[recLoader] Error message:', error instanceof Error ? error.message : String(error));
     console.error('[recLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.');
     console.error('[recLoader] Direct test URL (copy to browser):', GAS_REC_URL);
-    // キャッシュがあればそれを返す
-    if (recDataCache) {
-      console.log('[recLoader] Using cached data due to fetch error');
-      return recDataCache;
-    }
-    return [];
+    throw error;
   }
 }
 
@@ -364,35 +332,7 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
     const requestId = `userStatsLoader#${Date.now()}`;
     console.log(`[${requestId}] Fetching userStats data from:`, GAS_USERSTATS_URL);
     
-    let response: Response;
-    try {
-      response = await fetch(GAS_USERSTATS_URL, {
-        method: 'GET',
-        mode: 'cors',
-      });
-    } catch (fetchError) {
-      // CORS/Failed to fetch エラーの診断情報を出力
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-      console.error(`[${requestId}] Fetch failed - Diagnostic information:`);
-      console.error(`[${requestId}] Used URL:`, GAS_USERSTATS_URL);
-      console.error(`[${requestId}] Origin:`, origin);
-      console.error(`[${requestId}] Error name:`, fetchError instanceof Error ? fetchError.name : 'Unknown');
-      console.error(`[${requestId}] Error message:`, fetchError instanceof Error ? fetchError.message : String(fetchError));
-      console.error(`[${requestId}] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.`);
-      console.error(`[${requestId}] Direct test URL (copy to browser):`, GAS_USERSTATS_URL);
-      throw fetchError;
-    }
-    
-    // 形式チェック: レスポンス情報をログ出力
-    const contentType = response.headers.get('content-type') || 'unknown';
-    console.log(`[${requestId}] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[${requestId}] Content-Type: ${contentType}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch all userStats: ${response.status} ${response.statusText}`);
-    }
-    
-    const rawText = await response.text();
+    const rawText = await readGasText(GAS_USERSTATS_URL, '成績・ランキング');
     const rawPreview = rawText.substring(0, 200);
     console.log(`[${requestId}] Raw response preview (first 200 chars):`, rawPreview);
     
@@ -490,11 +430,7 @@ async function fetchAllUserStats(): Promise<UserStatsRow[]> {
     console.error('[userStatsLoader] Error message:', error instanceof Error ? error.message : String(error));
     console.error('[userStatsLoader] Possible causes: CORS policy violation, network error, redirect loop, or GAS deployment/permission issue.');
     console.error('[userStatsLoader] Direct test URL (copy to browser):', GAS_USERSTATS_URL);
-    if (userStatsCache) {
-      console.log('[userStatsLoader] Using cached data due to fetch error');
-      return userStatsCache;
-    }
-    return [];
+    throw error;
   }
 }
 
@@ -1218,7 +1154,7 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
  * @param userName - ユーザー名（displayName/name）
  * @returns UserStatsRow | null
  */
-export const getUserStatsByUserKey = async (userKey: string, userName?: string): Promise<UserStatsRow | null> => {
+export const getUserStatsByUserKey = async (userKey: string, userName?: string, strict = false): Promise<UserStatsRow | null> => {
   try {
     const allUserStats = await fetchAllUserStats();
     const targetUserId = userName ? `${String(userKey)}|${String(userName)}` : null;
@@ -1234,6 +1170,7 @@ export const getUserStatsByUserKey = async (userKey: string, userName?: string):
       return stats || null;
     }
   } catch (error) {
+    if (strict) throw error;
     console.warn('Failed to get userStats by userKey:', error);
     return null;
   }
@@ -1246,7 +1183,7 @@ export const getUserStatsByUserKey = async (userKey: string, userName?: string):
  * @param userName - ユーザー名（displayName/name）
  * @returns number (0-1)
  */
-export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string): Promise<number | null> => {
+export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' | 'inorganic', userName?: string, strict = false): Promise<number | null> => {
   try {
     // REC_BASE_URLが設定されていない場合は、tenAveを計算できない
     if (!REC_BASE_URL || REC_BASE_URL.trim() === '') {
@@ -1300,6 +1237,7 @@ export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' |
     
     return totalCorrect / totalQuestions;
   } catch (error) {
+    if (strict) throw error;
     // REC_BASE_URL未設定エラーの場合はnullを返す（計算不可）
     if (error instanceof Error && error.message.includes('REC_BASE_URL is not configured')) {
       console.warn('[calculateTenAveFromRec] REC_BASE_URL is not configured. Cannot calculate tenAve.');
@@ -1315,7 +1253,7 @@ export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' |
  * userId = userKey + name の複合キーでグループ化（既にuserStatsは1ユーザー=1行なので、そのまま使用）
  * @returns UserStatsRow[]
  */
-export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> => {
+export const getPublicRankingFromUserStats = async (strict = false): Promise<UserStatsRow[]> => {
   try {
     const allUserStats = await fetchAllUserStats();
     
@@ -1363,6 +1301,7 @@ export const getPublicRankingFromUserStats = async (): Promise<UserStatsRow[]> =
     
     return ranking;
   } catch (error) {
+    if (strict) throw error;
     console.warn('Failed to get public ranking from userStats:', error);
     return [];
   }

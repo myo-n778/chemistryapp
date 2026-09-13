@@ -10,6 +10,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
   const [userStats, setUserStats] = useState<UserStatsRow | null>(null);
   const [tenAve, setTenAve] = useState<number | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userKey, setUserKey] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
 
     console.log('[UserStatsPanel] Loading userStats for userKey:', userKey, 'mode:', mode);
     
+    let cancelled = false;
     const loadData = async () => {
       try {
         setLoading(true);
@@ -65,27 +67,28 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
         
         // userStatsから通算データを取得（userId = userKey + name の複合キー）
         const userName = activeUser?.displayName || '';
-        const stats = await getUserStatsByUserKey(userKey, userName);
-        console.log('[UserStatsPanel] UserStats loaded:', stats);
+        const [stats, tenAveValue] = await Promise.all([
+          getUserStatsByUserKey(userKey, userName, true),
+          calculateTenAveFromRec(userKey, mode, userName, true)
+        ]);
+        if (cancelled) return;
         setUserStats(stats);
-        
-        // tenAveはrecから最新10セッションを計算（userId = userKey + name の複合キー）
-        const tenAveValue = await calculateTenAveFromRec(userKey, mode, userName);
         setTenAve(tenAveValue);
-        
+
         // 問題単位の連続正解数を計算
         const streak = calculateQuestionConsecutiveStreak(userKey, mode);
         setQuestionStreak(streak);
       } catch (err) {
         console.error('[UserStatsPanel] Failed to load userStats:', err);
-        setError('データの読み込みに失敗しました');
+        if (!cancelled) setError(err instanceof Error ? err.message : '成績を読み込めませんでした');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadData();
-  }, [mode, userKey]); // userKey（文字列）のみを依存配列に含める
+    return () => { cancelled = true; };
+  }, [mode, userKey, activeUser?.displayName, reloadKey]); // userKey（文字列）のみを依存配列に含める
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
   if (!activeUser) {
@@ -95,7 +98,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   if (loading) {
     return (
       <div className="user-stats-panel">
-        <div className="stats-loading">読み込み中...</div>
+        <div className="stats-loading" role="status">成績を読み込み中…（最大45秒）<br />問題は下のボタンから始められます。</div>
       </div>
     );
   }
@@ -103,7 +106,7 @@ export const UserStatsPanel: React.FC<UserStatsPanelProps> = ({ mode }) => {
   if (error) {
     return (
       <div className="user-stats-panel">
-        <div className="stats-error">{error}</div>
+        <div className="stats-error" role="alert">{error}<br />問題は下のボタンから始められます。<br /><button style={{ font: 'inherit', minHeight: 44, maxWidth: '100%', whiteSpace: 'normal', padding: '8px 12px', marginTop: 8, color: '#ffa500', background: '#33271f', border: '1px solid #ffa500', borderRadius: 6, cursor: 'pointer' }} onClick={() => setReloadKey(k => k + 1)}>成績を再読み込み</button></div>
       </div>
     );
   }

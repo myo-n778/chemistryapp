@@ -9,6 +9,7 @@ interface PublicRankingPanelProps {
 export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = () => {
   // Hookは必ずトップレベルで無条件に宣言（React error #310を防ぐ）
   const [ranking, setRanking] = useState<UserStatsRow[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userKey, setUserKey] = useState<string | null>(null);
@@ -54,23 +55,26 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = () => {
 
     console.log('[PublicRankingPanel] Loading ranking from userStats');
     
+    let cancelled = false;
     const loadRanking = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getPublicRankingFromUserStats();
+        const data = await getPublicRankingFromUserStats(true);
+        if (cancelled) return;
         console.log('[PublicRankingPanel] Ranking loaded:', data.length, 'entries');
         setRanking(data);
       } catch (err) {
         console.error('[PublicRankingPanel] Failed to load ranking:', err);
-        setError('ランキングの読み込みに失敗しました');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'ランキングを読み込めませんでした');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadRanking();
-  }, [userKey]); // userKey（文字列）のみを依存配列に含める
+    return () => { cancelled = true; };
+  }, [userKey, reloadKey]); // userKey（文字列）のみを依存配列に含める
 
   // activeUserが存在しない場合は表示しない（Hookの後に条件分岐）
   if (!activeUser) {
@@ -79,16 +83,16 @@ export const PublicRankingPanel: React.FC<PublicRankingPanelProps> = () => {
 
   if (loading) {
     return (
-      <div className="public-ranking-panel">
-        <div className="ranking-loading">読み込み中...</div>
+      <div className="public-ranking-panel" style={{ maxHeight: 'none' }}>
+        <div className="ranking-loading" role="status">公開ランキングを読み込み中…（最大45秒）</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="public-ranking-panel">
-        <div className="ranking-error">{error}</div>
+      <div className="public-ranking-panel" style={{ maxHeight: 'none' }}>
+        <div className="ranking-error" role="alert">{error}<br /><button style={{ font: 'inherit', minHeight: 44, maxWidth: '100%', whiteSpace: 'normal', padding: '8px 12px', marginTop: 8, color: '#ffa500', background: '#33271f', border: '1px solid #ffa500', borderRadius: 6, cursor: 'pointer' }} onClick={() => setReloadKey(k => k + 1)}>ランキングを再読み込み</button></div>
       </div>
     );
   }

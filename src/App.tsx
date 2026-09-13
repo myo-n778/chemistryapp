@@ -64,23 +64,32 @@ function App() {
     setReactions(0);
     setExperiments([]);
     setLoadingError(null);
-    setLoading(selectedCategory === 'organic');
-    if (selectedCategory === 'organic') {
-      Promise.all([loadCompounds('organic'), loadReactions('organic'), loadExperiments('organic')])
-        .then(([nextCompounds, nextReactions, nextExperiments]) => {
-          if (cancelled) return;
-          if (!nextCompounds.length) throw new Error('化合物データが空です。問題シートを確認してください。');
-          setCompounds(nextCompounds);
-          setReactions(nextReactions.length);
-          setExperiments(nextExperiments);
-        })
+    setLoading(selectedCategory === 'organic' && selectedMode !== null);
+    if (selectedCategory === 'organic' && selectedMode) {
+      // タイプ選択後に必要な教材だけ取得する。実験の通信失敗で構造問題まで止めない。
+      const loadSelected = async () => {
+        if (selectedMode === 'experiment') {
+          const data = await loadExperiments('organic');
+          if (!data.length) throw new Error('実験データが空です。問題シートを確認してください。');
+          if (!cancelled) setExperiments(data);
+        } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
+          const [nextCompounds, nextReactions] = await Promise.all([loadCompounds('organic'), loadReactions('organic')]);
+          if (!nextCompounds.length || !nextReactions.length) throw new Error('反応または化合物データが空です。問題シートを確認してください。');
+          if (!cancelled) { setCompounds(nextCompounds); setReactions(nextReactions.length); }
+        } else {
+          const data = await loadCompounds('organic');
+          if (!data.length) throw new Error('化合物データが空です。問題シートを確認してください。');
+          if (!cancelled) setCompounds(data);
+        }
+      };
+      loadSelected()
         .catch(error => {
           if (!cancelled) setLoadingError(error instanceof Error ? error.message : '問題データを取得できませんでした。');
         })
         .finally(() => { if (!cancelled) setLoading(false); });
     }
     return () => { cancelled = true; };
-  }, [selectedCategory, reloadKey]);
+  }, [selectedCategory, selectedMode, reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -429,7 +438,8 @@ function App() {
         <SoundSelector />
         <div className="status-panel">
           <p className="loading-text" role="status">問題を読み込んでいます…</p>
-          <button className="status-action" onClick={() => setSelectedCategory(null)}>分野選択に戻る</button>
+          <p>混雑時は最大45秒ほどかかります。</p>
+          <button className="status-action" onClick={() => { setSelectedMode(null); setQuizSettings(null); setSelectedCategory(null); }}>分野選択に戻る</button>
         </div>
       </div>
     );
@@ -449,9 +459,12 @@ function App() {
           </p>
           <div className="status-actions">
           <button className="status-action" onClick={() => setReloadKey(key => key + 1)}>再読み込み</button>
+          {selectedCategory === 'organic' && <button className="status-action" onClick={() => { setSelectedMode(null); setQuizSettings(null); }}>出題タイプに戻る</button>}
           <button
             className="status-action"
             onClick={() => {
+              setSelectedMode(null);
+              setQuizSettings(null);
               setSelectedCategory(null);
               if (selectedCategory === 'inorganic') {
                 setInorganicLoadingError(null);
