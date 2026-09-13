@@ -22,6 +22,14 @@ let userStatsCache: UserStatsRow[] | null = null;
 let userStatsCacheTimestamp: number = 0;
 const USERSTATS_CACHE_TTL = 30 * 1000; // 30秒キャッシュ
 
+/** 区切られた分野名で判定し、inorganicをorganicに部分一致させない。 */
+export function recordCategory(row: { mode?: unknown; category?: unknown }): 'organic' | 'inorganic' | undefined {
+  const mode = String(row.mode || '').toLowerCase();
+  if (/(?:^|-)inorganic(?:-|$)/.test(mode)) return 'inorganic';
+  if (/(?:^|-)organic(?:-|$)/.test(mode)) return 'organic';
+  return row.category === 'organic' || row.category === 'inorganic' ? row.category : undefined;
+}
+
 /**
  * RecRowを正規化（recordedAtを数値に変換、その他の型を保証）
  * recordedAtがnullの場合は救済処理を行う（除外しない）
@@ -74,7 +82,7 @@ function normalizeRecRow(row: Record<string, any>): RecRow | null {
       userKey: userKey,
       displayName: String(row.name || row.displayName || ''),
       mode: String(row.mode || ''),
-      category: (row.mode || '').indexOf('organic') === 0 ? 'organic' : 'inorganic',
+      category: recordCategory(row),
       rangeKey: String(row.rangeKey || ''),
       correctCount: Number(row.correctCount || 0),
       totalCount: Number(row.totalCount || 0),
@@ -1039,14 +1047,9 @@ export const getLatestRecByUser = async (userKey: string, mode?: 'organic' | 'in
     }
     
     // modeでフィルタ（指定されている場合）
-    // mode フィルタは 'organic'/'inorganic' を「含むか」で判定する
     if (mode) {
       filtered = filtered.filter(row => {
-        const rowMode = (row.mode || '').toLowerCase();
-        const rowCategory = (row.category || '').toLowerCase();
-        const modeLower = mode.toLowerCase();
-        // mode文字列に含まれるか、またはcategoryが一致するか
-        return rowMode.includes(modeLower) || rowCategory === modeLower;
+        return recordCategory(row) === mode;
       });
     }
     
@@ -1086,14 +1089,9 @@ export const getPublicRankingLatest = async (mode?: 'organic' | 'inorganic'): Pr
     }
     
     // modeでフィルタ（指定されている場合）
-    // mode フィルタは 'organic'/'inorganic' を「含むか」で判定する
     if (mode) {
       publicRows = publicRows.filter(row => {
-        const rowMode = (row.mode || '').toLowerCase();
-        const rowCategory = (row.category || '').toLowerCase();
-        const modeLower = mode.toLowerCase();
-        // mode文字列に含まれるか、またはcategoryが一致するか
-        return rowMode.includes(modeLower) || rowCategory === modeLower;
+        return recordCategory(row) === mode;
       });
     }
     
@@ -1206,10 +1204,7 @@ export const calculateTenAveFromRec = async (userKey: string, mode?: 'organic' |
     // modeでフィルタ（指定されている場合）
     if (mode) {
       filtered = filtered.filter(row => {
-        const rowMode = (row.mode || '').toLowerCase();
-        const rowCategory = (row.category || '').toLowerCase();
-        const modeLower = mode.toLowerCase();
-        return rowMode.includes(modeLower) || rowCategory === modeLower;
+        return recordCategory(row) === mode;
       });
     }
     
