@@ -125,3 +125,6 @@
 検証：TypeScript/Vite、git diff --check、scripts/validate-loading.cjsの模擬通信試験（16秒応答成功、45秒タイムアウト、同時要求共有、再試行なし、手動再試行、エラー非キャッシュ、成功データ再利用、他教材障害の分離）。Chrome320/844/1280pxのエラーボタン枠とクリック、有機6モードの320pxで3問回答・次問・ポイント、無機ABC×3学習モード×3幅・単元完了と次単元を確認。本番POSTは遮断。
 
 公開後の実GAS再接続はユーザー確認待ち。実iPad/Safari・実保存・独立検証・利用者受入は未確認。証拠 /private/tmp/chemistry-loading-probe.log、chemistry-loading-validation.log、chemistry-loading-organic.log、chemistry-loading-inorganic.log、chemistry-loading-build.log。
+
+
+公開：44c2292、Actions 34730839360成功。公開JS/CSSはローカルdistと一致。公開Chromeにブラウザ内の模擬GAS応答を渡し、16秒応答、45秒停止、重複GET共有、再試行なし、手動再読込、失敗非キャッシュ、不要教材の障害分離を確認。実GASへの再接続ではない。初回の実通信タイムアウト後、ユーザーに再試行可否を質問済みで回答待ち。Companyはreview。
