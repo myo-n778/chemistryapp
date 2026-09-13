@@ -143,3 +143,6 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 
 
 検証：TypeScript/Vite、差分検査、Chrome320/844/1280px・文字大で初期一覧と同一ボタン再押下、全切替、順序変更、10問/全74問開始を確認。有機6モードで回答・次問・ポイントの回帰を通過。試験は模擬GASで、本番保存POSTを遮断。実iPad/Safariと利用者受入は未確認。
+
+
+公開確認：3a05f60、Actions 34731716316成功。公開JS/CSSとローカルdistの一致、公開Chrome3幅で初期一覧・同一画面切替・順序変更・10問/全74問開始を確認。公開試験も模擬GASを使用し実通信・保存は遮断。証拠 /private/tmp/chemistry-range-public.log。
