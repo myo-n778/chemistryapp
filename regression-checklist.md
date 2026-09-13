@@ -157,3 +157,11 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 - 有機①〜⑥で問題数選択のラベルが選択元と一致。All/10/20/40切替時とクイズから戻ったときに保持し、別タイプを選んだら更新。
 - All埋込でラベルを重複表示しない。scripts/validate-selected-mode.cjsで3幅・文字大を確認。
 - 模擬通信試験を実GASの安定性確認として報告しない。
+
+## 知識4択増補
+
+- [x] 有機78／無機60でカテゴリが混ざらない。旧8列CSVは有機のみ。
+- [x] 320px・文字大で全138問の正誤採点、選択肢枠、解説、Nextを確認。
+- [x] experiment-organicとexperiment-inorganicのセッションcategory・成績が一致。
+- [x] 有機6タイプと無機ABCの既存出題を維持。
+- [ ] Sheets追加セル読戻しと公開JSの一致。実GAS確認とは区別。

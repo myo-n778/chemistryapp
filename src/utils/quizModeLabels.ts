@@ -7,5 +7,8 @@ export const quizModeLabels: Partial<Record<QuizMode, string>> = {
   'compound-type': '③ 化合物の種類',
   reaction: '④ 反応（何ができる）',
   substitution: '⑤ 反応（何をした）',
-  experiment: '⑥ 分類実験',
+  experiment: '⑥ 知識・実験・構造決定',
 };
+
+export const getQuizModeLabel = (mode: QuizMode, category?: string): string | undefined =>
+  mode === 'experiment' && category === 'inorganic' ? 'タイプD：知識・実験' : quizModeLabels[mode];

@@ -99,7 +99,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h1>Organic Chemistry Drill</h1>
+          <h1>{category === 'inorganic' ? 'Inorganic' : 'Organic'} Chemistry Drill</h1>
         </div>
         <div style={{ textAlign: 'center', color: '#ffffff', padding: '40px' }}>
           <p>問題データにエラーがあります。</p>
@@ -182,7 +182,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
       presentedChoices: options.map(option => option.text),
       timestamp: Date.now(),
       mode,
-      category: 'organic',
+      category,
     };
     questionLogsRef.current.push(questionLog);
 
@@ -227,7 +227,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         sessionId,
         userKey: activeUser.userKey,
         mode,
-        category: 'organic',
+        category,
         rangeKey,
         correctCount: score,
         totalCount: totalAnswered,
@@ -242,7 +242,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         userKey: activeUser.userKey,
         displayName: activeUser.displayName,
         mode,
-        category: 'organic',
+        category,
         rangeKey,
         correctCount: score,
         totalCount: totalAnswered,
@@ -252,7 +252,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         timestamp: now,
         isPublic: activeUser.isPublic,
       };
-      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      pushRecRowToSheetRec(recRow, category).catch(err => console.warn('Failed to push rec row:', err));
       
       setIsFinished(true);
     } else if (currentIndex < filteredExperiments.length - 1) {
@@ -284,7 +284,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         sessionId,
         userKey: activeUser.userKey,
         mode,
-        category: 'organic',
+        category,
         rangeKey,
         correctCount: score,
         totalCount: totalAnswered,
@@ -299,7 +299,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         userKey: activeUser.userKey,
         displayName: activeUser.displayName,
         mode,
-        category: 'organic',
+        category,
         rangeKey,
         correctCount: score,
         totalCount: totalAnswered,
@@ -309,7 +309,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         timestamp: now,
         isPublic: activeUser.isPublic,
       };
-      pushRecRowToSheetRec(recRow, 'organic').catch(err => console.warn('Failed to push rec row:', err));
+      pushRecRowToSheetRec(recRow, category).catch(err => console.warn('Failed to push rec row:', err));
       
       setIsFinished(true);
     }
@@ -511,7 +511,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   return (
     <div className="quiz-container">
       <div className="quiz-header">
-        <h1>有機化学Drill</h1>
+        <h1>{category === 'inorganic' ? '無機化学' : '有機化学'}Drill</h1>
         <div className="quiz-header-right">
           <span className="score-text">
             <ScoreDisplay 

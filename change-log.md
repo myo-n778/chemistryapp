@@ -193,3 +193,15 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 
 
 公開確認：73c65f0、Actions34733005576成功。公開JS/CSSとdist一致、公開Chrome3幅×有機6タイプの表示名・切替・出題・回答・戻るを確認。検査は問題範囲の読込完了後に照合する。証拠 /private/tmp/chemistry-selected-mode-public.log。模擬GASを使用し、無機HTTP404の実通信原因は未解明・1回再接続の許可回答待ち。Company全体はreviewで維持する。
+
+
+## 2026-09-13 知識・実験問題120問増補
+
+有機60問・無機60問を追加。既存実験18問を維持して有機⑥は78問、無機タイプDは60問。experimentシートのIにcategory、Jにunitを追加し、既存A:HとID・並び順を維持。無機ABCと有機①〜⑤の教材は変更しない。新たに異性体・構造決定・油脂・糖・タンパク質・高分子・気体実験・典型元素・製法・系統分離・計算を補う。
+
+GASのtype=experimentの既存CSV応答をカテゴリ別に絞る。無機もタイプを選んでから必要なデータを読む。Dは既存4択画面を使い、記録はexperiment-inorganic／category=inorganic。有機の既存成績キーを維持。GASコード、rec/userStatsの既存データ、API設定には変更なし。
+
+詳細と件数・計算の確認はreports/2026-09-13-bank-expansion.md。ローカル検証中、実Sheets書込みと公開確認は後続工程。受験範囲全体の網羅・実GAS通信の復旧を意味しない。
+
+
+ローカル検証完了：全138問を320px・文字大で順に表示し、正解／不正解を交互に選択。全問の正答強調・解説・Next・最終セッションのcategory/modeを確認。844/1280pxの両カテゴリ、既存有機6タイプ×3幅、無機ABC×3学習モード×4条件も通過。見出しのカテゴリ表示と多原子イオン電荷の表記を修正後、両カテゴリ×3幅を再確認。TypeScript/Vite・差分検査はPASS。試験のGASは模擬応答で、本番POSTは遮断。実シート既存18問のA:Hはミラーと完全一致。

@@ -136,6 +136,10 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               <div className="mode-title">タイプC：反応式 → 観察</div>
               <div className="mode-subtitle">反応式から観察を選ぶ</div>
             </button>
+            <button className="mode-button" onClick={() => onSelectMode('experiment')}>
+              <div className="mode-title">タイプD：知識・実験</div>
+              <div className="mode-subtitle">気体・典型元素・製法・系統分離・計算</div>
+            </button>
           </>
         )}
         </div>

@@ -14,3 +14,7 @@
 化合物のマルトースとラクトースは現行図の立体区別が十分でないため互いを誤答にしません。各図そのものの立体化学を全面改修したものではありません。分類はCompoundTypeQuizの明示的な候補規則を使います。
 
 検証：Viteを5173番で起動し、`PLAYWRIGHT_MODULE=<playwrightの絶対パス> node scripts/validate-learning.cjs` を実行します。全行の読込・候補・分類・正解位置の対応を検査します。実内容の第三者審査や実機確認とは区別してください。
+
+## 2026-09-13 増補
+
+experiments.jsonは既存18問＋有機60問＋無機60問。実シートexperimentのI category、J unitを追加。category空欄は既存互換でorganic。A:Hは元の順序、既存18問は本文・正答・IDを維持。org-k-001〜060、inorg-k-001〜060が追加ID。ランタイムはSheetsをGAS経由で読むため、JSONだけの変更は公開教材反映ではない。追加本文は全問自己点検、独立審査は未確認。

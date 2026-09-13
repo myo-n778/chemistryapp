@@ -8,7 +8,7 @@ const fields = {
  inorganic: ['equation_tex','reactants_tex','products_tex','conditions','observations','reaction_ja','reaction_before_ja','reaction_after_ja','reactants_visual','products_visual','observations_visual','visual_timing','visual_review','learning_point','a_distractors_json','b_distractors_json','c_distractors_json','a_context','b_prompt','c_prompt','learning_status','question_id','b_answer'],
  compounds: ['id','name','type','formula','atoms','bonds','choice_ids_json','learning_point'],
  reactions: ['type','from','reagent','to','description','product_distractors_json','reagent_distractors_json','learning_point','question_id','learning_status'],
- experiments: ['question','1','2','3','4','answer','explanation','question_id'],
+ experiments: ['question','1','2','3','4','answer','explanation','question_id','category','unit'],
 };
 const csv = (name) => [fields[name], ...data[name].map(row=>fields[name].map(key=>row[key]??''))].map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(',')).join('\r\n');
 const fixtures = Object.fromEntries(Object.keys(fields).map(name=>[name,{csv:csv(name)}]));
@@ -55,6 +55,6 @@ if (process.env.FIXTURE_PATH) fs.writeFileSync(process.env.FIXTURE_PATH,JSON.str
   check(!u.learningChoiceVisuals('赤褐色','解説のみ',false),'before-answer color');
   return {counts,positions:[...ep].sort(),ids:inorganic.map(r=>r.id)};
  },fixtures);
- assert.equal(result.counts.A,88);assert.equal(result.counts.reactions,32);assert.equal(result.counts.experiments,18);
+ assert.equal(result.counts.A,88);assert.equal(result.counts.reactions,32);assert.equal(result.counts.experiments,138);
  console.log(JSON.stringify(result,null,2));console.log('LEARNING_DATA_AND_SHUFFLE_PASS');
 }finally{await b.close()}})().catch(error=>{console.error(error);process.exit(1)});

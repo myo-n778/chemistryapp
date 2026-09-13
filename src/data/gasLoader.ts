@@ -50,8 +50,8 @@ export async function loadReactionsFromGAS(category: Category): Promise<Reaction
 }
 export async function loadExperimentsFromGAS(category: Category): Promise<ExperimentCSVRow[]> {
   return loadProblem('experiment', category, data => {
-    if (typeof data.csv === 'string') return parseExperimentCSV(data.csv);
-    if (Array.isArray(data.experiments)) return data.experiments as ExperimentCSVRow[];
+    if (typeof data.csv === 'string') return parseExperimentCSV(data.csv).filter(row => (row.category || 'organic') === category);
+    if (Array.isArray(data.experiments)) return (data.experiments as ExperimentCSVRow[]).filter(row => (row.category || 'organic') === category);
     throw new Error('実験データの形式が正しくありません。');
   });
 }

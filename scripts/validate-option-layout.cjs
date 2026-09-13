@@ -8,7 +8,7 @@ const fixtures=Object.fromEntries(['inorganic','compounds','reactions','experime
   const targets=[rows.find(r=>r.question.includes('フェノールとエタノール')),rows.find(r=>r.question.startsWith('次の物質のうち、NaHCO3水溶液'))];
   assert(targets.every(Boolean));const other=rows.filter(r=>!targets.includes(r));rows=[...other.slice(0,2),...targets,...other.slice(2)];
  }
- const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
+ const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id','category','unit'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
 }));
 const base=process.env.APP_URL || 'http://127.0.0.1:5173';
 (async()=>{const b=await chromium.launch({channel:'chrome',headless:true});try{

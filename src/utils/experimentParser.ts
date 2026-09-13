@@ -1,5 +1,7 @@
 export interface ExperimentCSVRow {
   questionId?: string;
+  category?: 'organic' | 'inorganic';
+  unit?: string;
   question: string; // A列：問題文
   option1: string; // B列：選択肢1
   option2: string; // C列：選択肢2
@@ -77,6 +79,8 @@ export const parseExperimentCSV = (csvText: string): ExperimentCSVRow[] => {
 
     rows.push({
       questionId: values[header.indexOf('question_id')] || `experiment-${i}`,
+      category: values[header.indexOf('category')] === 'inorganic' ? 'inorganic' : 'organic',
+      unit: values[header.indexOf('unit')] || '',
       question,
       option1,
       option2,

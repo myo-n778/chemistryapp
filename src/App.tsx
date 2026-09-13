@@ -64,12 +64,12 @@ function App() {
     setReactions(0);
     setExperiments([]);
     setLoadingError(null);
-    setLoading(selectedCategory === 'organic' && selectedMode !== null);
-    if (selectedCategory === 'organic' && selectedMode) {
+    setLoading(selectedMode !== null && (selectedCategory === 'organic' || selectedMode === 'experiment'));
+    if (selectedCategory && selectedMode && (selectedCategory === 'organic' || selectedMode === 'experiment')) {
       // タイプ選択後に必要な教材だけ取得する。実験の通信失敗で構造問題まで止めない。
       const loadSelected = async () => {
         if (selectedMode === 'experiment') {
-          const data = await loadExperiments('organic');
+          const data = await loadExperiments(selectedCategory);
           if (!data.length) throw new Error('実験データが空です。問題シートを確認してください。');
           if (!cancelled) setExperiments(data);
         } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
@@ -96,8 +96,8 @@ function App() {
     setInorganicReactions([]);
     setInorganicReactionsNew([]);
     setInorganicLoadingError(null);
-    setInorganicLoading(selectedCategory === 'inorganic');
-    if (selectedCategory === 'inorganic') {
+    setInorganicLoading(selectedCategory === 'inorganic' && selectedMode !== null && selectedMode !== 'experiment');
+    if (selectedCategory === 'inorganic' && selectedMode && selectedMode !== 'experiment') {
       loadInorganicReactionsNew()
         .then(data => {
           if (cancelled) return;
@@ -110,7 +110,7 @@ function App() {
         .finally(() => { if (!cancelled) setInorganicLoading(false); });
     }
     return () => { cancelled = true; };
-  }, [selectedCategory, reloadKey]);
+  }, [selectedCategory, selectedMode, reloadKey]);
 
   // すべてのHooksを先に宣言（固定順序）
   // 回答が空の行は出題せず、件数・範囲・実出題で同じ集合を使う。
@@ -133,15 +133,16 @@ function App() {
 
   // ローディング状態のチェック（有機化学または無機化学）
   const isLoading = useMemo(() => {
-    return selectedCategory === 'inorganic' ? inorganicLoading : loading;
-  }, [selectedCategory, inorganicLoading, loading]);
+    return selectedCategory === 'inorganic' && selectedMode !== 'experiment' ? inorganicLoading : loading;
+  }, [selectedCategory, selectedMode, inorganicLoading, loading]);
 
   const currentLoadingError = useMemo(() => {
-    return selectedCategory === 'inorganic' ? inorganicLoadingError : loadingError;
-  }, [selectedCategory, inorganicLoadingError, loadingError]);
+    return selectedCategory === 'inorganic' && selectedMode !== 'experiment' ? inorganicLoadingError : loadingError;
+  }, [selectedCategory, selectedMode, inorganicLoadingError, loadingError]);
 
   // モード④⑤の場合はreactions数、モード⑥の場合はexperiments数、無機化学モードの場合はinorganicReactions数、それ以外はcompounds数を使用
   const totalQuestionCount = useMemo(() => {
+    if (selectedMode === 'experiment') return experiments.length;
     if (selectedCategory === 'inorganic') {
       // 回答欄のある出題可能な行の件数を表示する
       if (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') {
@@ -153,8 +154,6 @@ function App() {
       return count;
     } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
       return reactions;
-    } else if (selectedMode === 'experiment') {
-      return experiments.length;
     }
     return compounds.filter(c => c.structure?.atoms?.length > 0 && c.structure?.bonds?.length > 0).length;
   }, [selectedCategory, selectedMode, eligibleInorganicReactions, inorganicReactions, reactions, experiments.length, compounds]);
@@ -162,12 +161,11 @@ function App() {
 
   // 最大問題数（handleNextRange/hasNextRange用）
   const maxQuestionCount = useMemo(() => {
+    if (selectedMode === 'experiment') return experiments.length;
     if (selectedCategory === 'inorganic') {
       return activeInorganicReactions?.data.length ?? 0;
     } else if (selectedMode === 'reaction' || selectedMode === 'substitution') {
       return reactions;
-    } else if (selectedMode === 'experiment') {
-      return experiments.length;
     }
     return compounds.filter(c => c.structure?.atoms?.length > 0 && c.structure?.bonds?.length > 0).length;
   }, [selectedCategory, selectedMode, activeInorganicReactions, reactions, experiments.length, compounds]);
@@ -227,30 +225,30 @@ function App() {
   // すべてのhooksを先に実行（早期returnの前にすべてのhooksを宣言）
   const handleNextRange = useCallback(() => {
     if (!quizSettings) return;
-    
+
     if (quizSettings.learningMode) {
       const next = nextInorganicUnit(eligibleInorganicReactions, quizSettings);
       if (next) setQuizSettings({ ...quizSettings, unitId: next.id, allQuestionCount: next.reactions.length });
       return;
     }
     // batch-10/20/40モードの場合のみ次の範囲へ進む
-    if (quizSettings.questionCountMode === 'batch-10' || 
-        quizSettings.questionCountMode === 'batch-20' || 
+    if (quizSettings.questionCountMode === 'batch-10' ||
+        quizSettings.questionCountMode === 'batch-20' ||
         quizSettings.questionCountMode === 'batch-40') {
       if (quizSettings.startIndex === undefined) return;
-      
+
       let batchSize = 10;
       if (quizSettings.questionCountMode === 'batch-20') {
         batchSize = 20;
       } else if (quizSettings.questionCountMode === 'batch-40') {
         batchSize = 40;
       }
-      
+
       const nextStartIndex = quizSettings.startIndex + batchSize;
       if (nextStartIndex > maxQuestionCount) {
         return; // 次の範囲が存在しない
       }
-      
+
       setQuizSettings({
         ...quizSettings,
         startIndex: nextStartIndex
@@ -297,7 +295,7 @@ function App() {
     }
 
     // 2) shuffleをsliceの前に適用
-    const base = (quizSettings.orderMode === 'shuffle') 
+    const base = (quizSettings.orderMode === 'shuffle')
       ? (() => {
           const shuffled = [...sourceReactions];
           for (let i = shuffled.length - 1; i > 0; i--) {
@@ -341,7 +339,7 @@ function App() {
     }
 
     // reactions.length === 0の場合はエラー表示
-    if (selectedCategory === 'inorganic' && 
+    if (selectedCategory === 'inorganic' &&
         (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c') &&
         quizInorganicReactionsNew.length === 0) {
       return (
@@ -365,8 +363,8 @@ function App() {
 
     // hasNextRangeをuseMemo内で直接計算
     const hasNext = quizSettings?.learningMode ? Boolean(nextInorganicUnit(eligibleInorganicReactions, quizSettings)) : quizSettings && (
-      (quizSettings.questionCountMode === 'batch-10' || 
-       quizSettings.questionCountMode === 'batch-20' || 
+      (quizSettings.questionCountMode === 'batch-10' ||
+       quizSettings.questionCountMode === 'batch-20' ||
        quizSettings.questionCountMode === 'batch-40') &&
       quizSettings.startIndex !== undefined
     ) ? (() => {
@@ -459,7 +457,7 @@ function App() {
           </p>
           <div className="status-actions">
           <button className="status-action" onClick={() => setReloadKey(key => key + 1)}>再読み込み</button>
-          {selectedCategory === 'organic' && <button className="status-action" onClick={() => { setSelectedMode(null); setQuizSettings(null); }}>出題タイプに戻る</button>}
+          <button className="status-action" onClick={() => { setSelectedMode(null); setQuizSettings(null); }}>出題タイプに戻る</button>
           <button
             className="status-action"
             onClick={() => {
@@ -499,15 +497,15 @@ function App() {
     if (selectedCategory === 'inorganic' && ['inorganic-type-a', 'inorganic-type-b', 'inorganic-type-c'].includes(selectedMode)) {
       return <div className="App"><SoundSelector /><InorganicLearningSelector reactions={eligibleInorganicReactions} onSelectSettings={setQuizSettings} onBack={() => setSelectedMode(null)} /></div>;
     }
-    
+
     // Inorganicの場合、直接inorganicReactionsNew.lengthを計算して渡す
     // selectedModeが設定されていない場合でも、全件数を表示する
-    const actualTotalCount = selectedCategory === 'inorganic' 
+    const actualTotalCount = selectedCategory === 'inorganic' && selectedMode !== 'experiment'
       ? (selectedMode === 'inorganic-type-a' || selectedMode === 'inorganic-type-b' || selectedMode === 'inorganic-type-c'
           ? eligibleInorganicReactions.length
           : inorganicReactions.length)
       : totalQuestionCount;
-    
+
     // シートから取得した実件数を使用する
 
     return (
@@ -576,7 +574,7 @@ function App() {
 
   // すべてのhooksを先に実行した後、return分岐を最後にまとめる
   // mainContentは既にuseMemoで計算済み
-  
+
   // 一時的にTeXTestを表示（開発用）
   if (SHOW_TEX_TEST) {
     return (

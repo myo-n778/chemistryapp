@@ -3,7 +3,7 @@ const fs=require('fs'),assert=require('assert');
 const fixtures=Object.fromEntries(['inorganic','compounds','reactions','experiments'].map(type=>{
  let rows=JSON.parse(fs.readFileSync(`learning/${type}.json`,'utf8'));
 
- const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
+ const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id','category','unit'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
 }));
 const base=process.env.APP_URL || 'http://127.0.0.1:5173';
 (async()=>{const b=await chromium.launch({channel:'chrome',headless:true});try {

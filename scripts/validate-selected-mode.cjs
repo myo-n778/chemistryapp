@@ -3,10 +3,10 @@ const fs=require('fs'),assert=require('assert');
 const fixtures=Object.fromEntries(['inorganic','compounds','reactions','experiments'].map(type=>{
  let rows=JSON.parse(fs.readFileSync(`learning/${type}.json`,'utf8'));
 
- const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
+ const keys=type==='experiments' ? ['question','1','2','3','4','answer','explanation','question_id','category','unit'] : Object.keys(rows[0]);return [type,{csv:[keys,...rows.map(r=>keys.map(k=>r[k]??''))].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')}];
 }));
 const base=process.env.APP_URL || 'http://127.0.0.1:5173';
-const modes=['① 構造式から名称','② 名称から構造式','③ 化合物の種類','④ 反応（何ができる）','⑤ 反応（何をした）','⑥ 分類実験'];
+const modes=['① 構造式から名称','② 名称から構造式','③ 化合物の種類','④ 反応（何ができる）','⑤ 反応（何をした）','⑥ 知識・実験・構造決定'];
 (async()=>{const b=await chromium.launch({channel:'chrome',headless:true});try {
 for(const width of [320,844,1280]){
 const p=await b.newPage({viewport:{width,height:900}});p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));

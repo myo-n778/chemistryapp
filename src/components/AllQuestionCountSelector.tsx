@@ -1,6 +1,6 @@
 import React from 'react';
 import './QuestionCountSelector.css';
-import { quizModeLabels } from '../utils/quizModeLabels';
+import { getQuizModeLabel } from '../utils/quizModeLabels';
 import { QuizMode } from './ModeSelector';
 import { Category } from './CategorySelector';
 import { getScoreHistory, getRangeKey } from '../utils/scoreCalculator';
@@ -97,9 +97,9 @@ export const AllQuestionCountSelector: React.FC<AllQuestionCountSelectorProps> =
         </div>
       </div>
       }
-      {!embedded && mode && quizModeLabels[mode] && (
+      {!embedded && mode && getQuizModeLabel(mode, category) && (
         <p className="selected-quiz-mode" aria-label="選択中の出題タイプ">
-          有機化学 · {quizModeLabels[mode]}
+          {category === 'inorganic' ? '無機化学' : '有機化学'} · {getQuizModeLabel(mode, category)}
         </p>
       )}
       <p className="question-count-description">何問解きますか？</p>
