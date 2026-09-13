@@ -179,10 +179,23 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 
 GASのtype=experimentの既存CSV応答をカテゴリ別に絞る。無機もタイプを選んでから必要なデータを読む。Dは既存4択画面を使い、記録はexperiment-inorganic／category=inorganic。有機の既存成績キーを維持。GASコード、rec/userStatsの既存データ、API設定には変更なし。
 
-詳細と件数・計算の確認はreports/2026-09-13-bank-expansion.md。ローカル検証中、実Sheets書込みと公開確認は後続工程。受験範囲全体の網羅・実GAS通信の復旧を意味しない。
+詳細と件数・計算の確認はreports/2026-09-13-bank-expansion.md。実Sheets反映・公開ファイル照合・公開Chromeでの出題を確認。受験範囲全体の網羅・実GAS通信の復旧を意味しない。
 
 
 ローカル検証完了：全138問を320px・文字大で順に表示し、正解／不正解を交互に選択。全問の正答強調・解説・Next・最終セッションのcategory/modeを確認。844/1280pxの両カテゴリ、既存有機6タイプ×3幅、無機ABC×3学習モード×4条件も通過。見出しのカテゴリ表示と多原子イオン電荷の表記を修正後、両カテゴリ×3幅を再確認。TypeScript/Vite・差分検査はPASS。試験のGASは模擬応答で、本番POSTは遮断。実シート既存18問のA:Hはミラーと完全一致。
 
 
 新規無機Dの成績表示でorganic/inorganicの部分一致を避けるため、rec読込時と直近平均・最新記録・分野指定ランキングのカテゴリ判定を区切られた分野名の一致に統一。既存実rec/userStatsは書き換えない。模擬4セッションで有機平均0.3・無機平均0.8に分かれることと、旧行の誤ったcategoryがモード名から判別されることを検証。scripts/validate-record-category.cjsはPASS。
+
+
+## 反映・公開の最終確認
+
+2026-09-13、experiment!I1:J19とA20:J139へ追加・メタデータを反映。A1:J139の1390セルの値が教材と完全一致。既存18問A:Hは変更なし。識別子F/H:J列の全4000セルでTEXT書式を確認。既存の折返し・罫線を新行へ継承。Google Sheets自体のネイティブ画面目視は未実施で、値と書式メタデータを確認した。
+
+公開実装61d6655、GitHub Actions34734636822成功。公開JS/CSSはdistと一致。公開Chrome320px・文字大で、有機78問と無機60問を全問表示・交互正誤回答・解説・Next・完了時セッションcategory/modeまで確認。844/1280pxは両カテゴリ各3問を確認。試験には実シートから読み戻したCSVをブラウザ内で供給し、本番GAS通信とPOSTは遮断した。実GAS経由の読込・保存が成功した証拠ではない。
+
+旧8列CSV18問を有機として読む後方互換も確認。追加範囲の有機71〜78／無機41〜50は3幅で表示・採点を再確認し、計算と系統分離の画面を目視した。
+
+証拠：/private/tmp/chemistry-expansion-learning.log、chemistry-expansion-ui.log、chemistry-expansion-mode.log、chemistry-expansion-unit.log、chemistry-expansion-added.log、chemistry-expansion-public.log、chemistry-expansion-build.log。scripts/validate-record-category.cjsでも模擬成績のカテゴリ別平均を検証。
+
+未確認：実GASへの再接続は従前の確認回答待ち。実iPad/Safari、本番保存、独立内容審査、利用者受入。APIモードは未着手で増補の後続工程。

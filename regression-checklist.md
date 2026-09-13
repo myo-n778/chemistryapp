@@ -164,4 +164,4 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 - [x] 320px・文字大で全138問の正誤採点、選択肢枠、解説、Nextを確認。
 - [x] experiment-organicとexperiment-inorganicのセッションcategory・成績が一致。
 - [x] 有機6タイプと無機ABCの既存出題を維持。
-- [ ] Sheets追加セル読戻しと公開JSの一致。実GAS確認とは区別。
+- [x] Sheets追加セル読戻しと公開JSの一致。実GAS確認とは区別。

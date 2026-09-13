@@ -44,9 +44,9 @@ GASの既存type=experimentが全列をCSVとして返すことをローカル�
 
 ## 検証と反映
 
-TypeScript/Vite、全行のパース・正答対応・選択肢シャッフル、既存有機6タイプの3幅回帰、無機ABCの単元UI回帰を確認。新規出題の全件画面試験は実行中。
+TypeScript/Vite、全行のパース・正答対応・選択肢シャッフル、既存有機6タイプの3幅回帰、無機ABCの単元UI回帰を確認。新規出題の全件画面試験は完了。
 
-実Sheetsはexperiment!A1:J139を読取り、既存18問以外の追加先が空欄で、数式・入力規則・チップがないことを確認。公開フロントを先に更新し、その後Sheetsの追加セルのみを更新・読み戻す予定。
+実Sheetsはexperiment!A1:J139を読取り、既存18問以外の追加先が空欄で、数式・入力規則・チップがないことを確認。公開フロントを先に更新し、その後Sheetsの追加セルのみを更新・読み戻した。
 
 実GAS再接続は従前の許可回答待ちのため試していない。模擬GASでの出題検証と実Sheets読戻しを区別する。実iPad/Safari・本番保存・利用者受入は未確認。APIモードの設定・呼出しは実施しない。
 
@@ -55,3 +55,16 @@ TypeScript/Vite、全行のパース・正答対応・選択肢シャッフル�
 
 
 新規無機Dの成績表示でorganic/inorganicの部分一致を避けるため、rec読込時と直近平均・最新記録・分野指定ランキングのカテゴリ判定を区切られた分野名の一致に統一。既存実rec/userStatsは書き換えない。模擬4セッションで有機平均0.3・無機平均0.8に分かれることと、旧行の誤ったcategoryがモード名から判別されることを検証。scripts/validate-record-category.cjsはPASS。
+
+
+## 反映・公開の最終確認
+
+2026-09-13、experiment!I1:J19とA20:J139へ追加・メタデータを反映。A1:J139の1390セルの値が教材と完全一致。既存18問A:Hは変更なし。識別子F/H:J列の全4000セルでTEXT書式を確認。既存の折返し・罫線を新行へ継承。Google Sheets自体のネイティブ画面目視は未実施で、値と書式メタデータを確認した。
+
+公開実装61d6655、GitHub Actions34734636822成功。公開JS/CSSはdistと一致。公開Chrome320px・文字大で、有機78問と無機60問を全問表示・交互正誤回答・解説・Next・完了時セッションcategory/modeまで確認。844/1280pxは両カテゴリ各3問を確認。試験には実シートから読み戻したCSVをブラウザ内で供給し、本番GAS通信とPOSTは遮断した。実GAS経由の読込・保存が成功した証拠ではない。
+
+旧8列CSV18問を有機として読む後方互換も確認。追加範囲の有機71〜78／無機41〜50は3幅で表示・採点を再確認し、計算と系統分離の画面を目視した。
+
+証拠：/private/tmp/chemistry-expansion-learning.log、chemistry-expansion-ui.log、chemistry-expansion-mode.log、chemistry-expansion-unit.log、chemistry-expansion-added.log、chemistry-expansion-public.log、chemistry-expansion-build.log。scripts/validate-record-category.cjsでも模擬成績のカテゴリ別平均を検証。
+
+未確認：実GASへの再接続は従前の確認回答待ち。実iPad/Safari、本番保存、独立内容審査、利用者受入。APIモードは未着手で増補の後続工程。
