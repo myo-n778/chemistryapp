@@ -15,19 +15,18 @@ export function InorganicLearningSelector({ reactions, onSelectSettings, onBack 
   const selected = units.find(u => u.id === unitId);
   const total = mode === 'global-shuffle' ? Math.min(count ?? reactions.length, reactions.length) : selected?.reactions.length ?? 0;
   return <section className="inorganic-learning-selector">
-    <button className="learning-back" onClick={onBack}>← 出題タイプに戻る</button>
-    <h1>無機化学の学習設定</h1>
-    <p>まずは単元順で覚え、慣れたら順番を混ぜて確かめましょう。</p>
     <div className="learning-mode-list" role="group" aria-label="出題の進め方">
-      {(Object.keys(learningModeLabels) as InorganicLearningMode[]).map(value => <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>
+      {(Object.keys(learningModeLabels) as InorganicLearningMode[]).map(value => <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)} title={value === 'unit-sequential' ? '選んだ単元を学習順に' : value === 'unit-shuffle' ? '選んだ単元だけ順番を混ぜる' : '全単元から混ぜて出題'}>
         <strong>{learningModeLabels[value]}</strong>
-        <span>{value === 'unit-sequential' ? '選んだ単元を学習順に' : value === 'unit-shuffle' ? '選んだ単元だけ順番を混ぜる' : '全単元から混ぜて出題'}</span>
       </button>)}
+    </div>
+    <div className="learning-heading-row">
+      <h1>{mode === 'global-shuffle' ? '無機化学の出題設定' : '学習する単元'}</h1>
+      <button className="learning-back" onClick={onBack}>← 出題タイプに戻る</button>
     </div>
     {mode === 'global-shuffle' ? <fieldset className="learning-count"><legend>出題数（全{reactions.length}問）</legend>
       {[10,20,null].map(n => <button key={n ?? 'all'} aria-pressed={count === n} onClick={() => setCount(n)}>{n === null ? '全問' : `${n}問`}</button>)}
     </fieldset> : <>
-      <h2>学習する単元</h2>
       <div className="learning-unit-list" role="group" aria-label="単元">
         {units.map((u, index) => <button key={u.id} disabled={!u.reactions.length} aria-pressed={unitId === u.id} onClick={() => setUnitId(u.id)}>
           <strong>{index + 1}. {u.title}</strong><span>{u.description}</span>

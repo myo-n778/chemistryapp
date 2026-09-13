@@ -146,3 +146,8 @@ ChemicalTextがFragmentで複数のspan/subを返し、選択肢のflex/space-be
 - 初期10問一覧、選択済み10ずつで閉じない、20/40/Allの同一画面切替。
 - All選択中も順序変更と区切り切替が可能。10問とALL全74問の開始、範囲別履歴を維持。
 - scripts/validate-range-selection.cjsで320/844/1280px・文字大を確認。実GASは模擬応答で遮断。
+
+
+## 無機設定の配置（2026-09-13）
+- scripts/validate-unit-layout.cjsで320/844/1280pxとCSS zoom .8相当、文字大の3モード横並び・単元一覧の上寄せ・広い画面の3列以上を検証。
+- ABC×3モードの単元選択、開始、回答、ポイント、戻る。通信は模擬GAS、本番保存遮断。
