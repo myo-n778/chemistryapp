@@ -1,5 +1,5 @@
 // npm run ai:gas:build で生成した一括版。教材は既存スプレッドシートから読み取ります。APIキーはここに記載しないでください。
-/* AI専用GAS。教材4シートは読取のみ。成績シートにはアクセスしません。 */
+/* AI専用GAS。教材4シートは読取のみ。質問ログはAI質問へ保存。成績シートにはアクセスしません。 */
 // 教材は既存の chemistry スプレッドシートで管理します。全教材の埋込みはしません。
 const CHEM_AI_SPREADSHEET_ID = '1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0';
 // これは通信形式の版です。教材の一致は各問題のSHA-256で確認します。
@@ -81,7 +81,7 @@ function chemAiRead_(p,k,fallback) {const v=p.getProperty(k);return v===null?fal
 function chemAiPut_(p,k,v) {const data=JSON.stringify(v);if(Utilities.newBlob(data).getBytes().length>8500)chemAiError_('state_too_large');p.setProperty(k,data);}
 function chemAiLock_(fn) {const lock=LockService.getScriptLock();if(!lock.tryLock(2000))chemAiError_('request_busy');try{return fn(PropertiesService.getScriptProperties());}finally{lock.releaseLock();}}
 function chemAiReady_(p) {if(p.getProperty('CHEM_AI_ENABLED')!=='true'||!/^sk-/.test(p.getProperty('OPENAI_API_KEY')||''))chemAiError_('not_configured');}
-function doGet() {return chemAiJson_({service:'chemistry-ai',version:'gas-sheets-v1',bankVersion:CHEM_AI_PROTOCOL});}
+function doGet() {return chemAiJson_({service:'chemistry-ai',version:'gas-question-log-v1',bankVersion:CHEM_AI_PROTOCOL});}
 function doPost(e) {
   try {
     const text=e&&e.postData&&e.postData.contents;
@@ -89,6 +89,7 @@ function doPost(e) {
     let d;try{d=JSON.parse(text);}catch(_){chemAiError_('invalid_json');}
     if(!d||typeof d!=='object'||Array.isArray(d))chemAiError_('invalid_request');
     if(d.operation==='session')return chemAiJson_(chemAiSession_());
+    if(d.operation==='log')return chemAiJson_(chemAiLog_(d));
     if(d.operation==='answer')return chemAiJson_(chemAiAnswer_(d));
     chemAiError_('invalid_operation');
   } catch(e) {return chemAiJson_({error:e.chemCode||'internal_error',...(e.budget?{budget:e.budget}:{})});}
@@ -97,7 +98,7 @@ function chemAiSession_() {
  return chemAiLock_(p=>{
   chemAiReady_(p);const now=Date.now();let sessions=0;
   const values=p.getProperties();
-  Object.keys(values).filter(k=>/^CHEM_AI_(SESSION|REQUEST)_/.test(k)).forEach(k=>{const x=JSON.parse(values[k]);if(x.expires<=now)p.deleteProperty(k);else if(k.indexOf('CHEM_AI_SESSION_')===0)sessions++;});
+  Object.keys(values).filter(k=>/^CHEM_AI_(SESSION|REQUEST|LOG)_/.test(k)).forEach(k=>{const x=JSON.parse(values[k]);if(x.expires<=now)p.deleteProperty(k);else if(k.indexOf('CHEM_AI_SESSION_')===0)sessions++;});
   const day=Utilities.formatDate(new Date(now),'Asia/Tokyo','yyyy-MM-dd');const daily=chemAiRead_(p,'CHEM_AI_DAILY',{day:day,count:0});
   if(daily.day===day&&daily.count>=CHEM_AI_LIMITS.daily)chemAiError_('daily_limit');
   let rate=chemAiRead_(p,'CHEM_AI_SESSION_RATE',{minute:0,count:0});const minute=Math.floor(now/60000);
@@ -136,6 +137,7 @@ function chemAiAnswer_(d) {
   // Charge reservation is persisted first: a partial storage failure can over-count, never under-count.
   chemAiPut_(p,'CHEM_AI_DAILY',daily);chemAiPut_(p,sk,s);
   chemAiPut_(p,rk,{expires:s.expires,digest:digest,budget:next});
+  chemAiPut_(p,'CHEM_AI_LOG_'+chemAiHash_(d.token+':'+requestId),{expires:s.expires,prompt:q.prompt,question:action==='question'?text.trim():action==='simple'?'やさしく説明':selected===q.correct?'正解の理由':'選んだ答えとの違い'});
   chemAiPut_(p,'CHEM_AI_BUSY',{until:now+7*60*1000,request:rk});
   return {budget:next,expires:s.expires};
  });
@@ -171,4 +173,48 @@ function chemAiProvider_(question,action,text,history) {
  // Keep each PropertiesService value below its byte limit, including JSON and multibyte characters.
  if(Utilities.newBlob(JSON.stringify(reply)).getBytes().length>6500)chemAiError_('invalid_response');
  return {status:reply.status,conclusion:reply.conclusion,distinction:reply.distinction,checkQuestion:reply.checkQuestion};
+}
+
+// Display acknowledgment only: identity is never part of the provider request.
+function chemAiLog_(d) {
+ if(typeof d.token!=='string'||!/^[a-f0-9-]{72}$/.test(d.token)||typeof d.requestId!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(d.requestId)||typeof d.username!=='string'||!d.username.trim()||d.username.length>200)chemAiError_('invalid_request');
+ return chemAiLock_(p=>{
+  const hash=chemAiHash_(d.token+':'+d.requestId);
+  const entry=chemAiRead_(p,'CHEM_AI_REQUEST_'+hash,null),context=chemAiRead_(p,'CHEM_AI_LOG_'+hash,null);
+  if(!entry||!context||entry.expires<=Date.now())chemAiError_('log_expired');
+  if(!entry.result||!entry.result.reply)chemAiError_('log_unavailable');
+  try {
+   const sheet=SpreadsheetApp.openById(CHEM_AI_SPREADSHEET_ID).getSheetByName('AI質問');
+   if(!sheet||JSON.stringify(sheet.getRange(1,1,1,5).getValues()[0])!==JSON.stringify(['日時','ユーザー名','問題','質問','解答']))chemAiError_('log_failed');
+   if(context.logged)return {logged:true};
+   const reply=entry.result.reply;
+   const answer='結論\n'+reply.conclusion+'\n\n区別するポイント\n'+reply.distinction+'\n\n確認の問い\n'+reply.checkQuestion;
+   if(!context.row) {
+    const counter='CHEM_QUESTION_LOG_ROW_'+sheet.getSheetId();
+    const prior=chemAiRead_(p,counter,{row:1});
+    context.row=Math.max(sheet.getLastRow(),prior.row)+1;
+    context.stamp=(Date.now()+9*3600000)/86400000+25569;
+    context.username=d.username.trim();
+    // Reserve a unique row durably before writing. Failed reservations may leave
+    // a blank row, but concurrent/retried requests never share a destination.
+    chemAiPut_(p,counter,{row:context.row});
+    chemAiPut_(p,'CHEM_AI_LOG_'+hash,context);
+   }
+   if(context.row>sheet.getMaxRows())sheet.insertRowsAfter(sheet.getMaxRows(),context.row-sheet.getMaxRows());
+   const values=[context.stamp,context.username,context.prompt,context.question,answer];
+   const range=sheet.getRange(context.row,1,1,5),current=range.getValues()[0];
+   const same=current.every((value,i)=>i===0&&value instanceof Date?Math.abs((value.getTime()/86400000+25569)-values[0])<1/86400000:String(value)===String(values[i]));
+   if(!same&&current.some(value=>value!==''))chemAiError_('log_failed');
+   if(!same) {
+    range.setNumberFormats([['yyyy/MM/dd HH:mm','@','@','@','@']]);
+    // Prefix text with an apostrophe so leading =, +, - and @ stay literal.
+    range.setValues([[values[0],...values.slice(1).map(value=>"'"+value)]]);
+    range.setWrap(true).setVerticalAlignment('top');
+    SpreadsheetApp.flush();
+   }
+   context.logged=true;
+   chemAiPut_(p,'CHEM_AI_LOG_'+hash,context);
+   return {logged:true};
+  } catch(e) {chemAiError_('log_failed');}
+ });
 }

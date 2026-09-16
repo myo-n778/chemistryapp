@@ -23,7 +23,7 @@ export function mockTutorReply(q: TutorQuestion, action: TutorAction, question: 
       if (scenario === 'invalid') { reject(new Error('invalid-response')); return; }
       // Deterministic sample: never present this as a generated answer to free text.
       resolve({
-        conclusion: action === 'question' ? `質問「${question}」を受け付けました。これは操作確認用の応答で、質問へのAI回答ではありません。` : `この問題の正解は「${q.correct}」です。`,
+        conclusion: action === 'question' ? `質問「${question}」を受け付けました。これは操作確認用の応答で、実際の質問への回答ではありません。` : `この問題の正解は「${q.correct}」です。`,
         distinction: action === 'difference' && q.selected !== q.correct
           ? `選んだ答えは「${q.selected}」。既存の解説で違いを確認しましょう。${q.explanation || ''}`
           : `既存の解説：${q.explanation || 'この問題には解説が登録されていません。'}`,

@@ -1,4 +1,4 @@
-/* AI専用GAS。教材4シートは読取のみ。成績シートにはアクセスしません。 */
+/* AI専用GAS。教材4シートは読取のみ。質問ログはAI質問へ保存。成績シートにはアクセスしません。 */
 __SHEETS_SOURCE__
 const CHEM_AI_MODEL = __MODEL__;
 const CHEM_AI_SCHEMA = __SCHEMA__;
@@ -12,7 +12,7 @@ function chemAiRead_(p,k,fallback) {const v=p.getProperty(k);return v===null?fal
 function chemAiPut_(p,k,v) {const data=JSON.stringify(v);if(Utilities.newBlob(data).getBytes().length>8500)chemAiError_('state_too_large');p.setProperty(k,data);}
 function chemAiLock_(fn) {const lock=LockService.getScriptLock();if(!lock.tryLock(2000))chemAiError_('request_busy');try{return fn(PropertiesService.getScriptProperties());}finally{lock.releaseLock();}}
 function chemAiReady_(p) {if(p.getProperty('CHEM_AI_ENABLED')!=='true'||!/^sk-/.test(p.getProperty('OPENAI_API_KEY')||''))chemAiError_('not_configured');}
-function doGet() {return chemAiJson_({service:'chemistry-ai',version:'gas-sheets-v1',bankVersion:CHEM_AI_PROTOCOL});}
+function doGet() {return chemAiJson_({service:'chemistry-ai',version:'gas-question-log-v1',bankVersion:CHEM_AI_PROTOCOL});}
 function doPost(e) {
   try {
     const text=e&&e.postData&&e.postData.contents;
@@ -20,6 +20,7 @@ function doPost(e) {
     let d;try{d=JSON.parse(text);}catch(_){chemAiError_('invalid_json');}
     if(!d||typeof d!=='object'||Array.isArray(d))chemAiError_('invalid_request');
     if(d.operation==='session')return chemAiJson_(chemAiSession_());
+    if(d.operation==='log')return chemAiJson_(chemAiLog_(d));
     if(d.operation==='answer')return chemAiJson_(chemAiAnswer_(d));
     chemAiError_('invalid_operation');
   } catch(e) {return chemAiJson_({error:e.chemCode||'internal_error',...(e.budget?{budget:e.budget}:{})});}
@@ -28,7 +29,7 @@ function chemAiSession_() {
  return chemAiLock_(p=>{
   chemAiReady_(p);const now=Date.now();let sessions=0;
   const values=p.getProperties();
-  Object.keys(values).filter(k=>/^CHEM_AI_(SESSION|REQUEST)_/.test(k)).forEach(k=>{const x=JSON.parse(values[k]);if(x.expires<=now)p.deleteProperty(k);else if(k.indexOf('CHEM_AI_SESSION_')===0)sessions++;});
+  Object.keys(values).filter(k=>/^CHEM_AI_(SESSION|REQUEST|LOG)_/.test(k)).forEach(k=>{const x=JSON.parse(values[k]);if(x.expires<=now)p.deleteProperty(k);else if(k.indexOf('CHEM_AI_SESSION_')===0)sessions++;});
   const day=Utilities.formatDate(new Date(now),'Asia/Tokyo','yyyy-MM-dd');const daily=chemAiRead_(p,'CHEM_AI_DAILY',{day:day,count:0});
   if(daily.day===day&&daily.count>=CHEM_AI_LIMITS.daily)chemAiError_('daily_limit');
   let rate=chemAiRead_(p,'CHEM_AI_SESSION_RATE',{minute:0,count:0});const minute=Math.floor(now/60000);
@@ -67,6 +68,7 @@ function chemAiAnswer_(d) {
   // Charge reservation is persisted first: a partial storage failure can over-count, never under-count.
   chemAiPut_(p,'CHEM_AI_DAILY',daily);chemAiPut_(p,sk,s);
   chemAiPut_(p,rk,{expires:s.expires,digest:digest,budget:next});
+  chemAiPut_(p,'CHEM_AI_LOG_'+chemAiHash_(d.token+':'+requestId),{expires:s.expires,prompt:q.prompt,question:action==='question'?text.trim():action==='simple'?'やさしく説明':selected===q.correct?'正解の理由':'選んだ答えとの違い'});
   chemAiPut_(p,'CHEM_AI_BUSY',{until:now+7*60*1000,request:rk});
   return {budget:next,expires:s.expires};
  });
@@ -103,3 +105,5 @@ function chemAiProvider_(question,action,text,history) {
  if(Utilities.newBlob(JSON.stringify(reply)).getBytes().length>6500)chemAiError_('invalid_response');
  return {status:reply.status,conclusion:reply.conclusion,distinction:reply.distinction,checkQuestion:reply.checkQuestion};
 }
+
+__QUESTION_LOG__

@@ -1,9 +1,9 @@
-import { isTutorEnabled, isTutorLive, openTutorSession, requestTutorReply, tutorErrorMessage, TutorClientError } from '../../utils/aiTutorClient';
+import { logTutorDisplay, supportsTutorLogging, type TutorSession, isTutorEnabled, isTutorLive, openTutorSession, requestTutorReply, tutorErrorMessage, TutorClientError } from '../../utils/aiTutorClient';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChemicalText } from '../ChemicalText';
 import { mockTutorReply, type TutorAction, type TutorQuestion, type TutorReply } from '../../utils/aiTutorMock';
 import { useTutorBudget } from './AiTutorSession';
-import { getActiveUserKey } from '../../utils/sessionLogger';
+import { getActiveUserKey, getUserByKey } from '../../utils/sessionLogger';
 import { readTutorUsage, recordTutorDisplay } from '../../utils/aiTutorUsage';
 import './AiTutorPanel.css';
 
@@ -17,12 +17,13 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
   const id = useId();
   const usageCategory = question.category === 'inorganic' ? 'inorganic' : 'organic';
   const [usageOwner] = useState(getActiveUserKey);
+  const [username] = useState(() => (usageOwner ? getUserByKey(usageOwner)?.displayName : '') || 'ゲスト');
   const [usage, setUsage] = useState(() => readTutorUsage(usageOwner));
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [history, setHistory] = useState<{ label: string; reply: TutorReply }[]>([]);
+  const [history, setHistory] = useState<{ label:string; reply:TutorReply; log?:{requestId:string;session:TutorSession;status:'saving'|'saved'|'failed'} }[]>([]);
   const [last, setLast] = useState<{action: TutorAction; text: string} | null>(null);
   const active = useRef<AbortController | null>(null);
   const key = `${question.category}:${question.mode}:${question.id}`;
@@ -30,6 +31,12 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
   const total = budget?.total || 0;
   const exhausted = count >= 3 || total >= 20;
   useEffect(() => () => { active.current?.abort(); active.current = null; }, []);
+
+  const saveLog = async (requestId:string,session:TutorSession) => {
+    const status = (value:'saving'|'saved'|'failed') => setHistory(h=>h.map(item=>item.log?.requestId===requestId?{...item,log:{...item.log,status:value}}:item));
+    status('saving');
+    try {await logTutorDisplay(requestId,username,session);status('saved');} catch {status('failed');}
+  };
 
   const send = async (action: TutorAction, text = '') => {
     if (!budget || active.current || (budget.questions.get(key) || 0) >= 3 || budget.total >= 20) return;
@@ -41,15 +48,18 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
     const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
     try {
       let reply: TutorReply;
+      let log: {requestId:string;session:TutorSession;status:'saving'} | undefined;
       if (live) {
         if (!budget.liveSession) budget.liveSession = await openTutorSession(controller.signal);
         const result = await requestTutorReply(question, action, text.trim(), controller.signal, budget.liveSession);
         budget.total = result.budget.sessionUsed; budget.questions.set(key, result.budget.questionUsed);
         reply = result.reply;
+        if(supportsTutorLogging())log={requestId:result.requestId,session:budget.liveSession,status:'saving'};
       } else reply = await mockTutorReply(question, action, text.trim(), controller.signal);
       if (active.current !== controller || controller.signal.aborted) return;
       if (live) setUsage(recordTutorDisplay(usageOwner, usageCategory));
-      setHistory(h => [...h, {label: action === 'question' ? text.trim() : action === 'simple' ? 'もっとやさしく説明して' : '答えの理由を確認', reply}]);
+      setHistory(h => [...h, {label: action === 'question' ? text.trim() : action === 'simple' ? 'もっとやさしく説明して' : '答えの理由を確認', reply, log}]);
+      if(log)void saveLog(log.requestId,log.session);
       if (action === 'question') setInput('');
     } catch (failure) {
       if (active.current !== controller) return;
@@ -65,10 +75,10 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
   return <section className="ai-tutor" data-question-id={question.id} data-mode={question.mode}
     onClick={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
     <button type="button" className="ai-tutor-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen(v => !v)}>
-      <span>AIに聞く</span><span aria-hidden="true">{open ? '−' : '＋'}</span>
+      <span>質問する</span><span aria-hidden="true">{open ? '−' : '＋'}</span>
     </button>
     {open && <div id={id} className="ai-tutor-body">
-      <p className="ai-tutor-preview">{live ? 'AIによる学習サポート' : '操作プレビュー · AI未接続'}</p>
+      {!live && <p className="ai-tutor-preview">操作プレビュー</p>}
       <p className="ai-tutor-count" role="status">{question.category === 'organic' ? '有機' : '無機'} {usage[usageCategory]}回 · 通算 {usage.organic + usage.inorganic}回</p>
       <div className="ai-tutor-actions">
         <button type="button" disabled={busy || exhausted} onClick={() => void send('difference')}>{question.correct === question.selected ? '正解の理由' : '選んだ答えとの違い'}</button>
@@ -91,6 +101,8 @@ function TutorPanel({ question }: { question: TutorQuestion }) {
       <div className="ai-tutor-history" aria-live="polite" aria-relevant="additions">
         {history.map((item, i) => <article key={i} className="ai-tutor-reply">
           <p className="ai-tutor-request">{item.label}</p>
+          {item.log?.status === 'saving' && <p role="status">記録中…</p>}
+          {item.log?.status === 'failed' && <p role="alert">記録できませんでした。<button type="button" onClick={() => void saveLog(item.log!.requestId,item.log!.session)}>記録を再試行</button></p>}
           <strong>結論</strong><p><ChemicalText text={item.reply.conclusion} /></p>
           <strong>区別するポイント</strong><p><ChemicalText text={item.reply.distinction} /></p>
           <strong>確認の問い</strong><p>{item.reply.checkQuestion}</p>

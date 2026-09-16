@@ -11,22 +11,24 @@ const fixtureTables=process.env.CHEM_AI_SHEETS_FIXTURE ? JSON.parse(readFileSync
  const heads=[...new Set(rows.flatMap(Object.keys))];return [name,[heads,...rows.map(r=>heads.map(k=>r[k]??''))]];
 }));
 function runtime(shared=new Map()) {
- let locked=false,calls=0,now=Date.now(),hook,sheetReads=0;
+ let locked=false,calls=0,now=Date.now(),hook,sheetReads=0,logFailure=false,ambiguous=false;
+ const logRows=[];
  const tables=JSON.parse(JSON.stringify(fixtureTables));
  const cache=new Map();
  const props={getProperty:k=>shared.get(k)??null,setProperty:(k,v)=>{assert(Buffer.byteLength(v)<=9000);shared.set(k,v);},deleteProperty:k=>shared.delete(k),getProperties:()=>Object.fromEntries(shared)};
  const blob=x=>({getBytes:()=>Array.from(Buffer.from(x)),getDataAsString:()=>Buffer.from(x).toString()});
  const context=vm.createContext({Date:class extends Date {constructor(v){super(v??now)}static now(){return now;}},
   Utilities:{getUuid:randomUUID,DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(a,t)=>Array.from(createHash(a).update(t).digest()),newBlob:blob,formatDate:d=>new Date(+d+9*3600000).toISOString().slice(0,10)},
-  SpreadsheetApp:{openById:id=>{assert.equal(id,'1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0');return {getSheetByName:name=>{assert(['compounds','reactions','experiment','inorganic'].includes(name));sheetReads++;const values=tables[name];return values?{getLastRow:()=>values.length,getLastColumn:()=>values[0].length,getRange:(r,c,h,w)=>{assert.equal(r,1);assert.equal(c,1);assert.equal(h,values.length);assert.equal(w,values[0].length);return {getValues:()=>JSON.parse(JSON.stringify(values))}}}:null;}}}},
+  SpreadsheetApp:{flush:()=>{},openById:id=>{assert.equal(id,'1QxRAbYbN0tA3nmBgT7yL4HhnIPqW_QeFFkzGKkDLda0');return {getSheetByName:name=>{if(name==='AI質問')return {getLastRow:()=>logRows.length+1,getSheetId:()=>9162026,getMaxRows:()=>1000,getRange:(r,c,h,w)=>r===1?{getValues:()=>[['日時','ユーザー名','問題','質問','解答']]}:{getValues:()=>[logRows[r-2]?.values.map((cell,i)=>i===0?new context.Date((cell.userEnteredValue.numberValue-25569)*86400000):cell.userEnteredValue.stringValue)??['','','','','']],setNumberFormats:formats=>{assert.equal(formats[0][0],'yyyy/MM/dd HH:mm')},setValues:rows=>{if(logFailure)throw Error('write denied');logRows[r-2]={values:rows[0].map((v,i)=>i===0?{userEnteredValue:{numberValue:v},userEnteredFormat:{numberFormat:{pattern:'yyyy/MM/dd HH:mm'}}}:{userEnteredValue:{stringValue:v.slice(1)}})};if(ambiguous)throw Error('lost response');},setWrap:()=>({setVerticalAlignment:()=>{}})}};assert(['compounds','reactions','experiment','inorganic'].includes(name));sheetReads++;const values=tables[name];return values?{getLastRow:()=>values.length,getLastColumn:()=>values[0].length,getRange:(r,c,h,w)=>{assert.equal(r,1);assert.equal(c,1);assert.equal(h,values.length);assert.equal(w,values[0].length);return {getValues:()=>JSON.parse(JSON.stringify(values))}}}:null;}}}},
   PropertiesService:{getScriptProperties:()=>props},LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true},releaseLock:()=>{locked=false}})},CacheService:{getScriptCache:()=>({get:k=>cache.get(k)??null,put:(k,v)=>cache.set(k,v)})},
   ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({setMimeType:()=>({text})})},
-  UrlFetchApp:{fetch:(url,opts)=>{calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(opts.headers.Authorization,'Bearer sk-test-only');const input=JSON.parse(opts.payload);assert.equal(input.store,false);assert.equal(input.max_output_tokens,1000);if(hook)return hook(input);return response();}}
+  ScriptApp:{getOAuthToken:()=> 'google-test-token'},
+  UrlFetchApp:{fetch:(url,opts)=>{if(url.startsWith('https://sheets.googleapis.com/')){assert.equal(opts.headers.Authorization,'Bearer google-test-token');if(logFailure)return {getResponseCode:()=>403};const payload=JSON.parse(opts.payload);assert.equal(payload.requests.length,1);assert.equal(payload.requests[0].appendCells.sheetId,9162026);logRows.push(...payload.requests[0].appendCells.rows);if(ambiguous)throw Error('lost response');return {getResponseCode:()=>200};}calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(opts.headers.Authorization,'Bearer sk-test-only');const input=JSON.parse(opts.payload);assert.equal(input.store,false);assert.equal(input.max_output_tokens,1000);if(hook)return hook(input);return response();}}
  });vm.runInContext(code,context);
  const response=(reply={status:'ok',conclusion:'確認用の説明です。',distinction:'条件を比べます。',checkQuestion:'どの条件ですか？'})=>({getResponseCode:()=>200,getContentText:()=>JSON.stringify({status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify(reply)}]}]})});
  const post=d=>JSON.parse(context.doPost({postData:{contents:JSON.stringify(d)}}).text);
  const configure=()=>{props.setProperty('OPENAI_API_KEY','sk-test-only');props.setProperty('CHEM_AI_ENABLED','true');};
- return {context,props,shared,post,configure,response,tables,get sheetReads(){return sheetReads},get calls(){return calls},set hook(v){hook=v},advance:ms=>{now+=ms},setLocked:v=>{locked=v}};
+ return {context,props,shared,post,configure,response,tables,logRows,set logFailure(v){logFailure=v},set ambiguous(v){ambiguous=v},get sheetReads(){return sheetReads},get calls(){return calls},set hook(v){hook=v},advance:ms=>{now+=ms},setLocked:v=>{locked=v}};
 }
 const question=[...bank.questions.values()].find(q=>q.category==='organic'&&q.mode==='experiment');
 function request(token,q=question){return {operation:'answer',token,requestId:randomUUID(),id:q.id,category:q.category,mode:q.mode,signature:q.signature,selected:q.choices[0],action:'difference',text:''};}
@@ -65,4 +67,21 @@ test('missing sheet, invalid headers, duplicates and malformed source do not cal
 });
 test('unknown session and health do not access Sheets',()=>{
  const r=runtime();r.configure();assert.equal(r.post(request(randomUUID()+randomUUID())).error,'session_expired');r.context.doGet();assert.equal(r.sheetReads,0);
+});
+
+function logRequest(d,username='確認用') {return {operation:'log',token:d.token,requestId:d.requestId,username};}
+test('display logging writes exactly five literal cells, JST date and server-owned material',()=>{
+ const r=runtime();r.configure();const d={...request(session(r)),action:'question',text:'=1+2 はなぜ？'};
+ r.hook=input=>{assert(!JSON.stringify(input).includes('確認用'));assert(!JSON.stringify(input).includes('username'));return r.response();};
+ const a=r.post(d);assert(a.reply);assert.equal(r.logRows.length,0);
+ assert.deepEqual(r.post({...logRequest(d,'=確認用'),answer:'fabricated',problem:'fabricated'}),{logged:true});
+ const cells=r.logRows[0].values;assert.equal(cells.length,5);assert.equal(cells[1].userEnteredValue.stringValue,'=確認用');assert.equal(cells[2].userEnteredValue.stringValue,question.prompt);assert.equal(cells[3].userEnteredValue.stringValue,d.text);assert(cells[4].userEnteredValue.stringValue.includes(a.reply.conclusion));assert(!JSON.stringify(cells).includes('fabricated'));assert(cells.every(c=>!('formulaValue' in c.userEnteredValue)));assert.equal(cells[0].userEnteredFormat.numberFormat.pattern,'yyyy/MM/dd HH:mm');assert(Math.abs((cells[0].userEnteredValue.numberValue-25569)*86400000-9*3600000-Date.now())<1000);
+ assert.deepEqual(r.post(logRequest(d)),{logged:true});assert.equal(r.logRows.length,1);assert.equal(r.calls,1);
+});
+test('logging failure and lost acknowledgment are retryable without regenerating or duplicate rows',()=>{
+ const r=runtime();r.configure();const d=request(session(r));r.post(d);r.logFailure=true;assert.equal(r.post(logRequest(d)).error,'log_failed');assert.equal(r.logRows.length,0);r.logFailure=false;r.ambiguous=true;assert.equal(r.post(logRequest(d)).error,'log_failed');assert.equal(r.logRows.length,1);assert.deepEqual(r.post(logRequest(d)),{logged:true});assert.equal(r.logRows.length,1);assert.equal(r.calls,1);
+});
+test('preset questions, invalid identity, failed answers and expiry are handled',()=>{
+ for(const action of ['simple','difference']) {const r=runtime();r.configure();const d={...request(session(r)),action,selected:question.correct};r.post(d);assert.equal(r.post(logRequest(d,'')).error,'invalid_request');assert(r.post(logRequest(d)).logged);assert.equal(r.logRows[0].values[3].userEnteredValue.stringValue,action==='simple'?'やさしく説明':'正解の理由');r.advance(3*3600000);assert.equal(r.post(logRequest(d)).error,'log_expired');}
+ const r=runtime();r.configure();const d=request(session(r));r.hook=()=>({getResponseCode:()=>500,getContentText:()=> '{}'});r.post(d);assert.equal(r.post(logRequest(d)).error,'log_unavailable');assert.equal(r.logRows.length,0);assert.equal(r.post({...logRequest(d),requestId:randomUUID()}).error,'log_expired');
 });
