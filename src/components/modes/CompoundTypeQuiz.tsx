@@ -1,3 +1,5 @@
+import { useAnswerFeedback } from '../../utils/useAnswerFeedback';
+import { correct as showCorrectFeedback } from '../../utils/quizFeedback';
 import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { shuffleLearning } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
@@ -57,6 +59,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { acceptAnswer, resetAnswerFeedback } = useAnswerFeedback();
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -94,11 +97,13 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
+    if (!acceptAnswer()) return;
 
     const isCorrect = answer === correctType;
     
     // 効果音を再生
     if (isCorrect) {
+      showCorrectFeedback(false);
       playCorrect();
     } else {
       playWrong();
@@ -233,6 +238,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setQuestionStartTime(Date.now());
       // 次の問題が異なる場合は連続カウントをリセット（同じ問題IDでなければ）
@@ -297,7 +303,8 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
   const handleReset = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setShowResult(false);
+    resetAnswerFeedback();
+      setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
     setPointScore(0);
@@ -313,6 +320,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
     if (quizSettings?.startIndex !== undefined) {
       setCurrentIndex(0);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setScore(0);
       setTotalAnswered(0);
@@ -328,6 +336,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
   useEffect(() => {
     if (!isFinished) {
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setQuestionStartTime(Date.now());
     }
@@ -497,7 +506,7 @@ export const CompoundTypeQuiz: React.FC<CompoundTypeQuizProps> = ({ compounds, c
                 {showResult && (
                   <div className="result-action-inline">
                     <span className={selectedAnswer === correctType ? "result-correct" : "result-incorrect"}>
-                      {selectedAnswer === correctType ? "✓ Correct!" : "✗ Wrong"}
+                      {selectedAnswer === correctType ? "正解" : "✗ Wrong"}
                     </span>
                   </div>
                 )}

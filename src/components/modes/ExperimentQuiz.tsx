@@ -1,3 +1,5 @@
+import { useAnswerFeedback } from '../../utils/useAnswerFeedback';
+import { correct as showCorrectFeedback } from '../../utils/quizFeedback';
 import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { shuffleLearning } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
@@ -27,6 +29,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { acceptAnswer, resetAnswerFeedback } = useAnswerFeedback();
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -115,6 +118,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   const handleAnswer = (selectedOption: number) => {
     if (isProcessingRef.current) return;
     if (showResult) return;
+    if (!acceptAnswer()) return;
 
     isProcessingRef.current = true;
     setSelectedAnswer(selectedOption);
@@ -124,6 +128,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     
     // 効果音を再生
     if (isCorrect) {
+      showCorrectFeedback(false);
       playCorrect();
     } else {
       playWrong();
@@ -259,6 +264,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     } else if (currentIndex < filteredExperiments.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setQuestionStartTime(Date.now());
       // 次の問題が異なる場合は連続カウントをリセット
@@ -378,6 +384,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
     if (quizSettings?.startIndex !== undefined) {
       setCurrentIndex(0);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setScore(0);
       setTotalAnswered(0);
@@ -468,7 +475,8 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
         onRestart={() => {
           setCurrentIndex(0);
           setSelectedAnswer(null);
-          setShowResult(false);
+          resetAnswerFeedback();
+      setShowResult(false);
           setScore(0);
           setTotalAnswered(0);
           setIsFinished(false);
@@ -489,7 +497,8 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
   const handleReset = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setShowResult(false);
+    resetAnswerFeedback();
+      setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
     setPointScore(0);
@@ -561,7 +570,7 @@ export const ExperimentQuiz: React.FC<ExperimentQuizProps> = ({ experiments, cat
             {showResult && (
               <div className="result-action-inline">
                 <span className={selectedAnswer === currentExperiment.correctAnswer ? "result-correct" : "result-incorrect"}>
-                  {selectedAnswer === currentExperiment.correctAnswer ? "✓ Correct!" : "✗ Wrong"}
+                  {selectedAnswer === currentExperiment.correctAnswer ? "正解" : "✗ Wrong"}
                 </span>
               </div>
             )}
