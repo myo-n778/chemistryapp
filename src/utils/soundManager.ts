@@ -1,3 +1,4 @@
+import { playTone, stopSound } from './quizFeedback';
 /**
  * 効果音管理ユーティリティ
  */
@@ -23,25 +24,23 @@ const getSoundPath = (set: SoundSet, type: 'correct' | 'wrong'): string => {
 /**
  * 選択された効果音セットをlocalStorageから取得
  */
-export const getSoundSet = (): SoundSet => {
-  try {
-    const stored = localStorage.getItem(SOUND_SET_KEY);
-    if (stored) {
-      const set = parseInt(stored, 10);
-      if (set === 0 || set === 1 || set === 2 || set === 3) {
-        return set as SoundSet;
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get sound set from localStorage:', error);
-  }
-  return 1; // デフォルトはセット1
+let sessionSoundSet: SoundSet = 0;
+export const getSoundSet = (): SoundSet => sessionSoundSet;
+const resetSessionSound = () => {
+  sessionSoundSet = 0;
+  stopSound();
+  window.dispatchEvent(new Event('quiz-sound-change'));
 };
+window.addEventListener('pagehide', resetSessionSound);
+window.addEventListener('pageshow', resetSessionSound);
 
 /**
  * 選択された効果音セットをlocalStorageに保存
  */
 export const setSoundSet = (set: SoundSet): void => {
+  sessionSoundSet = set;
+  stopSound();
+  window.dispatchEvent(new Event('quiz-sound-change'));
   try {
     localStorage.setItem(SOUND_SET_KEY, String(set));
   } catch (error) {
@@ -53,10 +52,11 @@ export const setSoundSet = (set: SoundSet): void => {
  * 正解音を再生
  */
 export const playCorrect = (): void => {
+  stopClip();
   const set = getSoundSet();
   if (set === 0) return; // none（音無し）の場合は再生しない
-  const path = getSoundPath(set, 'correct');
-  playSound(path);
+  if (set === 1) playTone(true);
+  else playSound(getSoundPath(set, 'correct'));
 };
 
 /**
@@ -72,9 +72,17 @@ export const playWrong = (): void => {
 /**
  * 音声ファイルを再生（共通処理）
  */
+let activeAudio: HTMLAudioElement | null = null;
+const stopClip = () => { activeAudio?.pause(); activeAudio = null; };
+window.addEventListener('quiz-sound-change', stopClip);
+window.addEventListener('quiz-feedback-clear', stopClip);
+window.addEventListener('pagehide', stopClip);
+window.addEventListener('popstate', stopClip);
 const playSound = (path: string): void => {
+  stopClip();
   try {
     const audio = new Audio(path);
+    activeAudio = audio;
     console.log('[SoundManager] Attempting to play sound:', path);
     
     // エラーハンドリング
@@ -116,7 +124,8 @@ const playSound = (path: string): void => {
  * テスト再生（UI操作時に使用）
  */
 export const playTestSound = (set: SoundSet, type: 'correct' | 'wrong'): void => {
-  if (set === 0) return; // none（音無し）の場合は再生しない
+  if (set === 0 || getSoundSet() !== set) return;
+  if (set === 1 && type === 'correct') { playTone(true); return; }
   const path = getSoundPath(set, type);
   playSound(path);
 };

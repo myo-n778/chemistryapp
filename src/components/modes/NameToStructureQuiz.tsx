@@ -1,3 +1,5 @@
+import { useAnswerFeedback } from '../../utils/useAnswerFeedback';
+import { correct as showCorrectFeedback } from '../../utils/quizFeedback';
 import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { compoundOptions } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
@@ -27,6 +29,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { acceptAnswer, resetAnswerFeedback } = useAnswerFeedback();
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [showAllNames, setShowAllNames] = useState(false);
@@ -70,11 +73,13 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
 
   const handleAnswer = (answerId: string) => {
     if (showResult) return;
+    if (!acceptAnswer()) return;
 
     const isCorrect = answerId === currentCompound.id;
     
     // 効果音を再生
     if (isCorrect) {
+      showCorrectFeedback(false);
       playCorrect();
     } else {
       playWrong();
@@ -210,6 +215,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     } else if (currentIndex < compounds.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setShowAllNames(false);
       setQuestionStartTime(Date.now());
@@ -276,7 +282,8 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   const handleReset = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setShowResult(false);
+    resetAnswerFeedback();
+      setShowResult(false);
     setShowAllNames(false);
     setScore(0);
     setTotalAnswered(0);
@@ -293,6 +300,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
     if (quizSettings?.startIndex !== undefined) {
       setCurrentIndex(0);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setShowAllNames(false);
       setScore(0);
@@ -309,6 +317,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
   useEffect(() => {
     if (!isFinished) {
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setShowAllNames(false);
       setQuestionStartTime(Date.now());
@@ -486,7 +495,7 @@ export const NameToStructureQuiz: React.FC<NameToStructureQuizProps> = ({ compou
                 {showResult && (
                   <div className="result-action-inline">
                     <span className={selectedAnswer === currentCompound.id ? "result-correct" : "result-incorrect"}>
-                      {selectedAnswer === currentCompound.id ? "✓ Correct!" : "✗ Wrong"}
+                      {selectedAnswer === currentCompound.id ? "正解" : "✗ Wrong"}
                     </span>
                   </div>
                 )}

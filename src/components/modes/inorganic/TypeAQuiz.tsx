@@ -1,3 +1,5 @@
+import { useAnswerFeedback } from '../../../utils/useAnswerFeedback';
+import { correct as showCorrectFeedback } from '../../../utils/quizFeedback';
 import { AiTutorPanel } from '../../ai/AiTutorPanel';
 import { inorganicRangeKey, InorganicLearningSettings } from '../../../utils/inorganicUnits';
 import { ChemicalText } from '../../ChemicalText';
@@ -86,6 +88,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { acceptAnswer, resetAnswerFeedback } = useAnswerFeedback();
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -147,6 +150,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     if (quizSettings?.startIndex !== undefined) {
       setCurrentIndex(0);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setScore(0);
       setTotalAnswered(0);
@@ -215,6 +219,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     } else if (currentIndex < filteredReactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setQuestionStartTime(Date.now());
       const nextReaction = filteredReactions[currentIndex + 1];
@@ -334,6 +339,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
   const handleAnswer = (selectedOption: number) => {
     if (isProcessingRef.current) return;
     if (showResult) return;
+    if (!acceptAnswer()) return;
     isProcessingRef.current = true;
     setSelectedAnswer(selectedOption);
     setShowResult(true);
@@ -341,6 +347,7 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
     
     // 効果音を再生
     if (isCorrect) {
+      showCorrectFeedback(false);
       playCorrect();
     } else {
       playWrong();
@@ -428,7 +435,8 @@ export const TypeAQuiz: React.FC<TypeAQuizProps> = ({
           onRestart={() => {
             setCurrentIndex(0);
             setSelectedAnswer(null);
-            setShowResult(false);
+            resetAnswerFeedback();
+      setShowResult(false);
             setScore(0);
             setTotalAnswered(0);
             setPointScore(0);

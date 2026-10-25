@@ -52,7 +52,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
           </button>
         </div>
       </div>
-      <p className="mode-description">モードを選択してください</p>
+
       
       {/* 成績表示パネル（mode指定 = categoryでフィルタ） */}
       <UserStatsPanel mode={category} />
@@ -68,7 +68,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('structure-to-name')}
             >
               <div className="mode-title">{quizModeLabels['structure-to-name']}</div>
-              <div className="mode-subtitle">図から名称を選ぶ</div>
+
             </button>
 
             <button
@@ -76,7 +76,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('name-to-structure')}
             >
               <div className="mode-title">{quizModeLabels['name-to-structure']}</div>
-              <div className="mode-subtitle">名称から図を選ぶ</div>
+
             </button>
 
             <button
@@ -92,7 +92,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('reaction')}
             >
               <div className="mode-title">{quizModeLabels['reaction']}</div>
-              <div className="mode-subtitle">この反応で、何ができるか？</div>
+
             </button>
 
             <button
@@ -100,7 +100,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('substitution')}
             >
               <div className="mode-title">{quizModeLabels['substitution']}</div>
-              <div className="mode-subtitle">この反応で、何をしたか？</div>
+
             </button>
 
             <button
@@ -108,7 +108,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('experiment')}
             >
               <div className="mode-title">{quizModeLabels['experiment']}</div>
-              <div className="mode-subtitle">4択問題</div>
+
             </button>
           </>
         ) : (
@@ -118,7 +118,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('inorganic-type-a')}
             >
               <div className="mode-title">タイプA：反応 → 生成物</div>
-              <div className="mode-subtitle">反応内容から生成物を選ぶ</div>
+
             </button>
 
             <button
@@ -126,7 +126,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('inorganic-type-b')}
             >
               <div className="mode-title">タイプB：反応式 → 条件</div>
-              <div className="mode-subtitle">反応式から条件を選ぶ</div>
+
             </button>
 
             <button
@@ -134,7 +134,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ category, onSelectMo
               onClick={() => onSelectMode('inorganic-type-c')}
             >
               <div className="mode-title">タイプC：反応式 → 観察</div>
-              <div className="mode-subtitle">反応式から観察を選ぶ</div>
+
             </button>
             <button className="mode-button" onClick={() => onSelectMode('experiment')}>
               <div className="mode-title">タイプD：知識・実験</div>

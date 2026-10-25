@@ -1,3 +1,5 @@
+import { useAnswerFeedback } from '../../utils/useAnswerFeedback';
+import { correct as showCorrectFeedback } from '../../utils/quizFeedback';
 import { AiTutorPanel } from '../ai/AiTutorPanel';
 import { learningOptions } from '../../utils/learningChoices';
 import { LearningPoint } from '../LearningPoint';
@@ -30,6 +32,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { acceptAnswer, resetAnswerFeedback } = useAnswerFeedback();
   const [score, setScore] = useState(0);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [reactions, setReactions] = useState<ReactionCSVRow[]>([]);
@@ -83,6 +86,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     if (quizSettings?.startIndex !== undefined) {
       setCurrentIndex(0);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setScore(0);
       setTotalAnswered(0);
@@ -140,11 +144,13 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
+    if (!acceptAnswer()) return;
 
     const isCorrect = answer === correctValue;
     
     // 効果音を再生
     if (isCorrect) {
+      showCorrectFeedback(false);
       playCorrect();
     } else {
       playWrong();
@@ -279,6 +285,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
     } else if (currentIndex < reactions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
+      resetAnswerFeedback();
       setShowResult(false);
       setQuestionStartTime(Date.now());
       // 次の問題が異なる場合は連続カウントをリセット
@@ -396,7 +403,8 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
   const handleReset = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setShowResult(false);
+    resetAnswerFeedback();
+      setShowResult(false);
     setScore(0);
     setTotalAnswered(0);
     setPointScore(0);
@@ -545,7 +553,7 @@ export const ReactionQuiz: React.FC<ReactionQuizProps> = ({ compounds, category,
             {showResult && (
               <div className="result-action-inline">
                 <span className={selectedAnswer === correctValue ? "result-correct" : "result-incorrect"}>
-                  {selectedAnswer === correctValue ? "✓ Correct!" : "✗ Wrong"}
+                  {selectedAnswer === correctValue ? "正解" : "✗ Wrong"}
                 </span>
               </div>
             )}

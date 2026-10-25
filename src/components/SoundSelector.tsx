@@ -3,12 +3,15 @@ import { getSoundSet, setSoundSet, playTestSound, SoundSet } from '../utils/soun
 import './SoundSelector.css';
 
 export const SoundSelector: React.FC = () => {
-  const [soundSet, setSoundSetState] = useState<SoundSet>(1);
+  const [soundSet, setSoundSetState] = useState<SoundSet>(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // localStorageから初期値を読み込み
+  // 音はページを開くたびにOFF。現在のページ内の明示選択だけを反映。
   useEffect(() => {
-    setSoundSetState(getSoundSet());
+    const update = () => setSoundSetState(getSoundSet());
+    update();
+    window.addEventListener('quiz-sound-change', update);
+    return () => window.removeEventListener('quiz-sound-change', update);
   }, []);
 
   const handleSoundSetChange = (set: SoundSet) => {
@@ -29,21 +32,25 @@ export const SoundSelector: React.FC = () => {
         className="sound-selector-toggle"
         onClick={handleToggle}
         title="効果音を選択"
+        aria-expanded={isExpanded}
+        aria-label={`効果音 ${soundSet === 0 ? 'OFF' : 'ON'}`}
       >
-        sound
+        {soundSet === 0 ? '音 OFF' : `音 ON (${soundSet})`}
       </button>
       {isExpanded && (
         <div className="sound-selector-expanded">
           <div className="sound-selector-buttons">
             <button
               className={`sound-selector-button ${soundSet === 0 ? 'active' : ''}`}
+              aria-pressed={soundSet === 0}
               onClick={() => handleSoundSetChange(0)}
               title="音無し"
             >
-              none
+              OFF
             </button>
             <button
               className={`sound-selector-button ${soundSet === 1 ? 'active' : ''}`}
+              aria-pressed={soundSet === 1}
               onClick={() => handleSoundSetChange(1)}
               title="セット1"
             >
@@ -51,6 +58,7 @@ export const SoundSelector: React.FC = () => {
             </button>
             <button
               className={`sound-selector-button ${soundSet === 2 ? 'active' : ''}`}
+              aria-pressed={soundSet === 2}
               onClick={() => handleSoundSetChange(2)}
               title="セット2"
             >
@@ -58,6 +66,7 @@ export const SoundSelector: React.FC = () => {
             </button>
             <button
               className={`sound-selector-button ${soundSet === 3 ? 'active' : ''}`}
+              aria-pressed={soundSet === 3}
               onClick={() => handleSoundSetChange(3)}
               title="セット3"
             >

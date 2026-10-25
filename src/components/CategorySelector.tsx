@@ -23,23 +23,22 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({ onSelectCate
         <button className="logout-button" onClick={handleLogout} title="ユーザー切替">
           ユーザー切替
         </button>
-        <div><p className="category-eyebrow">CHEMISTRY / 化学演習</p><h1>Chemistry Drill</h1></div>
+        <div><h1>Chemistry Drill</h1></div>
       </div>
-      <p className="category-description">今日の学習を、ここから。分野を選んで始めましょう。</p>
 
       <div className="category-grid">
         <button 
           className="category-button"
           onClick={() => onSelectCategory('organic')}
         >
-          <span className="category-number">01 / ORGANIC</span><div className="category-title">有機化学</div><p className="category-subtitle">構造式・名称・反応・実験</p><span className="category-start">学習を始める →</span>
+          <div className="category-title">有機化学</div><p className="category-subtitle">構造式・名称・反応・実験</p>
         </button>
         
         <button 
           className="category-button"
           onClick={() => onSelectCategory('inorganic')}
         >
-          <span className="category-number">02 / INORGANIC</span><div className="category-title">無機化学</div><p className="category-subtitle">反応式・生成物・観察事項</p><span className="category-start">学習を始める →</span>
+          <div className="category-title">無機化学</div><p className="category-subtitle">反応式・生成物・観察事項</p>
         </button>
       </div>
       <details className="learning-records"><summary>学習記録・ランキングを見る</summary>
