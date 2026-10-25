@@ -1,6 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches:
       - main
@@ -19,16 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '18'
+          node-version: '22.23.4'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Mock AI and GAS regression tests
+        run: npm run test:ai && npm run test:ai:gas
 
       - name: Build
         run: npm run build
@@ -48,14 +53,17 @@ jobs:
           echo "Build verification passed"
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: './dist'
 
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -64,5 +72,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 

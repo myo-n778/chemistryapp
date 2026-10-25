@@ -1,4 +1,4 @@
-import { Compound, InorganicReaction } from '../types';
+import { Compound } from '../types';
 import { parseCSV, csvToCompounds } from '../utils/csvParser';
 import { parseReactionCSV, ReactionCSVRow } from '../utils/reactionParser';
 import { parseExperimentCSV, ExperimentCSVRow } from '../utils/experimentParser';
@@ -265,31 +265,3 @@ export const loadExperiments = async (category: Category): Promise<ExperimentCSV
     return [];
   }
 };
-
-/**
- * 無機化学反応データを読み込む
- * 新しいExcel形式（問題バンク_TEX）を優先的に読み込む
- */
-export const loadInorganicReactionsData = async (): Promise<InorganicReaction[]> => {
-  try {
-    // 新しいExcel形式を優先的に読み込む
-    const { loadInorganicQuizQuestions } = await import('./inorganicQuizLoader');
-    try {
-      const quizQuestions = await loadInorganicQuizQuestions();
-      if (quizQuestions.length > 0) {
-        console.log(`[dataLoader] Loaded ${quizQuestions.length} quiz questions from new Excel format`);
-        return quizQuestions;
-      }
-    } catch (quizError) {
-      console.warn('[dataLoader] Failed to load new Excel format:', quizError);
-    }
-    
-    // フォールバック: 空配列を返す（旧形式は削除されたため）
-    console.warn('[dataLoader] No inorganic reactions loaded, returning empty array');
-    return [];
-  } catch (error) {
-    console.error('Failed to load inorganic reactions:', error);
-    return [];
-  }
-};
-

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { loadKatexMhchem } from '../utils/katexMhchemLoader';
 
 /**
  * 最小構成テスト：\ce{}が確実に表示されることを確認
@@ -8,7 +9,7 @@ import 'katex/dist/katex.min.css';
  * 
  * 方針：
  * 1. KaTeXの読み込みを1系統に統一（npm importのみ）
- * 2. mhchem拡張をCDNから読み込むが、KaTeXの同一インスタンスに対して適用
+ * 2. mhchem拡張も同じnpmパッケージから読み込む
  * 3. react-katexは使わず、直接katex.render()を使用
  */
 export const TeXTest: React.FC = () => {
@@ -21,36 +22,9 @@ export const TeXTest: React.FC = () => {
     // 既にロード済みの場合はスキップ
     if (mhchemLoaded) return;
 
-    // KaTeXが既にロードされていることを確認
-    if (typeof katex === 'undefined') {
-      console.error('[TeXTest] KaTeX is not loaded');
-      return;
-    }
-
-    // mhchem拡張スクリプトをロード
-    // 重要: mhchem.min.jsは、window.katexに対してmhchemを登録する
-    // npmからインポートしたkatexをwindow.katexに設定することで、
-    // mhchem拡張が正しいKaTeXインスタンスに対して登録される
-    (window as any).katex = katex;
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js';
-    script.async = true;
-    script.onload = () => {
-      console.log('[TeXTest] mhchem extension loaded');
-      console.log('[TeXTest] katex instance:', katex);
-      console.log('[TeXTest] window.katex:', (window as any).katex);
-      console.log('[TeXTest] katex.__defineMacro:', typeof (katex as any).__defineMacro);
-      setMhchemLoaded(true);
-    };
-    script.onerror = () => {
-      console.error('[TeXTest] Failed to load mhchem extension');
-    };
-    document.head.appendChild(script);
-
-    return () => {
-      // クリーンアップ（必要に応じて）
-    };
+    loadKatexMhchem().then(() => setMhchemLoaded(true)).catch((error) => {
+      console.error('[TeXTest] Failed to load KaTeX mhchem:', error);
+    });
   }, [mhchemLoaded]);
 
   // 数式をレンダリング（mhchem拡張がロードされた後に実行）
